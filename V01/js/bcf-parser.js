@@ -141,11 +141,14 @@ class BCFParser {
       const parser = new DOMParser();
       const doc = parser.parseFromString(markupXml, 'text/xml');
 
+      // Get the Topic element to read attributes
+      const topicElement = doc.querySelector('Topic');
+
       const topic = {
         guid: topicGuid,
         title: this.getElementText(doc, 'Title'),
-        topicStatus: this.getElementText(doc, 'TopicStatus'),
-        topicType: this.getElementText(doc, 'TopicType'),
+        topicStatus: topicElement?.getAttribute('TopicStatus') || '',
+        topicType: topicElement?.getAttribute('TopicType') || '',
         priority: this.getElementText(doc, 'Priority'),
         description: this.getElementText(doc, 'Description'),
         creationDate: this.getElementText(doc, 'CreationDate'),
