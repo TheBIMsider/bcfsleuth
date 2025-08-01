@@ -4,7 +4,7 @@
 
 A modern web-based BCF (Building Collaboration Format) file analyzer and CSV/Excel converter.
 
-![BCFSleuth Interface](https://via.placeholder.com/800x400/2196F3/ffffff?text=BCFSleuth+Interface+Screenshot)
+<img width="1160" height="888" alt="BCFSleuth_V01_Phase1" src="https://github.com/user-attachments/assets/76751dd1-9ef4-46a7-ae1b-8c703f8a1272" />
 
 ## 🤖 AI-Assisted Development
 
