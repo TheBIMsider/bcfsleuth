@@ -1,3 +1,4 @@
+## 🏗️ WORK IN PROGESS 🏗️
 # BCFSleuth
 
 A modern web-based BCF (Building Collaboration Format) file analyzer and Excel/CSV converter.
