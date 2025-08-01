@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCFSleuth - BCF File Analyzer</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>BCFSleuth</h1>
+            <p class="tagline">Investigate your BCF files with precision</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- File Upload Section -->
+        <section id="upload-section" class="card">
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-zone-content">
+                    <div class="upload-icon">📁</div>
+                    <h3>Drop BCF files here</h3>
+                    <p>or click to browse</p>
+                    <input type="file" id="file-input" accept=".bcf,.bcfzip" multiple>
+                </div>
+            </div>
+            
+            <div id="file-list" class="file-list hidden">
+                <h4>Selected Files:</h4>
+                <ul id="selected-files"></ul>
+                <button id="process-btn" class="btn btn-primary">Process Files</button>
+            </div>
+        </section>
+
+        <!-- Processing Status -->
+        <section id="status-section" class="card hidden">
+            <div id="processing-status">
+                <div class="spinner hidden"></div>
+                <p id="status-text">Ready to process files...</p>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results-section" class="card hidden">
+            <h3>BCF Analysis Results</h3>
+            
+            <div id="project-info" class="info-grid">
+                <div class="info-item">
+                    <label>Project Name:</label>
+                    <span id="project-name">-</span>
+                </div>
+                <div class="info-item">
+                    <label>BCF Version:</label>
+                    <span id="bcf-version">-</span>
+                </div>
+                <div class="info-item">
+                    <label>Total Topics:</label>
+                    <span id="topic-count">-</span>
+                </div>
+                <div class="info-item">
+                    <label>Files Processed:</label>
+                    <span id="files-processed">-</span>
+                </div>
+            </div>
+
+            <div id="data-preview" class="data-preview">
+                <h4>Data Preview (First 5 Topics)</h4>
+                <div class="table-container">
+                    <table id="preview-table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Author</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="preview-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="export-controls">
+                <h4>Export Options</h4>
+                <div class="export-buttons">
+                    <button id="export-csv" class="btn btn-secondary">Download CSV</button>
+                    <button id="export-excel" class="btn btn-primary" disabled>Download Excel (Phase 2)</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>
+                Inspired by <a href="https://www.bim42.com/products/sloth.html" target="_blank">Sloth</a> 
+                by <strong><a href="https://www.linkedin.com/in/moreausimon/" target="_blank">Simon Moreau</a></strong> 
+                at <a href="https://www.bim42.com/" target="_blank">BIM42</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <!-- Application Scripts -->
+    <script src="js/bcf-parser.js"></script>
+    <script src="js/csv-exporter.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
