@@ -4,8 +4,6 @@
 
 A modern web-based BCF (Building Collaboration Format) file analyzer and CSV/Excel converter.
 
-<img width="1141" height="656" alt="BCFSleuth_V01_Phase1" src="https://github.com/user-attachments/assets/74ddf0d2-1ec4-47ce-8e2c-9d43ec7c8522" />
-
 ## 🤖 AI-Assisted Development
 
 This project demonstrates the power of human-AI collaboration in modern software development:
@@ -16,6 +14,14 @@ This project demonstrates the power of human-AI collaboration in modern software
 - **🎯 Systematic Approach**: Maintained code quality through structured debugging and iterative refinement
 
 **Why this matters**: Shows how AI tools can empower domain experts to create sophisticated applications while maintaining professional development standards, even without traditional programming backgrounds.
+
+# Screen Shot
+
+<img width="1141" height="656" alt="BCFSleuth_V01_Phase1" src="https://github.com/user-attachments/assets/74ddf0d2-1ec4-47ce-8e2c-9d43ec7c8522" />
+
+Love Demo here
+
+
 
 ## Overview
 
