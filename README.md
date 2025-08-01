@@ -103,4 +103,4 @@ The Building Collaboration Format (BCF) is an open file format supporting workfl
 
 ---
 
-*Built with ❤️ for the AECO community*
+*Made with ❤️ & 🤖 assistance for the AECO community*
