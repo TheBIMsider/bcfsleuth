@@ -10,7 +10,7 @@ This project demonstrates the power of human-AI collaboration in modern software
 
 - **🧠 AI Assistant**: Claude (Anthropic) provided architecture guidance, code generation, and debugging support
 - **⚡ Live Coding Sessions**: Built live using AI pair programming and systematic debugging
-- **🏗️ Domain Expertise**: AECO/BIM industry knowledge and project direction by TheBIMsider
+- **🏗️ Domain Expertise**: AECO/BIM industry knowledge and project direction by [The BIMsider](https://bio.link/thebimsider)
 - **🎯 Systematic Approach**: Maintained code quality through structured debugging and iterative refinement
 
 **Why this matters**: Shows how AI tools can empower domain experts to create sophisticated applications while maintaining professional development standards, even without traditional programming backgrounds.
