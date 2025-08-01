@@ -4,6 +4,17 @@ A modern web-based BCF (Building Collaboration Format) file analyzer and Excel/C
 
 ![BCFSleuth Interface](https://via.placeholder.com/800x400/2196F3/ffffff?text=BCFSleuth+Interface+Screenshot)
 
+## 🤖 AI-Assisted Development
+
+This project demonstrates the power of human-AI collaboration in modern software development:
+
+- **🧠 AI Assistant**: Claude (Anthropic) provided architecture guidance, code generation, and debugging support
+- **⚡ Live Coding Sessions**: Built live using AI pair programming and systematic debugging
+- **🏗️ Domain Expertise**: AECO/BIM industry knowledge and project direction by TheBIMsider
+- **🎯 Systematic Approach**: Maintained code quality through structured debugging and iterative refinement
+
+**Why this matters**: Shows how AI tools can empower domain experts to create sophisticated applications while maintaining professional development standards, even without traditional programming backgrounds.
+
 ## Overview
 
 BCFSleuth is a client-side web application that extracts and converts BCF file data into Excel or CSV formats for easy analysis and reporting. Built with modern web technologies for fast, secure, browser-based processing.
@@ -103,4 +114,4 @@ The Building Collaboration Format (BCF) is an open file format supporting workfl
 
 ---
 
-*Made with ❤️ & 🤖 assistance for the AECO community*
+*Built with ❤️ & 🤖 assistance for the AECO community*
