@@ -158,7 +158,7 @@ BCFSleuth is inspired by the original [Sloth](https://www.bim42.com/products/slo
 
 ## About BCF
 
-The Building Collaboration Format (BCF) is an open file format supporting workflow communication in BIM processes. Learn more at [buildingSMART International](https://www.buildingsmart.org/standards/bsi-standards/building-collaboration-format-bcf/).
+The Building Collaboration Format (BCF) is an open file format supporting workflow communication in BIM processes. Learn more at [buildingSMART International](https://www.buildingsmart.org/standards/bsi-standards/bim-collaboration-format/).
 
 ## Support & Feedback
 
