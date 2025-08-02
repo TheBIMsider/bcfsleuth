@@ -144,7 +144,6 @@ We welcome contributions! Please feel free to submit pull requests, report issue
 - BCF 2.0 and BCF 2.1 formats
 - BCF files with extensive comment threads
 - Large files with 100+ topics (tested up to 103 topics)
-- Various BCF format variations and edge cases
 
 **BCFSleuth expected performance:**
 
