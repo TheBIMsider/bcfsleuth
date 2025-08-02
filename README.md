@@ -275,7 +275,6 @@ We welcome contributions! Please feel free to submit pull requests, report issue
 - ✅ Multiple project.bcfp structures (ProjectExtension, ProjectInfo, direct Project)
 - ✅ Custom status taxonomies and non-standard BCF variations
 - ✅ Files with extensions.xsd custom field definitions
-- ✅ Vendor-specific BCF exports (Revit, Tekla, BIMtrack, Solibri, etc.)
 - ✅ Mixed BCF versions in batch processing scenarios
 
 **BCFSleuth intelligent adaptation:**
