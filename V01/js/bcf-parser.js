@@ -66,16 +66,57 @@ class BCFParser {
       const parser = new DOMParser();
       const doc = parser.parseFromString(projectXml, 'text/xml');
 
-      // Extract project information
-      const projectElement = doc.querySelector('ProjectInfo');
-      if (projectElement) {
-        bcfData.project = {
-          name: this.getElementText(projectElement, 'Name'),
-          projectId: projectElement.getAttribute('ProjectId'),
-        };
+      console.log('Project XML found'); // Debug log
+
+      // Extract project information - handle multiple BCF structures
+      let projectName = '';
+      let projectId = '';
+
+      // Method 1: ProjectExtension/Project/Name (your BCF structure)
+      const projectExtensionElement = doc.querySelector(
+        'ProjectExtension Project'
+      );
+      if (projectExtensionElement) {
+        projectName = this.getElementText(projectExtensionElement, 'Name');
+        projectId = projectExtensionElement.getAttribute('ProjectId');
+        console.log('Found ProjectExtension structure');
       }
+
+      // Method 2: ProjectInfo/Name (standard BCF 2.1 structure)
+      if (!projectName) {
+        const projectInfoElement = doc.querySelector('ProjectInfo');
+        if (projectInfoElement) {
+          projectName = this.getElementText(projectInfoElement, 'Name');
+          projectId = projectInfoElement.getAttribute('ProjectId');
+          console.log('Found ProjectInfo structure');
+        }
+      }
+
+      // Method 3: Direct Project/Name (some BCF variants)
+      if (!projectName) {
+        const projectElement = doc.querySelector('Project');
+        if (projectElement) {
+          projectName = this.getElementText(projectElement, 'Name');
+          projectId =
+            projectElement.getAttribute('ProjectId') ||
+            projectElement.getAttribute('Id');
+          console.log('Found direct Project structure');
+        }
+      }
+
+      console.log('Parsed project name:', projectName);
+      console.log('Parsed project ID:', projectId);
+
+      bcfData.project = {
+        name: projectName || 'Unknown Project',
+        projectId: projectId || '',
+      };
     } catch (error) {
       console.warn('Error parsing project file:', error);
+      bcfData.project = {
+        name: 'Unknown Project',
+        projectId: '',
+      };
     }
   }
 
