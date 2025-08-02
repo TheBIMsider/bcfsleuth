@@ -1,5 +1,3 @@
-## 🏗️ WORK IN PROGESS 🏗️
-
 # BCFSleuth
 
 A modern web-based BCF (Building Collaboration Format) file analyzer and CSV/Excel converter.
@@ -46,13 +44,68 @@ BCFSleuth is a client-side web application that extracts and converts BCF file d
 
 ## Getting Started
 
-### Quick Start
+### Quick Start (Use Live Demo)
 1. Open [BCFSleuth Live Demo](https://thebimsider.github.io/bcfsleuth/V01/)
 2. Drag and drop your BCF file(s) onto the upload area
 3. Review the extracted data in the preview table
 4. Choose your export format:
    - **Download CSV**: For data analysis, filtering, and pivot tables
    - **Download Excel**: For professional reports and stakeholder presentations
+
+### Self-Hosted Setup (Fork or Download)
+
+#### Option 1: Fork the Repository
+```bash
+# Fork the repo on GitHub (click "Fork" button), then clone your fork
+git clone https://github.com/[your-username]/bcfsleuth.git
+cd bcfsleuth
+
+# No build process needed - it's pure HTML/CSS/JavaScript
+# Serve the files using any web server
+```
+
+#### Option 2: Download and Host
+```bash
+# Download the latest release
+wget https://github.com/TheBIMsider/bcfsleuth/archive/refs/heads/main.zip
+unzip main.zip
+cd bcfsleuth-main
+
+# Or clone directly
+git clone https://github.com/TheBIMsider/bcfsleuth.git
+cd bcfsleuth
+```
+
+#### Hosting Options
+
+**Local Development Server:**
+```bash
+# Python 3
+python -m http.server 8000
+
+# Python 2
+python -m SimpleHTTPServer 8000
+
+# Node.js
+npx serve .
+
+# PHP
+php -S localhost:8000
+```
+
+**Production Hosting:**
+- **GitHub Pages**: Fork repo, enable Pages in Settings
+- **Netlify**: Drag folder to netlify.com or connect GitHub repo
+- **Vercel**: Import GitHub repo at vercel.com
+- **Traditional Web Host**: Upload files to any web server (Apache, Nginx, IIS)
+- **Static Hosting**: Works with any static file hosting service
+
+**Requirements:**
+- ✅ No server-side processing needed
+- ✅ No database required
+- ✅ No build process necessary
+- ✅ Just serve the static files
+- ✅ HTTPS recommended (required for some modern browser features)
 
 ### Supported BCF Data (25+ Fields)
 - **Topic Information**: Title, Description, Status, Priority, Type, Stage
