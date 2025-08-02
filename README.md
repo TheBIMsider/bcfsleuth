@@ -142,7 +142,7 @@ We welcome contributions! Please feel free to submit pull requests, report issue
 **BCFSleuth has been successfully tested with:**
 
 - BCF 2.0 and BCF 2.1 formats
-- Complex BCF files with extensive comment threads
+- BCF files with extensive comment threads
 - Large files with 100+ topics (tested up to 103 topics)
 - Various BCF format variations and edge cases
 
