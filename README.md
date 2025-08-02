@@ -15,7 +15,7 @@ This project demonstrates the power of human-AI collaboration in modern software
 
 # 📱 Screen Shot
 
-<img width="1141" height="656" alt="BCFSleuth_V01_Phase1" src="https://github.com/user-attachments/assets/74ddf0d2-1ec4-47ce-8e2c-9d43ec7c8522" />
+<img width="1030" height="813" alt="BCFSleuth_V01_Phase3b" src="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b" />
 
 ## Live Demo [HERE](https://thebimsider.github.io/bcfsleuth/V01/)
 
