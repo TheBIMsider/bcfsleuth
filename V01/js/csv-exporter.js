@@ -1,8 +1,13 @@
 // CSV Exporter - Handles CSV generation from BCF data
 class CSVExporter {
-  static export(bcfDataArray) {
+  static export(bcfDataArray, selectedFields = null) {
     if (!bcfDataArray || bcfDataArray.length === 0) {
       throw new Error('No BCF data to export');
+    }
+
+    // Use all fields if none selected
+    if (!selectedFields || selectedFields.length === 0) {
+      selectedFields = this.getAllFieldNames();
     }
 
     // Collect all rows (topics + their comments)
@@ -31,6 +36,7 @@ class CSVExporter {
           sourceFile: bcfData.filename,
           projectName: bcfData.project.name || 'Unknown',
           bcfVersion: bcfData.version || 'Unknown',
+          topicGuid: topic.guid,
           ...topic,
         };
         allRows.push(topicRow);
@@ -48,6 +54,10 @@ class CSVExporter {
               sourceFile: bcfData.filename,
               topicGuid: topic.guid,
               commentNumber: index + 1,
+              commentDate: comment.date,
+              commentAuthor: comment.author,
+              commentText: comment.comment,
+              commentStatus: comment.status,
               ...comment,
             };
             allRows.push(commentRow);
@@ -60,9 +70,9 @@ class CSVExporter {
       throw new Error('No topics found in BCF files');
     }
 
-    // Generate CSV content
-    const headers = this.getCSVHeaders();
-    const rows = allRows.map((row) => this.rowToCSVRow(row));
+    // Generate CSV content with selected fields only
+    const headers = this.getCSVHeaders(selectedFields);
+    const rows = allRows.map((row) => this.rowToCSVRow(row, selectedFields));
 
     // Combine headers and rows
     const csvContent = [headers, ...rows]
@@ -72,94 +82,156 @@ class CSVExporter {
     return csvContent;
   }
 
-  static getCSVHeaders() {
+  static getAllFieldNames() {
     return [
-      'Row Type',
-      'Source File',
-      'Project Name',
-      'BCF Version',
-      'Topic GUID',
-      'Title',
-      'Description',
-      'Status',
-      'Type',
-      'Priority',
-      'Stage',
-      'Labels',
-      'Assigned To',
-      'Creation Date',
-      'Creation Author',
-      'Modified Date',
-      'Modified Author',
-      'Due Date',
-      'Comments Count',
-      'Viewpoints Count',
-      'Comment Number',
-      'Comment Date',
-      'Comment Author',
-      'Comment Text',
-      'Comment Status',
+      'title',
+      'description',
+      'status',
+      'type',
+      'priority',
+      'stage',
+      'labels',
+      'assignedTo',
+      'creationDate',
+      'creationAuthor',
+      'modifiedDate',
+      'modifiedAuthor',
+      'dueDate',
+      'sourceFile',
+      'projectName',
+      'bcfVersion',
+      'topicGuid',
+      'commentsCount',
+      'viewpointsCount',
+      'commentNumber',
+      'commentDate',
+      'commentAuthor',
+      'commentText',
+      'commentStatus',
     ];
   }
 
-  static rowToCSVRow(row) {
-    if (row.rowType === 'topic') {
-      return [
-        'Topic',
-        row.sourceFile || '',
-        row.projectName || '',
-        row.bcfVersion || '',
-        row.guid || '',
-        row.title || '',
-        this.cleanDescription(row.description || ''),
-        row.topicStatus || '',
-        row.topicType || '',
-        row.priority || '',
-        row.stage || '',
-        this.formatLabels(row.labels),
-        row.assignedTo || '',
-        this.formatDate(row.creationDate),
-        row.creationAuthor || '',
-        this.formatDate(row.modifiedDate),
-        row.modifiedAuthor || '',
-        this.formatDate(row.dueDate),
-        row.comments ? row.comments.length : 0,
-        row.viewpoints ? row.viewpoints.length : 0,
-        '',
-        '',
-        '',
-        '',
-        '', // Empty comment fields for topic row
-      ];
-    } else if (row.rowType === 'comment') {
-      return [
-        'Comment', // Clean comment indicator
-        '', // Empty source file for comments
-        '', // Empty project name
-        '', // Empty BCF version
-        '', // Empty Topic GUID for visual hierarchy
-        '', // Empty title
-        '', // Empty description
-        '', // Empty status
-        '', // Empty type
-        '', // Empty priority
-        '', // Empty stage
-        '', // Empty labels
-        '', // Empty assigned to
-        '', // Empty creation date
-        '', // Empty creation author
-        '', // Empty modified date
-        '', // Empty modified author
-        '', // Empty due date
-        '', // Empty comments count
-        '', // Empty viewpoints count
-        row.commentNumber || '',
-        this.formatDate(row.date) || 'No Date',
-        row.author || 'Unknown Author',
-        this.cleanDescription(row.comment || '') || 'No Comment Text',
-        row.status || 'Unknown',
-      ];
-    }
+  static getCSVHeaders(selectedFields) {
+    const fieldHeaderMap = {
+      title: 'Title',
+      description: 'Description',
+      status: 'Status',
+      type: 'Type',
+      priority: 'Priority',
+      stage: 'Stage',
+      labels: 'Labels',
+      assignedTo: 'Assigned To',
+      creationDate: 'Creation Date',
+      creationAuthor: 'Creation Author',
+      modifiedDate: 'Modified Date',
+      modifiedAuthor: 'Modified Author',
+      dueDate: 'Due Date',
+      sourceFile: 'Source File',
+      projectName: 'Project Name',
+      bcfVersion: 'BCF Version',
+      topicGuid: 'Topic GUID',
+      commentsCount: 'Comments Count',
+      viewpointsCount: 'Viewpoints Count',
+      commentNumber: 'Comment Number',
+      commentDate: 'Comment Date',
+      commentAuthor: 'Comment Author',
+      commentText: 'Comment Text',
+      commentStatus: 'Comment Status',
+    };
+
+    // Always include Row Type as first column
+    const headers = ['Row Type'];
+
+    selectedFields.forEach((field) => {
+      if (fieldHeaderMap[field]) {
+        headers.push(fieldHeaderMap[field]);
+      }
+    });
+
+    return headers;
+  }
+
+  static rowToCSVRow(row, selectedFields) {
+    const fieldMap = {
+      title: row.title || '',
+      description: this.cleanDescription(row.description || ''),
+      status: row.topicStatus || '',
+      type: row.topicType || '',
+      priority: row.priority || '',
+      stage: row.stage || '',
+      labels: this.formatLabels(row.labels),
+      assignedTo: row.assignedTo || '',
+      creationDate: this.formatDate(row.creationDate),
+      creationAuthor: row.creationAuthor || '',
+      modifiedDate: this.formatDate(row.modifiedDate),
+      modifiedAuthor: row.modifiedAuthor || '',
+      dueDate: this.formatDate(row.dueDate),
+      sourceFile: row.sourceFile || '',
+      projectName: row.projectName || '',
+      bcfVersion: row.bcfVersion || '',
+      topicGuid: row.topicGuid || '',
+      commentsCount: row.comments ? row.comments.length : 0,
+      viewpointsCount: row.viewpoints ? row.viewpoints.length : 0,
+      commentNumber: row.commentNumber || '',
+      commentDate: this.formatDate(row.commentDate) || 'No Date',
+      commentAuthor: row.commentAuthor || 'Unknown Author',
+      commentText:
+        this.cleanDescription(row.commentText || '') || 'No Comment Text',
+      commentStatus: row.commentStatus || 'Unknown',
+    };
+
+    // Start with row type
+    const csvRow = [row.rowType === 'topic' ? 'Topic' : 'Comment'];
+
+    // Add selected fields in order
+    selectedFields.forEach((field) => {
+      if (row.rowType === 'topic') {
+        // For topic rows, show topic data or empty for comment-specific fields
+        if (
+          [
+            'commentNumber',
+            'commentDate',
+            'commentAuthor',
+            'commentText',
+            'commentStatus',
+          ].includes(field)
+        ) {
+          csvRow.push('');
+        } else {
+          csvRow.push(fieldMap[field] || '');
+        }
+      } else {
+        // For comment rows, show comment data or empty for topic-specific fields
+        if (
+          [
+            'title',
+            'description',
+            'status',
+            'type',
+            'priority',
+            'stage',
+            'labels',
+            'assignedTo',
+            'creationDate',
+            'creationAuthor',
+            'modifiedDate',
+            'modifiedAuthor',
+            'dueDate',
+            'sourceFile',
+            'projectName',
+            'bcfVersion',
+            'commentsCount',
+            'viewpointsCount',
+          ].includes(field)
+        ) {
+          csvRow.push('');
+        } else {
+          csvRow.push(fieldMap[field] || '');
+        }
+      }
+    });
+
+    return csvRow;
   }
 
   static getLatestComment(comments) {

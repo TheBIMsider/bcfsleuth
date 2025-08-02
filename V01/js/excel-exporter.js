@@ -1,21 +1,26 @@
 // Excel Exporter - Handles Excel (.xlsx) generation from BCF data
 class ExcelExporter {
-  static export(bcfDataArray) {
+  static export(bcfDataArray, selectedFields = null) {
     if (!bcfDataArray || bcfDataArray.length === 0) {
       throw new Error('No BCF data to export');
+    }
+
+    // Use all fields if none selected
+    if (!selectedFields || selectedFields.length === 0) {
+      selectedFields = this.getAllFieldNames();
     }
 
     // Create a new workbook
     const workbook = XLSX.utils.book_new();
 
     // Build the professional Excel structure similar to RFI report
-    const worksheetData = this.buildWorksheetData(bcfDataArray);
+    const worksheetData = this.buildWorksheetData(bcfDataArray, selectedFields);
 
     // Create worksheet from the structured data
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
 
     // Apply professional formatting
-    this.formatWorksheet(worksheet, worksheetData.length);
+    this.formatWorksheet(worksheet, worksheetData.length, selectedFields);
 
     // Add worksheet to workbook
     XLSX.utils.book_append_sheet(workbook, worksheet, 'BCF Report');
@@ -29,22 +34,43 @@ class ExcelExporter {
     return excelBuffer;
   }
 
-  static buildWorksheetData(bcfDataArray) {
+  static getAllFieldNames() {
+    return [
+      'title',
+      'description',
+      'status',
+      'type',
+      'priority',
+      'stage',
+      'labels',
+      'assignedTo',
+      'creationDate',
+      'creationAuthor',
+      'modifiedDate',
+      'modifiedAuthor',
+      'dueDate',
+      'sourceFile',
+      'projectName',
+      'bcfVersion',
+      'topicGuid',
+      'commentsCount',
+      'viewpointsCount',
+      'commentNumber',
+      'commentDate',
+      'commentAuthor',
+      'commentText',
+      'commentStatus',
+    ];
+  }
+
+  static buildWorksheetData(bcfDataArray, selectedFields) {
     const data = [];
     const today = new Date().toLocaleDateString();
 
     // Title row
     data.push([
       `BCF Analysis Report ${today}`,
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
+      ...Array(selectedFields.length).fill(''),
     ]);
     data.push([]); // Empty row
 
@@ -66,103 +92,68 @@ class ExcelExporter {
     data.push([
       'Files processed:',
       bcfDataArray.length,
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
+      ...Array(selectedFields.length - 1).fill(''),
     ]);
     data.push([
       'Project(s):',
       projectNames.size === 1
         ? Array.from(projectNames)[0]
         : `${projectNames.size} projects`,
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
+      ...Array(selectedFields.length - 1).fill(''),
     ]);
     data.push([
       'BCF Version(s):',
       Array.from(bcfVersions).join(', '),
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
+      ...Array(selectedFields.length - 1).fill(''),
     ]);
-    data.push(['Total Topics:', totalTopics, '', '', '', '', '', '', '', '']);
+    data.push([
+      'Total Topics:',
+      totalTopics,
+      ...Array(selectedFields.length - 1).fill(''),
+    ]);
     data.push([
       'Total Comments:',
       totalComments,
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
+      ...Array(selectedFields.length - 1).fill(''),
     ]);
     data.push([]); // Empty row
 
     // Main table headers
-    data.push([
-      'Topic #',
-      'Title',
-      'Status',
-      'Priority',
-      'Type',
-      'Creation Date',
-      'Author',
-      'Assigned To',
-      'Description',
-      'Comments',
-    ]);
+    const headers = this.getExcelHeaders(selectedFields);
+    data.push(headers);
 
     // Process each topic with professional spacing
     let topicNumber = 1;
     bcfDataArray.forEach((bcfData) => {
       bcfData.topics.forEach((topic) => {
         // Main topic row
-        data.push([
-          topicNumber,
-          topic.title || 'Untitled',
-          topic.topicStatus || 'Unknown',
-          topic.priority || 'Normal',
-          topic.topicType || 'Issue',
-          this.formatDate(topic.creationDate),
-          topic.creationAuthor || 'Unknown',
-          topic.assignedTo || '',
-          this.cleanDescription(topic.description || ''),
-          topic.comments ? topic.comments.length : 0,
-        ]);
+        const topicRow = this.buildTopicRow(
+          topic,
+          bcfData,
+          selectedFields,
+          topicNumber
+        );
+        data.push(topicRow);
 
-        // Comments section (if any)
-        if (topic.comments && topic.comments.length > 0) {
+        // Comments section (if commentNumber field is selected and comments exist)
+        if (
+          selectedFields.includes('commentNumber') &&
+          topic.comments &&
+          topic.comments.length > 0
+        ) {
           // Comments header
-          data.push([
+          const commentHeaderRow = [
             '',
             'Comments',
             'Author',
             'Date',
             'Comment Text',
-            '',
-            '',
-            '',
-            '',
-            '',
-          ]);
+          ];
+          // Pad to match selected fields length
+          while (commentHeaderRow.length < selectedFields.length + 1) {
+            commentHeaderRow.push('');
+          }
+          data.push(commentHeaderRow);
 
           // Sort comments by date
           const sortedComments = topic.comments.sort(
@@ -172,23 +163,17 @@ class ExcelExporter {
           );
 
           sortedComments.forEach((comment, index) => {
-            data.push([
-              '',
-              `${index + 1}`,
-              comment.author || 'Unknown',
-              this.formatDate(comment.date) || 'No Date',
-              this.cleanDescription(comment.comment || ''),
-              '',
-              '',
-              '',
-              '',
-              '',
-            ]);
+            const commentRow = this.buildCommentRow(
+              comment,
+              selectedFields,
+              index + 1
+            );
+            data.push(commentRow);
           });
         }
 
         // Empty row for spacing between topics
-        data.push([]);
+        data.push(Array(selectedFields.length + 1).fill(''));
         topicNumber++;
       });
     });
@@ -196,20 +181,164 @@ class ExcelExporter {
     return data;
   }
 
-  static formatWorksheet(worksheet, rowCount) {
-    // Set professional column widths similar to RFI report
-    worksheet['!cols'] = [
-      { wch: 12 }, // Topic #
-      { wch: 35 }, // Title
-      { wch: 15 }, // Status
-      { wch: 12 }, // Priority
-      { wch: 15 }, // Type
-      { wch: 15 }, // Creation Date
-      { wch: 25 }, // Author
-      { wch: 20 }, // Assigned To
-      { wch: 50 }, // Description
-      { wch: 10 }, // Comments Count
-    ];
+  static getExcelHeaders(selectedFields) {
+    const fieldHeaderMap = {
+      title: 'Title',
+      description: 'Description',
+      status: 'Status',
+      type: 'Type',
+      priority: 'Priority',
+      stage: 'Stage',
+      labels: 'Labels',
+      assignedTo: 'Assigned To',
+      creationDate: 'Creation Date',
+      creationAuthor: 'Creation Author',
+      modifiedDate: 'Modified Date',
+      modifiedAuthor: 'Modified Author',
+      dueDate: 'Due Date',
+      sourceFile: 'Source File',
+      projectName: 'Project Name',
+      bcfVersion: 'BCF Version',
+      topicGuid: 'Topic GUID',
+      commentsCount: 'Comments Count',
+      viewpointsCount: 'Viewpoints Count',
+      commentNumber: 'Comment #',
+      commentDate: 'Comment Date',
+      commentAuthor: 'Comment Author',
+      commentText: 'Comment Text',
+      commentStatus: 'Comment Status',
+    };
+
+    const headers = ['Topic #'];
+    selectedFields.forEach((field) => {
+      if (fieldHeaderMap[field]) {
+        headers.push(fieldHeaderMap[field]);
+      }
+    });
+
+    return headers;
+  }
+
+  static buildTopicRow(topic, bcfData, selectedFields, topicNumber) {
+    const fieldMap = {
+      title: topic.title || 'Untitled',
+      description: this.cleanDescription(topic.description || ''),
+      status: topic.topicStatus || 'Unknown',
+      type: topic.topicType || 'Issue',
+      priority: topic.priority || 'Normal',
+      stage: topic.stage || '',
+      labels: this.formatLabels(topic.labels),
+      assignedTo: topic.assignedTo || '',
+      creationDate: this.formatDate(topic.creationDate),
+      creationAuthor: topic.creationAuthor || 'Unknown',
+      modifiedDate: this.formatDate(topic.modifiedDate),
+      modifiedAuthor: topic.modifiedAuthor || '',
+      dueDate: this.formatDate(topic.dueDate),
+      sourceFile: bcfData.filename || '',
+      projectName: bcfData.project.name || 'Unknown',
+      bcfVersion: bcfData.version || 'Unknown',
+      topicGuid: topic.guid || '',
+      commentsCount: topic.comments ? topic.comments.length : 0,
+      viewpointsCount: topic.viewpoints ? topic.viewpoints.length : 0,
+      commentNumber: '', // Empty for topic rows
+      commentDate: '', // Empty for topic rows
+      commentAuthor: '', // Empty for topic rows
+      commentText: '', // Empty for topic rows
+      commentStatus: '', // Empty for topic rows
+    };
+
+    const row = [topicNumber];
+    selectedFields.forEach((field) => {
+      row.push(fieldMap[field] || '');
+    });
+
+    return row;
+  }
+
+  static buildCommentRow(comment, selectedFields, commentNumber) {
+    const fieldMap = {
+      title: '', // Empty for comment rows
+      description: '', // Empty for comment rows
+      status: '', // Empty for comment rows
+      type: '', // Empty for comment rows
+      priority: '', // Empty for comment rows
+      stage: '', // Empty for comment rows
+      labels: '', // Empty for comment rows
+      assignedTo: '', // Empty for comment rows
+      creationDate: '', // Empty for comment rows
+      creationAuthor: '', // Empty for comment rows
+      modifiedDate: '', // Empty for comment rows
+      modifiedAuthor: '', // Empty for comment rows
+      dueDate: '', // Empty for comment rows
+      sourceFile: '', // Empty for comment rows
+      projectName: '', // Empty for comment rows
+      bcfVersion: '', // Empty for comment rows
+      topicGuid: '', // Empty for comment rows
+      commentsCount: '', // Empty for comment rows
+      viewpointsCount: '', // Empty for comment rows
+      commentNumber: commentNumber,
+      commentDate: this.formatDate(comment.date) || 'No Date',
+      commentAuthor: comment.author || 'Unknown',
+      commentText: this.cleanDescription(comment.comment || ''),
+      commentStatus: comment.status || 'Unknown',
+    };
+
+    const row = [''];
+    selectedFields.forEach((field) => {
+      row.push(fieldMap[field] || '');
+    });
+
+    return row;
+  }
+
+  static formatLabels(labels) {
+    if (!labels || labels.length === 0) {
+      return '';
+    }
+    return labels.filter((label) => label.trim()).join('; ');
+  }
+
+  static formatWorksheet(worksheet, rowCount, selectedFields) {
+    // Set professional column widths
+    const colWidths = [{ wch: 12 }]; // Topic # column
+
+    selectedFields.forEach((field) => {
+      switch (field) {
+        case 'title':
+        case 'description':
+        case 'commentText':
+          colWidths.push({ wch: 50 });
+          break;
+        case 'creationAuthor':
+        case 'commentAuthor':
+        case 'assignedTo':
+          colWidths.push({ wch: 25 });
+          break;
+        case 'status':
+        case 'type':
+        case 'priority':
+        case 'stage':
+          colWidths.push({ wch: 15 });
+          break;
+        case 'creationDate':
+        case 'modifiedDate':
+        case 'dueDate':
+        case 'commentDate':
+          colWidths.push({ wch: 15 });
+          break;
+        case 'sourceFile':
+        case 'projectName':
+          colWidths.push({ wch: 30 });
+          break;
+        case 'topicGuid':
+          colWidths.push({ wch: 40 });
+          break;
+        default:
+          colWidths.push({ wch: 12 });
+      }
+    });
+
+    worksheet['!cols'] = colWidths;
 
     // Find title row, project info section, and main headers for styling
     let titleRowIndex = -1;
@@ -269,7 +398,7 @@ class ExcelExporter {
 
     // Format main table headers
     if (headerRowIndex >= 0) {
-      for (let c = 0; c < 10; c++) {
+      for (let c = 0; c < selectedFields.length + 1; c++) {
         const headerCell =
           worksheet[XLSX.utils.encode_cell({ r: headerRowIndex, c })];
         if (headerCell) {
@@ -299,7 +428,7 @@ class ExcelExporter {
         };
 
         // Style the other header cells in this row
-        for (let c = 2; c < 5; c++) {
+        for (let c = 2; c < Math.min(5, selectedFields.length + 1); c++) {
           const cell = worksheet[XLSX.utils.encode_cell({ r, c })];
           if (cell) {
             cell.s = {
@@ -314,7 +443,7 @@ class ExcelExporter {
     // Set the range to include all data
     const range = XLSX.utils.encode_range({
       s: { c: 0, r: 0 },
-      e: { c: 9, r: rowCount - 1 },
+      e: { c: selectedFields.length, r: rowCount - 1 },
     });
     worksheet['!ref'] = range;
   }
