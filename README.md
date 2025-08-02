@@ -245,8 +245,7 @@ We welcome contributions! Please feel free to submit pull requests, report issue
 - ✅ Dynamic field discovery based on actual BCF file content
 - ✅ Automatic BCF version detection (2.0 vs 2.1) with appropriate field presentation
 - ✅ Extensions.xsd parsing for project-specific custom field definitions
-- ✅ Custom value detection with usage statistics (Status: 11 custom, Type: 33 custom)
-- ✅ Vendor-specific field discovery (Revit, Tekla, BIMtrack, custom workflows)
+- ✅ Custom value detection with usage statistics 
 - ✅ Smart export field selection with unlimited field combinations
 - ✅ Production deployment with comprehensive intelligent features
 
