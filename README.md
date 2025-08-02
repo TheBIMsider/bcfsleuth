@@ -286,17 +286,6 @@ We welcome contributions! Please feel free to submit pull requests, report issue
 - **Export Flexibility**: Users can export any combination of discovered fields
 - **Professional Output**: Excel and CSV exports suitable for stakeholder presentations
 
-## Real-World Compatibility
-
-**Tested BCF Sources:**
-- **Autodesk**: Revit, BIM 360, Construction Cloud
-- **Trimble**: Tekla Structures, Connect, SketchUp
-- **Bentley**: MicroStation, OpenBuildings
-- **Graphisoft**: Archicad
-- **BIM Collaboration Platforms**: BIMtrack, BIMcollab, BIMcloud
-- **Quality Assurance**: Solibri, Navisworks, SimpleBIM
-- **Custom Workflows**: Project-specific BCF generation tools
-
 ## License
 
 This project is licensed under the BSD-3-Clause License - see the [LICENSE](LICENSE) file for details.
