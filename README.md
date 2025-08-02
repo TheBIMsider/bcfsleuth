@@ -147,23 +147,23 @@ Comment  | [empty]                         | Comment 2, Author, Date, Text
 ```
 
 #### Excel Export (Professional Reports)
-RFI-style formatted reports with dynamic field selection:
+Formatted reports with dynamic field selection:
 ```
 BCF Analysis Report [Date]
 
 Files processed: 2
-Project(s): *C3 Car Dealer
+Project(s): C9 Truck Shop
 Total Topics: 15
 Total Comments: 47
 
 Topic # | Title        | Status      | Priority | Type  | Creation Date | Author
 --------|--------------|-------------|----------|-------|---------------|--------
-1       | HVAC & BEAM  | In Progress | Medium   | Issue | 2018-04-14   | john.bark
+1       | HVAC & BEAM  | In Progress | Medium   | Issue | 2018-04-14   | john.dog
 
         | Comments     | Author      | Date      | Comment Text
         |--------------|-------------|-----------|-------------
-        | 1            | john.bark   | 2018-04-14| Initial issue report
-        | 2            | carl.storms | 2018-04-15| Reviewing with team
+        | 1            | john.dog   | 2018-04-14| Initial issue report
+        | 2            | carl.bimsider | 2018-04-15| Reviewing with team
 ```
 
 **Enhanced Excel Features:**
