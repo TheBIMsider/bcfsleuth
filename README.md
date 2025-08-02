@@ -139,16 +139,19 @@ We welcome contributions! Please feel free to submit pull requests, report issue
 
 ## Testing
 
-BCFSleuth has been tested with:
-- BCF 2.0 and BCF 2.1 frimats
-- Complex BCF files with extensive comment threads
-- Large files with 100+ topics
+**BCFSleuth has been successfully tested with:**
 
-BCFSleuth expected performace:
-- Support for BCF authoring tools that can export BCF 2.0 or 2.1
+- BCF 2.0 and BCF 2.1 formats
 - Complex BCF files with extensive comment threads
-- Extra Large files with 1000+ topics
+- Large files with 100+ topics (tested up to 103 topics)
 - Various BCF format variations and edge cases
+
+**BCFSleuth expected performance:**
+
+- Support for any BCF authoring tools that export BCF 2.0 or 2.1
+- Complex BCF files with extensive comment threads
+- Extra large files with 1000+ topics
+- Custom status taxonomies and non-standard BCF variations
 
 ## License
 
