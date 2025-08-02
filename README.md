@@ -140,9 +140,14 @@ We welcome contributions! Please feel free to submit pull requests, report issue
 ## Testing
 
 BCFSleuth has been tested with:
+- BCF 2.0 and BCF 2.1 frimats
+- Complex BCF files with extensive comment threads
+- Large files with 100+ topics
+
+BCFSleuth expected performace:
 - Multiple BCF authoring tools (Tekla, Solibri, BIMcollab, etc.)
 - Complex BCF files with extensive comment threads
-- Large files with 1000+ topics
+- Extra Large files with 1000+ topics
 - Various BCF format variations and edge cases
 
 ## License
