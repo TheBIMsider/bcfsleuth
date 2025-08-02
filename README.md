@@ -145,7 +145,7 @@ BCFSleuth has been tested with:
 - Large files with 100+ topics
 
 BCFSleuth expected performace:
-- Multiple BCF authoring tools (Tekla, Solibri, BIMcollab, etc.)
+- Support for multipule BCF authoring tools that can export BCF 2.0 or 2.1
 - Complex BCF files with extensive comment threads
 - Extra Large files with 1000+ topics
 - Various BCF format variations and edge cases
