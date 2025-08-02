@@ -253,7 +253,7 @@ We welcome contributions! Please feel free to submit pull requests, report issue
 - ✅ 100% success rate parsing BCF 2.0/2.1 files across multiple authoring tools
 - ✅ Complete topic and comment extraction with enhanced project parsing
 - ✅ Dual export formats: CSV for analysis, Excel for professional reports
-- ✅ Professional RFI-style Excel formatting with headers, styling, and spacing
+- ✅ Professional Excel formatting with headers, styling, and spacing
 - ✅ Modern responsive web interface with intelligent field selection
 - ✅ Comprehensive error handling and user feedback
 
