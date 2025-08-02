@@ -279,7 +279,7 @@ We welcome contributions! Please feel free to submit pull requests, report issue
 
 **BCFSleuth intelligent adaptation:**
 
-- **Version Detection**: Automatically adapts to BCF 2.0 (20 fields) vs BCF 2.1 (22 fields)
+- **Version Detection**: Automatically adapts to BCF 2.0 vs BCF 2.1
 - **Custom Taxonomies**: Discovers and displays project-specific status, type, priority schemes
 - **Vendor Extensions**: Finds and exports custom XML elements from any BCF authoring tool
 - **Field Intelligence**: Only shows fields that contain actual data in loaded files
