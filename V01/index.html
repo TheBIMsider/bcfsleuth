@@ -86,12 +86,161 @@
 
         <div class="export-controls">
           <h4>Export Options</h4>
+
+          <!-- Field Selection -->
+          <div class="field-selection">
+            <h5>
+              Select Fields to Export
+              <span class="field-count" id="field-count"
+                >0 of 25 fields selected</span
+              >
+            </h5>
+
+            <div class="field-selection-controls">
+              <button id="select-all-fields" class="btn btn-secondary">
+                Select All
+              </button>
+              <button id="clear-all-fields" class="btn btn-secondary">
+                Clear All
+              </button>
+              <button id="select-essential" class="btn btn-secondary">
+                Essential Only
+              </button>
+            </div>
+
+            <div class="field-categories">
+              <!-- Topic Information -->
+              <div class="field-category">
+                <h6>Topic Information</h6>
+                <div class="field-grid">
+                  <div class="field-item">
+                    <input type="checkbox" id="field-title" checked />
+                    <label for="field-title">Title</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-description" checked />
+                    <label for="field-description">Description</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-status" checked />
+                    <label for="field-status">Status</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-type" checked />
+                    <label for="field-type">Type</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-priority" checked />
+                    <label for="field-priority">Priority</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-stage" />
+                    <label for="field-stage">Stage</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-labels" />
+                    <label for="field-labels">Labels</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-assigned-to" />
+                    <label for="field-assigned-to">Assigned To</label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dates & Authors -->
+              <div class="field-category">
+                <h6>Dates & Authors</h6>
+                <div class="field-grid">
+                  <div class="field-item">
+                    <input type="checkbox" id="field-creation-date" checked />
+                    <label for="field-creation-date">Creation Date</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-creation-author" checked />
+                    <label for="field-creation-author">Creation Author</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-modified-date" />
+                    <label for="field-modified-date">Modified Date</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-modified-author" />
+                    <label for="field-modified-author">Modified Author</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-due-date" />
+                    <label for="field-due-date">Due Date</label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- File & Project Info -->
+              <div class="field-category">
+                <h6>File & Project Info</h6>
+                <div class="field-grid">
+                  <div class="field-item">
+                    <input type="checkbox" id="field-source-file" checked />
+                    <label for="field-source-file">Source File</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-project-name" checked />
+                    <label for="field-project-name">Project Name</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-bcf-version" />
+                    <label for="field-bcf-version">BCF Version</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-topic-guid" />
+                    <label for="field-topic-guid">Topic GUID</label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Comments & Counts -->
+              <div class="field-category">
+                <h6>Comments & Counts</h6>
+                <div class="field-grid">
+                  <div class="field-item">
+                    <input type="checkbox" id="field-comments-count" checked />
+                    <label for="field-comments-count">Comments Count</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-viewpoints-count" />
+                    <label for="field-viewpoints-count">Viewpoints Count</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-comment-number" checked />
+                    <label for="field-comment-number">Comment Number</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-comment-date" checked />
+                    <label for="field-comment-date">Comment Date</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-comment-author" checked />
+                    <label for="field-comment-author">Comment Author</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-comment-text" checked />
+                    <label for="field-comment-text">Comment Text</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-comment-status" />
+                    <label for="field-comment-status">Comment Status</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="export-buttons">
             <button id="export-csv" class="btn btn-secondary">
               Download CSV
             </button>
             <button id="export-excel" class="btn btn-primary" disabled>
-              Download Excel (Phase 2)
+              Download Excel
             </button>
           </div>
         </div>
