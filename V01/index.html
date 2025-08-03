@@ -66,21 +66,191 @@
           </div>
         </div>
 
+        <!-- Enhanced Data Preview with Tabs -->
         <div id="data-preview" class="data-preview">
-          <h4>Data Preview (First 5 Topics)</h4>
-          <div class="table-container">
-            <table id="preview-table">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Status</th>
-                  <th>Priority</th>
-                  <th>Author</th>
-                  <th>Created</th>
-                </tr>
-              </thead>
-              <tbody id="preview-tbody"></tbody>
-            </table>
+          <!-- Tab Navigation -->
+          <div class="preview-tabs">
+            <button class="tab-button active" data-tab="simple">
+              Simple Preview
+            </button>
+            <button class="tab-button" data-tab="advanced">
+              Advanced Preview
+            </button>
+          </div>
+
+          <!-- Simple Preview Tab (Your existing preview enhanced) -->
+          <div class="tab-content active" id="simple-tab">
+            <div class="simple-preview">
+              <h4>Quick Preview (First 5 Topics)</h4>
+              <div class="table-container">
+                <table id="preview-table">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Status</th>
+                      <th>Priority</th>
+                      <th>Author</th>
+                      <th>Created</th>
+                    </tr>
+                  </thead>
+                  <tbody id="preview-tbody"></tbody>
+                </table>
+              </div>
+              <div class="preview-summary" id="simple-summary">
+                <!-- Summary will be populated by JavaScript -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Advanced Preview Tab -->
+          <div class="tab-content" id="advanced-tab">
+            <!-- Data Summary Stats -->
+            <div class="data-summary">
+              <div class="summary-item">
+                <span class="summary-value" id="summary-total-topics">0</span>
+                <span class="summary-label">Total Topics</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-value" id="summary-total-comments">0</span>
+                <span class="summary-label">Total Comments</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-value" id="summary-open-issues">0</span>
+                <span class="summary-label">Open Issues</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-value" id="summary-high-priority">0</span>
+                <span class="summary-label">High Priority</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-value" id="summary-overdue">0</span>
+                <span class="summary-label">Overdue</span>
+              </div>
+            </div>
+
+            <!-- Advanced Controls -->
+            <div class="advanced-controls">
+              <div class="control-group">
+                <label for="search-input">Search:</label>
+                <input
+                  type="text"
+                  id="search-input"
+                  class="control-input search-input"
+                  placeholder="Search across all fields..."
+                />
+              </div>
+
+              <div class="control-group">
+                <label for="status-filter">Status:</label>
+                <select id="status-filter" class="control-input">
+                  <option value="">All Statuses</option>
+                  <!-- Options will be populated dynamically -->
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label for="priority-filter">Priority:</label>
+                <select id="priority-filter" class="control-input">
+                  <option value="">All Priorities</option>
+                  <!-- Options will be populated dynamically -->
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label for="assignee-filter">Assigned To:</label>
+                <select id="assignee-filter" class="control-input">
+                  <option value="">All Assignees</option>
+                  <!-- Options will be populated dynamically -->
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label for="due-date-filter">Due Date:</label>
+                <select id="due-date-filter" class="control-input">
+                  <option value="">All Dates</option>
+                  <option value="overdue">Overdue</option>
+                  <option value="this-week">This Week</option>
+                  <option value="next-week">Next Week</option>
+                  <option value="no-due-date">No Due Date</option>
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label for="page-size">Show:</label>
+                <select id="page-size" class="control-input">
+                  <option value="25">25 rows</option>
+                  <option value="50" selected>50 rows</option>
+                  <option value="100">100 rows</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Active Filters -->
+            <div
+              class="filter-controls"
+              id="active-filters"
+              style="display: none"
+            >
+              <!-- Active filter tags will be inserted here -->
+            </div>
+
+            <!-- Advanced Table -->
+            <div class="advanced-table-container">
+              <div class="table-wrapper">
+                <table class="advanced-table" id="advanced-table">
+                  <thead>
+                    <tr id="advanced-table-headers">
+                      <!-- Headers will be populated dynamically based on selected fields -->
+                    </tr>
+                  </thead>
+                  <tbody id="advanced-table-body">
+                    <!-- Table rows will be populated by JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination -->
+              <div class="pagination-container">
+                <div class="pagination-info">
+                  Showing <span id="showing-start">0</span> to
+                  <span id="showing-end">0</span> of
+                  <span id="total-filtered">0</span> items
+                </div>
+                <div class="pagination-controls">
+                  <button
+                    class="pagination-button"
+                    id="first-page"
+                    title="First page"
+                  >
+                    ⟨⟨
+                  </button>
+                  <button
+                    class="pagination-button"
+                    id="prev-page"
+                    title="Previous page"
+                  >
+                    ⟨
+                  </button>
+                  <span id="page-numbers">
+                    <!-- Page numbers will be inserted here -->
+                  </span>
+                  <button
+                    class="pagination-button"
+                    id="next-page"
+                    title="Next page"
+                  >
+                    ⟩
+                  </button>
+                  <button
+                    class="pagination-button"
+                    id="last-page"
+                    title="Last page"
+                  >
+                    ⟩⟩
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -273,6 +443,7 @@
     <script src="js/bcf-parser.js"></script>
     <script src="js/csv-exporter.js"></script>
     <script src="js/excel-exporter.js"></script>
+    <script src="js/advanced-preview.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>
