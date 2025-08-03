@@ -41,6 +41,15 @@ This project demonstrates the power of human-AI collaboration in modern software
       <p><em>Professional data exploration with search, filtering, sorting, and pagination</em></p>
     </td>
   </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <h3>⚙️ Configuration Management</h3>
+      <a href="https://github.com/user-attachments/assets/949c1f9f-8e21-4a37-bf7b-ef880902e773">
+        <img src="https://github.com/user-attachments/assets/949c1f9f-8e21-4a37-bf7b-ef880902e773" alt="Configuration Management Phase 3d" width="70%"/>
+      </a>
+      <p><em>Export templates, user preferences, and processing history management</em></p>
+    </td>
+  </tr>
 </table>
 
 > 💡 **Click any screenshot to view full size**
@@ -51,7 +60,7 @@ This project demonstrates the power of human-AI collaboration in modern software
 
 BCFSleuth is an intelligent, client-side web application that extracts and converts BCF file data into hierarchical CSV and professional Excel formats. Features dynamic field discovery that adapts to actual BCF content, automatically detects project-specific customizations, provides advanced data exploration capabilities, and includes comprehensive configuration management for professional workflows. Built with modern web technologies for fast, secure, browser-based processing.
 
-## ✅ Current Features (Phases 1, 2, 3a, 3b, 3c, 3d Complete)
+## ✅ Current Features (Phases 1, 2, 3a, 3b, 3c & 3d Complete)
 
 ### 🧠 Intelligent Field Discovery (Phase 3b)
 - **Dynamic Field Detection**: UI adapts to actual BCF file content - only shows fields containing data
