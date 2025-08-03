@@ -19,6 +19,7 @@ This project demonstrates the power of human-AI collaboration in modern software
 <img width="1030" height="813" alt="BCFSleuth Simple Preview" src="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b" />
 
 ## Advanced Preview with Filtering
+<img width="1117" height="1080" alt="Advanced Preview with Filtering_Phase3c" src="https://github.com/user-attachments/assets/5045f853-24fb-49e1-81ca-8268961b103b" />
 *Professional data exploration with search, filtering, sorting, and pagination*
 
 ## Live Demo [HERE](https://thebimsider.github.io/bcfsleuth/V01/)
