@@ -36,6 +36,7 @@ class ExcelExporter {
 
   static getAllFieldNames() {
     return [
+      // Existing BCF 2.x fields
       'title',
       'description',
       'status',
@@ -60,6 +61,12 @@ class ExcelExporter {
       'commentAuthor',
       'commentText',
       'commentStatus',
+
+      // NEW: BCF 3.0 fields
+      'serverAssignedId',
+      'referenceLinks',
+      'headerFiles',
+      'viewpointIndex',
     ];
   }
 
@@ -207,6 +214,12 @@ class ExcelExporter {
       commentAuthor: 'Comment Author',
       commentText: 'Comment Text',
       commentStatus: 'Comment Status',
+      // Enhanced BCF 3.0 field header mappings
+      serverAssignedId: 'Server Assigned ID',
+      referenceLinks: 'Reference Links',
+      documentReferences: 'Document References',
+      headerFiles: 'Header Files',
+      viewpointIndex: 'Viewpoint Index',
     };
 
     const headers = ['Topic #'];
@@ -245,6 +258,14 @@ class ExcelExporter {
       commentAuthor: '', // Empty for topic rows
       commentText: '', // Empty for topic rows
       commentStatus: '', // Empty for topic rows
+      // Enhanced BCF 3.0 field mappings with comprehensive data handling
+      serverAssignedId: topic.serverAssignedId || '',
+      referenceLinks: this.formatReferenceLinksExcel(topic.referenceLinks),
+      documentReferences: this.formatDocumentReferencesExcel(
+        topic.documentReferences
+      ),
+      headerFiles: this.formatHeaderFilesExcel(topic.headerFiles),
+      viewpointIndex: '', // Empty for topic rows
     };
 
     const row = [topicNumber];
@@ -281,6 +302,11 @@ class ExcelExporter {
       commentAuthor: comment.author || 'Unknown',
       commentText: this.cleanDescription(comment.comment || ''),
       commentStatus: comment.status || 'Unknown',
+      // ADD these new BCF 3.0 field mappings (empty for comment rows):
+      serverAssignedId: '', // Empty for comment rows
+      referenceLinks: '', // Empty for comment rows
+      headerFiles: '', // Empty for comment rows
+      viewpointIndex: '', // Empty for comment rows
     };
 
     const row = [''];
@@ -470,5 +496,83 @@ class ExcelExporter {
 
     // Clean but preserve readability for Excel
     return description.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  /**
+   * Format reference links for Excel export
+   */
+  static formatReferenceLinksExcel(referenceLinks) {
+    if (!referenceLinks || referenceLinks.length === 0) {
+      return '';
+    }
+
+    // For Excel, use line breaks between multiple links for better readability
+    return referenceLinks
+      .filter((link) => link && link.trim())
+      .map((link) => link.trim())
+      .join('\n');
+  }
+
+  /**
+   * Format header files for Excel export
+   */
+  static formatHeaderFilesExcel(headerFiles) {
+    if (!headerFiles || headerFiles.length === 0) {
+      return '';
+    }
+
+    // Format each file with details for Excel readability
+    return headerFiles
+      .filter((file) => file.filename || file.reference)
+      .map((file) => {
+        const parts = [];
+        if (file.filename) parts.push(`File: ${file.filename}`);
+        if (file.reference) parts.push(`Ref: ${file.reference}`);
+        if (file.ifcProject) parts.push(`IFC: ${file.ifcProject}`);
+        return parts.join(' | ');
+      })
+      .join('\n');
+  }
+
+  /**
+   * Format BCF 3.0 DocumentReferences for Excel export
+   * Uses line breaks for better readability in Excel cells
+   */
+  static formatDocumentReferencesExcel(documentReferences) {
+    if (!documentReferences || documentReferences.length === 0) {
+      return '';
+    }
+
+    console.log(
+      '📄 Formatting document references for Excel:',
+      documentReferences.length
+    );
+
+    // Format each document reference with detailed information for Excel
+    return documentReferences
+      .filter((docRef) => docRef.guid || docRef.documentGuid || docRef.url)
+      .map((docRef) => {
+        const parts = [];
+
+        // Add the main document identifier
+        if (docRef.documentGuid) {
+          parts.push(`Document GUID: ${docRef.documentGuid}`);
+        } else if (docRef.url) {
+          parts.push(`URL: ${docRef.url}`);
+        }
+
+        // Add description
+        if (docRef.description) {
+          parts.push(`Description: ${docRef.description}`);
+        }
+
+        // Add reference GUID if different
+        if (docRef.guid && docRef.guid !== docRef.documentGuid) {
+          parts.push(`Reference ID: ${docRef.guid}`);
+        }
+
+        return parts.join(' | ');
+      })
+      .join('\n'); // Use line breaks for Excel readability
   }
 }

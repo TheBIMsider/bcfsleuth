@@ -84,6 +84,7 @@ class CSVExporter {
 
   static getAllFieldNames() {
     return [
+      // Existing BCF 2.x fields
       'title',
       'description',
       'status',
@@ -108,6 +109,12 @@ class CSVExporter {
       'commentAuthor',
       'commentText',
       'commentStatus',
+
+      // NEW: BCF 3.0 fields
+      'serverAssignedId',
+      'referenceLinks',
+      'headerFiles',
+      'viewpointIndex',
     ];
   }
 
@@ -137,6 +144,12 @@ class CSVExporter {
       commentAuthor: 'Comment Author',
       commentText: 'Comment Text',
       commentStatus: 'Comment Status',
+      // Enhanced BCF 3.0 field header mappings
+      serverAssignedId: 'Server Assigned ID',
+      referenceLinks: 'Reference Links',
+      documentReferences: 'Document References',
+      headerFiles: 'Header Files',
+      viewpointIndex: 'Viewpoint Index',
     };
 
     // Always include Row Type as first column
@@ -178,6 +191,18 @@ class CSVExporter {
       commentText:
         this.cleanDescription(row.commentText || '') || 'No Comment Text',
       commentStatus: row.commentStatus || 'Unknown',
+      // Enhanced BCF 3.0 field mappings with proper data extraction
+      serverAssignedId: row.serverAssignedId || '',
+      referenceLinks: this.formatReferenceLinks(
+        row.referenceLinks || row._originalTopic?.referenceLinks
+      ),
+      documentReferences: this.formatDocumentReferences(
+        row.documentReferences || row._originalTopic?.documentReferences
+      ),
+      headerFiles: this.formatHeaderFiles(
+        row.headerFiles || row._originalTopic?.headerFiles
+      ),
+      viewpointIndex: row.viewpointIndex || '',
     };
 
     // Start with row type
@@ -331,5 +356,83 @@ class CSVExporter {
     });
 
     return summary;
+  }
+
+  /**
+   * Format reference links for CSV export
+   * BCF 3.0 can have multiple reference links per topic
+   */
+  static formatReferenceLinks(referenceLinks) {
+    if (!referenceLinks || referenceLinks.length === 0) {
+      return '';
+    }
+
+    // Join multiple links with semicolon separator
+    return referenceLinks
+      .filter((link) => link && link.trim())
+      .map((link) => link.trim())
+      .join('; ');
+  }
+
+  /**
+   * Format header files for CSV export
+   * BCF 3.0 can have multiple files referenced in the header
+   */
+  static formatHeaderFiles(headerFiles) {
+    if (!headerFiles || headerFiles.length === 0) {
+      return '';
+    }
+
+    // Format each file as "filename (reference)"
+    return headerFiles
+      .filter((file) => file.filename || file.reference)
+      .map((file) => {
+        const filename = file.filename || 'Unknown';
+        const reference = file.reference || '';
+        return reference ? `${filename} (${reference})` : filename;
+      })
+      .join('; ');
+  }
+
+  /**
+   * Format BCF 3.0 DocumentReferences for CSV export
+   * Handles the new DocumentReferences structure with DocumentGuid vs Url
+   */
+  static formatDocumentReferences(documentReferences) {
+    if (!documentReferences || documentReferences.length === 0) {
+      return '';
+    }
+
+    console.log(
+      '📄 Formatting document references for CSV:',
+      documentReferences.length
+    );
+
+    // Format each document reference with its key information
+    return documentReferences
+      .filter((docRef) => docRef.guid || docRef.documentGuid || docRef.url)
+      .map((docRef) => {
+        const parts = [];
+
+        // Add the main identifier (DocumentGuid or Url)
+        if (docRef.documentGuid) {
+          parts.push(`Doc: ${docRef.documentGuid}`);
+        } else if (docRef.url) {
+          parts.push(`URL: ${docRef.url}`);
+        }
+
+        // Add description if available
+        if (docRef.description) {
+          parts.push(`Desc: ${docRef.description}`);
+        }
+
+        // Add GUID if different from DocumentGuid
+        if (docRef.guid && docRef.guid !== docRef.documentGuid) {
+          parts.push(`ID: ${docRef.guid}`);
+        }
+
+        return parts.join(' | ');
+      })
+      .join('; ');
   }
 }

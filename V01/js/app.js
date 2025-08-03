@@ -331,17 +331,42 @@ class BCFSleuthApp {
     }
   }
 
+  /**
+   * Enhanced field discovery with intelligent BCF 3.0 detection
+   * Only shows BCF 3.0 fields when BCF 3.0 content is actually present
+   * Maintains full compatibility with BCF 2.x files
+   */
   discoverAvailableFields() {
     const discoveredFields = {
       topic: new Set(),
       comment: new Set(),
       metadata: new Set(['sourceFile', 'projectName', 'bcfVersion']), // Always available
+      bcf30: new Set(), // BCF 3.0 specific fields (only populated when BCF 3.0 detected)
     };
+
+    // Track BCF versions found in the data for intelligent UI adaptation
+    const bcfVersionsFound = new Set();
+    let hasBCF30Content = false;
+
+    console.log('🔍 Starting enhanced field discovery...');
 
     // Scan all BCF data to discover what fields actually contain data
     this.parsedData.forEach((bcfData) => {
+      // Track BCF format for version-aware field discovery
+      const bcfFormat =
+        bcfData.bcfFormat || bcfData.version?.substring(0, 3) || '2.1';
+      bcfVersionsFound.add(bcfFormat);
+
+      console.log(`📋 Analyzing ${bcfFormat} file: ${bcfData.filename}`);
+
+      // Check if this file has BCF 3.0 content
+      if (bcfFormat === '3.0') {
+        hasBCF30Content = true;
+        console.log('🆔 BCF 3.0 content detected - will enable BCF 3.0 fields');
+      }
+
       bcfData.topics.forEach((topic) => {
-        // Check topic fields
+        // Standard BCF 2.x field detection (existing logic)
         if (topic.title) discoveredFields.topic.add('title');
         if (topic.description) discoveredFields.topic.add('description');
         if (topic.topicStatus) discoveredFields.topic.add('status');
@@ -357,8 +382,64 @@ class BCFSleuthApp {
         if (topic.modifiedAuthor) discoveredFields.topic.add('modifiedAuthor');
         if (topic.dueDate) discoveredFields.topic.add('dueDate');
         if (topic.guid) discoveredFields.metadata.add('topicGuid');
-        if (topic.viewpoints && topic.viewpoints.length > 0)
+
+        // BCF 3.0 specific field detection (only when BCF 3.0 content is present)
+        if (bcfFormat === '3.0' && hasBCF30Content) {
+          console.log('🔍 Checking BCF 3.0 fields for topic:', topic.title);
+
+          // ServerAssignedId detection
+          if (topic.serverAssignedId) {
+            discoveredFields.bcf30.add('serverAssignedId');
+            console.log('✅ Found ServerAssignedId field');
+          }
+
+          // Multiple ReferenceLinks detection
+          if (topic.referenceLinks && topic.referenceLinks.length > 0) {
+            discoveredFields.bcf30.add('referenceLinks');
+            console.log(
+              '✅ Found ReferenceLinks field:',
+              topic.referenceLinks.length,
+              'links'
+            );
+          }
+
+          // DocumentReferences detection
+          if (topic.documentReferences && topic.documentReferences.length > 0) {
+            discoveredFields.bcf30.add('documentReferences');
+            console.log(
+              '✅ Found DocumentReferences field:',
+              topic.documentReferences.length,
+              'refs'
+            );
+          }
+
+          // Header Files detection
+          if (topic.headerFiles && topic.headerFiles.length > 0) {
+            discoveredFields.bcf30.add('headerFiles');
+            console.log(
+              '✅ Found HeaderFiles field:',
+              topic.headerFiles.length,
+              'files'
+            );
+          }
+        }
+
+        // Viewpoints and comments detection (existing logic)
+        if (topic.viewpoints && topic.viewpoints.length > 0) {
           discoveredFields.metadata.add('viewpointsCount');
+
+          // BCF 3.0: Check for viewpoint index (if BCF 3.0 content present)
+          if (bcfFormat === '3.0' && hasBCF30Content) {
+            const hasViewpointIndex = topic.viewpoints.some(
+              (vp) => vp.index !== undefined && vp.index !== null
+            );
+            if (hasViewpointIndex) {
+              discoveredFields.bcf30.add('viewpointIndex');
+              console.log('✅ Found ViewpointIndex field');
+            }
+          }
+        }
+
         if (topic.comments && topic.comments.length > 0) {
           discoveredFields.metadata.add('commentsCount');
 
@@ -367,22 +448,43 @@ class BCFSleuthApp {
             if (comment.date) discoveredFields.comment.add('commentDate');
             if (comment.author) discoveredFields.comment.add('commentAuthor');
             if (comment.comment) discoveredFields.comment.add('commentText');
-            if (comment.status) discoveredFields.comment.add('commentStatus');
+
+            // BCF 2.x only: comment status (removed in BCF 3.0)
+            if (bcfFormat !== '3.0' && comment.status) {
+              discoveredFields.comment.add('commentStatus');
+            }
+
             discoveredFields.comment.add('commentNumber'); // Always available when comments exist
           });
         }
       });
     });
 
-    return {
+    // Calculate totals including BCF 3.0 fields when present
+    const totalFields =
+      discoveredFields.topic.size +
+      discoveredFields.comment.size +
+      discoveredFields.metadata.size +
+      discoveredFields.bcf30.size;
+
+    const result = {
       topic: Array.from(discoveredFields.topic),
       comment: Array.from(discoveredFields.comment),
       metadata: Array.from(discoveredFields.metadata),
-      total:
-        discoveredFields.topic.size +
-        discoveredFields.comment.size +
-        discoveredFields.metadata.size,
+      bcf30: Array.from(discoveredFields.bcf30),
+      bcfVersionsFound: Array.from(bcfVersionsFound),
+      hasBCF30Content: hasBCF30Content, // NEW: Flag for UI decisions
+      total: totalFields,
     };
+
+    console.log('✅ Enhanced field discovery complete:', {
+      bcfVersions: result.bcfVersionsFound,
+      bcf30FieldsFound: result.bcf30.length,
+      totalFields: result.total,
+      hasBCF30Content: result.hasBCF30Content,
+    });
+
+    return result;
   }
 
   discoverCustomFields() {
@@ -586,6 +688,44 @@ class BCFSleuthApp {
       fieldCategories.appendChild(commentCategory);
     }
 
+    // Build BCF 3.0 Fields category (ONLY if BCF 3.0 content is actually present)
+    if (discoveredFields.hasBCF30Content && discoveredFields.bcf30.length > 0) {
+      console.log('🆔 Building BCF 3.0 fields category...');
+
+      const bcf30Category = this.buildFieldCategory(
+        'BCF 3.0 Fields',
+        discoveredFields.bcf30,
+        customData,
+        [
+          { id: 'serverAssignedId', label: 'Server Assigned ID' },
+          { id: 'referenceLinks', label: 'Reference Links' },
+          { id: 'documentReferences', label: 'Document References' },
+          { id: 'headerFiles', label: 'Header Files' },
+          { id: 'viewpointIndex', label: 'Viewpoint Index' },
+        ]
+      );
+      fieldCategories.appendChild(bcf30Category);
+      console.log(
+        '✅ Added BCF 3.0 fields category with',
+        discoveredFields.bcf30.length,
+        'fields'
+      );
+
+      // Add visual indicator that BCF 3.0 features are active
+      const bcf30Header = bcf30Category.querySelector('h6');
+      if (bcf30Header) {
+        bcf30Header.innerHTML = `BCF 3.0 Fields <span style="color: var(--primary); font-weight: bold;">(${discoveredFields.bcf30.length} enhanced fields)</span>`;
+      }
+    } else if (discoveredFields.bcfVersionsFound.includes('3.0')) {
+      console.log(
+        '🔍 BCF 3.0 file detected but no BCF 3.0 fields found in topics'
+      );
+    } else {
+      console.log(
+        '📋 No BCF 3.0 content detected - BCF 3.0 fields category not shown'
+      );
+    }
+
     // Re-attach event listeners to new checkboxes
     this.attachFieldSelectionListeners();
 
@@ -757,6 +897,12 @@ class BCFSleuthApp {
       'field-commentAuthor': 'commentAuthor',
       'field-commentText': 'commentText',
       'field-commentStatus': 'commentStatus',
+      // BCF 3.0 specific field mappings (only active when BCF 3.0 content is present)
+      'field-serverAssignedId': 'serverAssignedId',
+      'field-referenceLinks': 'referenceLinks',
+      'field-documentReferences': 'documentReferences',
+      'field-headerFiles': 'headerFiles',
+      'field-viewpointIndex': 'viewpointIndex',
     };
   }
 
