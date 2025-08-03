@@ -79,6 +79,7 @@ BCFSleuth is an intelligent, client-side web application that extracts and conve
 ### ⚙️ Configuration Management (Phase 3d)
 - **Export Templates**: Save and manage field selection combinations for quick reuse
 - **Template Operations**: Create, edit, apply, and delete export configurations with full CRUD operations
+- **Template Import/Export**: Share templates via JSON files - backup locally or share with team members
 - **Session Persistence**: User preferences and templates saved between browser sessions
 - **Smart Export Filenames**: Template-based filename generation with variable substitution (`{project_name}`, `{date}`, `{time}`)
 - **Processing History**: Automatic tracking of BCF analysis sessions with detailed metrics
@@ -123,6 +124,7 @@ BCFSleuth is an intelligent, client-side web application that extracts and conve
 6. **Configuration**: Switch to Configuration tab for:
    - Creating export templates from current field selections
    - Managing saved templates (create, edit, apply, delete)
+   - Import/export templates as JSON files for backup or team sharing
    - Setting user preferences and defaults
    - Viewing processing history
 7. Select which fields to export using the dynamic field selection interface
@@ -209,9 +211,10 @@ BCFSleuth prioritizes your data privacy by storing everything locally in your br
 
 ### **For Teams & Organizations:**
 - Each team member maintains their own templates and preferences
-- Templates can be manually shared by recreating them on each device
+- **NEW**: Templates can be shared via JSON export/import feature
+- Export your templates and share the JSON file with team members
+- Import templates from colleagues to maintain consistency across projects
 - Consider documenting standard templates for team consistency
-- Future versions may include template import/export capabilities
 
 ## Advanced Data Exploration (Phase 3c)
 
@@ -249,6 +252,20 @@ BCFSleuth prioritizes your data privacy by storing everything locally in your br
 - **Template Application**: One-click application of saved field combinations
 - **Template Metadata**: Name, description, custom filename template, and usage tracking
 - **Template Library**: Organized display with last-used dates and field counts
+
+### Template Import/Export (NEW)
+- **Export Templates**: Download all your templates as a JSON file for backup
+- **Import Templates**: Upload template JSON files to restore or share with team members
+- **Conflict Resolution**: Smart handling when importing templates with duplicate names
+- **Team Collaboration**: Share standardized field selections across your organization
+- **Backup & Restore**: Keep your templates safe and transfer between devices
+
+**Template Sharing Workflow:**
+1. Create and save your export templates
+2. Click "Export Templates" to download a JSON file
+3. Share the JSON file with team members via email, shared drives, etc.
+4. Team members click "Import Templates" and upload the JSON file
+5. Templates are added to their configuration with conflict handling
 
 ### Template Features
 **Custom Filename Templates:**
@@ -361,7 +378,7 @@ bcfsleuth/
 ├── js/
 │   ├── app.js              # Enhanced application logic with config integration
 │   ├── advanced-preview.js # Advanced data table with filtering, sorting, pagination
-│   ├── configuration.js    # NEW: Complete configuration management system
+│   ├── configuration.js    # Complete configuration management system
 │   ├── bcf-parser.js       # Advanced BCF parsing with extensions support
 │   ├── csv-exporter.js     # CSV export with dynamic field support
 │   └── excel-exporter.js   # Excel export with professional formatting
@@ -410,6 +427,7 @@ We welcome contributions! Please feel free to submit pull requests, report issue
 ### Current Status (Phase 3d Complete)
 **Configuration Management Achievements:**
 - ✅ Complete export template system with create, edit, apply, and delete operations
+- ✅ Template import/export functionality for team collaboration and backup
 - ✅ Session persistence with localStorage integration and error handling
 - ✅ Smart export filename generation with template variable substitution
 - ✅ Processing history with automatic session tracking and CSV export capability
@@ -443,7 +461,7 @@ We welcome contributions! Please feel free to submit pull requests, report issue
 **Phase 4 Goals (Advanced Features):**
 - BCF 3.0 format support with enhanced field discovery
 - Advanced analytics and statistical analysis of BCF data
-- Template sharing and import/export capabilities
+- Enhanced template sharing with cloud storage integration
 - Workflow automation and batch processing features
 - Integration APIs for external project management systems
 
@@ -461,6 +479,7 @@ We welcome contributions! Please feel free to submit pull requests, report issue
 - ✅ Advanced table performance with large datasets and complex filtering
 - ✅ Mobile and tablet interaction with responsive table design
 - ✅ Template creation, editing, and application across different BCF files
+- ✅ Template import/export functionality with conflict resolution
 - ✅ Session persistence and preference restoration across browser restarts
 - ✅ Processing history tracking through multiple analysis sessions
 
@@ -475,6 +494,7 @@ We welcome contributions! Please feel free to submit pull requests, report issue
 - **Data Exploration**: Advanced filtering and search capabilities for large BCF datasets
 - **Workflow Integration**: Configuration management enables efficient repeated processing
 - **Session Continuity**: Persistent templates and preferences for seamless user experience
+- **Team Collaboration**: Template sharing enables standardized workflows across teams
 
 ## License
 
