@@ -42,8 +42,8 @@ This project demonstrates the power of human-AI collaboration in modern software
     </td>
     <td width="50%">
       <h3>⚙️ Configuration Management</h3>
-      <a href="https://github.com/user-attachments/assets/949c1f9f-8e21-4a37-bf7b-ef880902e773">
-        <img src="https://github.com/user-attachments/assets/949c1f9f-8e21-4a37-bf7b-ef880902e773" alt="Configuration Management Phase 3d" width="100%"/>
+      <a href="https://github.com/user-attachments/assets/05d99a92-22af-4b28-bfae-f0f46ffeaaf2">
+        <img src="https://github.com/user-attachments/assets/05d99a92-22af-4b28-bfae-f0f46ffeaaf2" alt="Configuration Management Phase 3d" width="100%"/>
       </a>
       <p><em>Export templates, user preferences, and processing history management</em></p>
     </td>
