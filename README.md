@@ -33,7 +33,7 @@ This project demonstrates the power of human-AI collaboration in modern software
     </td>
   </tr>
   <tr>
-    <td colspan="2">
+    <td colspan="2" align="center">
       <h3>🔍 Advanced Preview with Filtering</h3>
       <a href="https://github.com/user-attachments/assets/152c08b9-fc4b-4c03-bc80-b58609057227">
         <img src="https://github.com/user-attachments/assets/152c08b9-fc4b-4c03-bc80-b58609057227" alt="Advanced Preview with Filtering Phase 3c" width="70%"/>
