@@ -4,7 +4,7 @@ class AdvancedPreview {
     this.app = bcfApp; // Reference to main BCFSleuthApp
     this.currentTab = 'simple';
     this.currentPage = 1;
-    this.pageSize = 50;
+    this.pageSize = 25;
     this.sortField = 'created';
     this.sortDirection = 'desc';
     this.filters = {
@@ -18,6 +18,9 @@ class AdvancedPreview {
     this.allTableData = []; // Flattened topics + comments for table display
     this.filteredData = [];
     this.isInitialized = false;
+
+    // Track which topics are expanded
+    this.expandedTopics = new Set(); // Stores topic GUIDs that are expanded
   }
 
   initialize() {
@@ -134,6 +137,7 @@ class AdvancedPreview {
           due: this.formatDate(topic.dueDate),
           comments: topic.comments ? topic.comments.length : 0,
           isOverdue: this.isOverdue(topic.dueDate),
+          hasComments: topic.comments && topic.comments.length > 0, // ADD THIS
           // Store original topic for reference
           _originalTopic: topic,
         };
@@ -154,6 +158,7 @@ class AdvancedPreview {
               rowType: 'comment',
               sourceFile: bcfFile.filename,
               topicGuid: topic.guid,
+              parentTopicGuid: topic.guid, // ADD THIS - for easier filtering
               parentTitle: topic.title,
               title: `Comment ${index + 1}`,
               status: comment.status || '',
@@ -444,6 +449,21 @@ class AdvancedPreview {
             if (row.due) return false;
             break;
         }
+      }
+
+      return true;
+    });
+
+    // Filter out collapsed comments
+    this.filteredData = this.filteredData.filter((row) => {
+      // Always show topics
+      if (row.rowType === 'topic') {
+        return true;
+      }
+
+      // For comments, only show if parent topic is expanded
+      if (row.rowType === 'comment') {
+        return this.expandedTopics.has(row.parentTopicGuid);
       }
 
       return true;
@@ -914,19 +934,47 @@ class AdvancedPreview {
     div.textContent = text.toString();
     return div.innerHTML;
   }
-  // ADD THESE THREE NEW METHODS HERE:
 
   createTitleCell(row) {
     const title = row.title || '';
     const truncated = this.truncateText(title, 40);
-    const needsTooltip = title.length > 40;
+    const needsTooltip = title.length > 40 || truncated.includes('...');
 
-    if (needsTooltip) {
-      return `<td class="cell-title expandable" data-full-text="${this.escapeHtml(
-        title
-      )}">${truncated}</td>`;
+    // ADD EXPAND/COLLAPSE FUNCTIONALITY FOR TOPICS
+    if (row.rowType === 'topic' && row.hasComments) {
+      const isExpanded = this.expandedTopics.has(row.topicGuid);
+      const expandIcon = isExpanded ? '▼' : '▶';
+      const expandButton = `<button class="expand-button" onclick="window.bcfApp.advancedPreview.toggleTopicComments('${
+        row.topicGuid
+      }')" title="${
+        isExpanded ? 'Collapse' : 'Expand'
+      } comments">${expandIcon}</button>`;
+
+      if (needsTooltip) {
+        return `<td class="cell-title expandable" data-full-text="${this.escapeHtml(
+          title
+        )}">${expandButton} ${truncated}</td>`;
+      } else {
+        return `<td class="cell-title">${expandButton} ${truncated}</td>`;
+      }
+    } else if (row.rowType === 'topic') {
+      // Topic with no comments - no expand button
+      if (needsTooltip) {
+        return `<td class="cell-title expandable" data-full-text="${this.escapeHtml(
+          title
+        )}">${truncated}</td>`;
+      } else {
+        return `<td class="cell-title">${truncated}</td>`;
+      }
     } else {
-      return `<td class="cell-title">${truncated}</td>`;
+      // Comment row - add indentation
+      if (needsTooltip) {
+        return `<td class="cell-title cell-comment-title expandable" data-full-text="${this.escapeHtml(
+          title
+        )}">${truncated}</td>`;
+      } else {
+        return `<td class="cell-title cell-comment-title">${truncated}</td>`;
+      }
     }
   }
 
@@ -995,11 +1043,18 @@ class AdvancedPreview {
         break;
 
       default:
-        // Handle long text fields
-        if (value && value.length > 30) {
-          cssClass = 'expandable';
-          fullText = value;
-          value = this.truncateText(value, 30);
+        // Handle long text fields and detect truncation
+        const originalValue = value;
+        if (originalValue && originalValue.length > 30) {
+          cssClass = cssClass ? `${cssClass} expandable` : 'expandable';
+          fullText = originalValue;
+          value = this.truncateText(originalValue, 30);
+          needsTooltip = true;
+        }
+        // Also check if truncateText added ellipsis (indicates truncation)
+        else if (originalValue && value && value.includes('...')) {
+          cssClass = cssClass ? `${cssClass} expandable` : 'expandable';
+          fullText = originalValue;
           needsTooltip = true;
         }
     }
@@ -1012,6 +1067,22 @@ class AdvancedPreview {
     } else {
       return `<td class="${cssClass}">${value}</td>`;
     }
+  }
+
+  // Enhanced truncation detection
+  needsTooltipForText(originalText, displayText, maxLength = 30) {
+    if (!originalText || !displayText) return false;
+
+    // Check if original text is longer than max length
+    if (originalText.length > maxLength) return true;
+
+    // Check if display text has ellipsis (indicates truncation)
+    if (displayText.includes('...')) return true;
+
+    // Check if display text is significantly shorter than original
+    if (originalText.length - displayText.length > 5) return true;
+
+    return false;
   }
 
   // Updated setupTooltips method
@@ -1060,5 +1131,33 @@ class AdvancedPreview {
         console.log('Tooltip hidden'); // Debug
       });
     });
+  }
+
+  // ADD THESE NEW METHODS at the end of the AdvancedPreview class
+
+  toggleTopicComments(topicGuid) {
+    if (this.expandedTopics.has(topicGuid)) {
+      this.expandedTopics.delete(topicGuid);
+    } else {
+      this.expandedTopics.add(topicGuid);
+    }
+
+    // Re-apply filters to show/hide comments
+    this.applyFilters();
+  }
+
+  expandAllTopics() {
+    // Get all topic GUIDs that have comments
+    const topicsWithComments = this.allTableData
+      .filter((row) => row.rowType === 'topic' && row.hasComments)
+      .map((row) => row.topicGuid);
+
+    topicsWithComments.forEach((guid) => this.expandedTopics.add(guid));
+    this.applyFilters();
+  }
+
+  collapseAllTopics() {
+    this.expandedTopics.clear();
+    this.applyFilters();
   }
 }

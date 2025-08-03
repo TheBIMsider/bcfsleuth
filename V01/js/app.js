@@ -13,6 +13,7 @@ class BCFSleuthApp {
     this.initializeFieldSelection();
     this.showSection('upload-section');
     this.advancedPreview = new AdvancedPreview(this);
+    this.configManager = new ConfigurationManager(this);
     window.bcfApp = this; // Make globally accessible for onclick handlers
   }
 
@@ -66,7 +67,8 @@ class BCFSleuthApp {
   }
 
   initializeFieldSelection() {
-    // Start with static field selection, will be updated after BCF processing
+    // Start with ALL fields selected for better UX
+    this.selectAllFields();
     this.updateFieldSelection();
   }
 
@@ -616,23 +618,12 @@ class BCFSleuthApp {
         checkbox.type = 'checkbox';
         checkbox.id = `field-${fieldDef.id}`;
 
-        // Check essential fields by default
-        const essentialFields = [
-          'title',
-          'description',
-          'status',
-          'priority',
-          'creationDate',
-          'creationAuthor',
-          'sourceFile',
-          'projectName',
-          'commentsCount',
-          'commentNumber',
-          'commentDate',
-          'commentAuthor',
-          'commentText',
-        ];
-        checkbox.checked = essentialFields.includes(fieldDef.id);
+        // Check ALL fields by default (changed from essential only)
+        checkbox.checked = true;
+        // Trigger initial field selection update to count the pre-checked essential fields
+        this.updateFieldSelection();
+        // Select all fields by default for better UX
+        this.selectAllFields();
 
         const label = document.createElement('label');
         label.setAttribute('for', `field-${fieldDef.id}`);
@@ -988,12 +979,12 @@ class BCFSleuthApp {
     const summaryElement = document.getElementById('simple-summary');
     if (summaryElement) {
       summaryElement.innerHTML = `
-      Showing ${Math.min(
-        5,
-        totalTopics
-      )} of ${totalTopics} topics, ${totalComments} total comments. 
-      <strong>Switch to Advanced Preview for full functionality.</strong>
-    `;
+  Showing ${Math.min(
+    5,
+    totalTopics
+  )} of ${totalTopics} topics, ${totalComments} total comments. 
+  <strong>Switch to Advanced Preview for full functionality.</strong>
+`;
     }
   }
 
@@ -1022,7 +1013,14 @@ class BCFSleuthApp {
       }
 
       const csvData = CSVExporter.export(this.parsedData, selectedFields);
-      this.downloadFile(csvData, 'bcf-export.csv', 'text/csv');
+
+      // Generate filename using template system
+      const filename = this.generateExportFilename('csv');
+
+      this.downloadFile(csvData, filename, 'text/csv');
+
+      // Add to processing history
+      this.addToProcessingHistory('csv', selectedFields.length);
     } catch (error) {
       console.error('Error exporting CSV:', error);
       this.showError(`Error exporting CSV: ${error.message}`);
@@ -1038,12 +1036,14 @@ class BCFSleuthApp {
       }
 
       const excelBuffer = ExcelExporter.export(this.parsedData, selectedFields);
-      const timestamp = new Date()
-        .toISOString()
-        .slice(0, 19)
-        .replace(/:/g, '-');
-      const filename = `bcf-export-${timestamp}.xlsx`;
+
+      // Generate filename using template system
+      const filename = this.generateExportFilename('xlsx');
+
       this.downloadExcelFile(excelBuffer, filename);
+
+      // Add to processing history
+      this.addToProcessingHistory('excel', selectedFields.length);
     } catch (error) {
       console.error('Error exporting Excel:', error);
       this.showError(`Error exporting Excel: ${error.message}`);
@@ -1162,6 +1162,96 @@ class BCFSleuthApp {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  generateExportFilename(extension) {
+    // Get current template filename or use default
+    let template = '{project_name}_BCF_Export_{date}';
+
+    // Try to get template from configuration if available
+    if (this.configManager && this.configManager.preferences.customFilename) {
+      template = this.configManager.preferences.customFilename;
+    }
+
+    // Get project name from parsed data
+    let projectName = 'BCF_Export';
+    if (this.parsedData && this.parsedData.length > 0) {
+      const firstProject = this.parsedData[0].project;
+      if (firstProject && firstProject.name) {
+        projectName = firstProject.name.replace(/[^a-zA-Z0-9]/g, '_');
+      }
+    }
+
+    // Get current date and time
+    const now = new Date();
+    const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const time = now.toTimeString().slice(0, 8).replace(/:/g, '-'); // HH-MM-SS
+
+    // Replace template variables
+    let filename = template
+      .replace(/{project_name}/g, projectName)
+      .replace(/{date}/g, date)
+      .replace(/{time}/g, time)
+      .replace(/{template_name}/g, 'Export');
+
+    // Add extension
+    filename += `.${extension}`;
+
+    return filename;
+  }
+
+  addToProcessingHistory(exportFormat, fieldCount) {
+    if (!this.configManager) return;
+
+    // Calculate summary data
+    let totalTopics = 0;
+    let totalComments = 0;
+    let projectName = 'Unknown';
+    let filename = 'Unknown';
+
+    if (this.parsedData && this.parsedData.length > 0) {
+      this.parsedData.forEach((data) => {
+        totalTopics += data.topics.length;
+        data.topics.forEach((topic) => {
+          totalComments += topic.comments ? topic.comments.length : 0;
+        });
+      });
+
+      projectName = this.parsedData[0].project.name || 'Unknown';
+      filename = this.parsedData[0].filename || 'Unknown';
+    }
+
+    const historyData = {
+      filename: filename,
+      projectName: projectName,
+      topicCount: totalTopics,
+      commentCount: totalComments,
+      fieldsSelected: fieldCount,
+      exportFormat: exportFormat,
+      templateUsed: 'Manual selection', // Will be enhanced later for actual templates
+    };
+
+    this.configManager.addToHistory(historyData);
+  }
+}
+
+// Utility function for scrolling to export options
+function scrollToExportOptions() {
+  const exportSection = document.querySelector('.export-controls');
+  if (exportSection) {
+    exportSection.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+
+    // Briefly highlight the export section
+    exportSection.style.transition = 'background-color 0.3s ease';
+    exportSection.style.backgroundColor = 'var(--primary)';
+    exportSection.style.backgroundColor = 'rgba(37, 99, 235, 0.1)';
+
+    setTimeout(() => {
+      exportSection.style.backgroundColor = '';
+    }, 2000);
   }
 }
 
