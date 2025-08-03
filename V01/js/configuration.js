@@ -72,6 +72,31 @@ class ConfigurationManager {
       exportHistoryBtn.addEventListener('click', () => this.exportHistory());
     }
 
+    // Template import/export buttons
+    const exportTemplatesBtn = document.getElementById('export-templates-btn');
+    const importTemplatesBtn = document.getElementById('import-templates-btn');
+    const importFileInput = document.getElementById('import-file-input');
+
+    if (exportTemplatesBtn) {
+      exportTemplatesBtn.addEventListener('click', () =>
+        this.exportTemplates()
+      );
+    }
+
+    if (importTemplatesBtn) {
+      importTemplatesBtn.addEventListener('click', () =>
+        this.importTemplates()
+      );
+    }
+
+    if (importFileInput) {
+      importFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          this.handleTemplateFileImport(e.target.files[0]);
+        }
+      });
+    }
+
     // Tab switching support
     document.querySelectorAll('.tab-button').forEach((button) => {
       button.addEventListener('click', (e) => {
@@ -541,6 +566,279 @@ class ConfigurationManager {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  // ==========================================
+  // TEMPLATE IMPORT/EXPORT
+  // ==========================================
+
+  exportTemplates() {
+    if (this.templates.length === 0) {
+      alert('No templates to export. Create some templates first.');
+      return;
+    }
+
+    const exportData = {
+      exportedFrom: 'BCFSleuth V01',
+      exportDate: new Date().toISOString(),
+      version: '3d.1',
+      templateCount: this.templates.length,
+      templates: this.templates.map((template) => ({
+        // Clean up the template data for export
+        id: template.id,
+        name: template.name,
+        description: template.description || '',
+        selectedFields: template.selectedFields,
+        customFilename: template.customFilename,
+        createdDate: template.createdDate,
+        exportFormat: template.exportFormat || 'excel',
+        // Note: We don't export lastUsed as that's device-specific
+      })),
+      preferences: {
+        // Export relevant preferences that make sense to share
+        defaultExportFormat: this.preferences.defaultExportFormat,
+        customFilenameDefaults: this.preferences.customFilenameDefaults,
+      },
+    };
+
+    try {
+      const jsonString = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `bcfsleuth_templates_${timestamp}.json`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      URL.revokeObjectURL(url);
+
+      console.log(`Exported ${this.templates.length} templates to ${filename}`);
+      alert(
+        `Successfully exported ${this.templates.length} templates!\nFile: ${filename}`
+      );
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Error exporting templates: ' + error.message);
+    }
+  }
+
+  importTemplates() {
+    const fileInput = document.getElementById('import-file-input');
+    if (!fileInput) {
+      alert('Import functionality not available');
+      return;
+    }
+
+    // Trigger file picker
+    fileInput.click();
+  }
+
+  handleTemplateFileImport(file) {
+    if (!file) return;
+
+    // Validate file type
+    if (!file.name.toLowerCase().endsWith('.json')) {
+      alert('Please select a valid JSON file (.json)');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importData = JSON.parse(e.target.result);
+        this.processImportedTemplates(importData);
+      } catch (error) {
+        console.error('Import parsing error:', error);
+        alert(
+          "Error reading template file: Invalid JSON format.\n\nPlease ensure you're importing a valid BCFSleuth template file."
+        );
+      }
+    };
+
+    reader.onerror = () => {
+      alert('Error reading file. Please try again.');
+    };
+
+    reader.readAsText(file);
+  }
+
+  processImportedTemplates(importData) {
+    // Validate import data structure
+    if (!this.validateImportData(importData)) {
+      return;
+    }
+
+    const importedTemplates = importData.templates;
+    const conflicts = this.checkForTemplateConflicts(importedTemplates);
+
+    if (conflicts.length > 0) {
+      this.handleImportConflicts(conflicts, importedTemplates);
+    } else {
+      this.performTemplateImport(importedTemplates);
+    }
+  }
+
+  validateImportData(data) {
+    // Check basic structure
+    if (!data || typeof data !== 'object') {
+      alert('Invalid template file: Not a valid JSON object');
+      return false;
+    }
+
+    if (!data.templates || !Array.isArray(data.templates)) {
+      alert('Invalid template file: Missing or invalid templates array');
+      return false;
+    }
+
+    if (data.templates.length === 0) {
+      alert('No templates found in the import file');
+      return false;
+    }
+
+    // Validate template structure
+    const invalidTemplates = data.templates.filter(
+      (template) =>
+        !template.name ||
+        !template.selectedFields ||
+        !Array.isArray(template.selectedFields)
+    );
+
+    if (invalidTemplates.length > 0) {
+      alert(
+        `Invalid template file: ${invalidTemplates.length} templates are missing required fields (name, selectedFields)`
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  checkForTemplateConflicts(importedTemplates) {
+    const conflicts = [];
+
+    importedTemplates.forEach((importedTemplate) => {
+      const existingTemplate = this.templates.find(
+        (existing) =>
+          existing.name.toLowerCase() === importedTemplate.name.toLowerCase()
+      );
+
+      if (existingTemplate) {
+        conflicts.push({
+          imported: importedTemplate,
+          existing: existingTemplate,
+        });
+      }
+    });
+
+    return conflicts;
+  }
+
+  handleImportConflicts(conflicts, allImportedTemplates) {
+    const conflictNames = conflicts.map((c) => c.imported.name).join(', ');
+    const newTemplates = allImportedTemplates.filter(
+      (imported) =>
+        !conflicts.some((conflict) => conflict.imported.name === imported.name)
+    );
+
+    const message =
+      `Template name conflicts detected:\n\n` +
+      `Conflicting templates: ${conflictNames}\n\n` +
+      `Options:\n` +
+      `• Import New Only (${newTemplates.length} templates)\n` +
+      `• Rename Conflicts (import all with auto-rename)\n` +
+      `• Cancel Import\n\n` +
+      `What would you like to do?`;
+
+    const userChoice = prompt(
+      message +
+        `\nEnter: 'new' (import new only), 'rename' (auto-rename conflicts), or 'cancel':`
+    );
+
+    switch (userChoice?.toLowerCase()) {
+      case 'new':
+        if (newTemplates.length > 0) {
+          this.performTemplateImport(newTemplates);
+        } else {
+          alert('No new templates to import');
+        }
+        break;
+
+      case 'rename':
+        const renamedTemplates = allImportedTemplates.map((template) => {
+          const hasConflict = conflicts.some(
+            (c) => c.imported.name === template.name
+          );
+          if (hasConflict) {
+            return {
+              ...template,
+              name: `${template.name} (imported)`,
+              id: this.generateId(), // Generate new ID for renamed template
+            };
+          }
+          return template;
+        });
+        this.performTemplateImport(renamedTemplates);
+        break;
+
+      case 'cancel':
+      default:
+        console.log('Template import cancelled by user');
+        break;
+    }
+  }
+
+  performTemplateImport(templatesToImport) {
+    let successCount = 0;
+
+    templatesToImport.forEach((importedTemplate) => {
+      try {
+        // Create new template with fresh ID and current timestamp
+        const newTemplate = {
+          id: importedTemplate.id || this.generateId(),
+          name: importedTemplate.name,
+          description: importedTemplate.description || '',
+          selectedFields: importedTemplate.selectedFields,
+          customFilename:
+            importedTemplate.customFilename ||
+            '{project_name}_BCF_Export_{date}',
+          createdDate: importedTemplate.createdDate || new Date().toISOString(),
+          lastUsed: new Date().toISOString(), // Set to now for imported templates
+          exportFormat: importedTemplate.exportFormat || 'excel',
+        };
+
+        this.templates.push(newTemplate);
+        successCount++;
+      } catch (error) {
+        console.error(
+          'Error importing template:',
+          importedTemplate.name,
+          error
+        );
+      }
+    });
+
+    if (successCount > 0) {
+      this.saveToStorage();
+      this.displayTemplates();
+      alert(`Successfully imported ${successCount} template(s)!`);
+      console.log(`Imported ${successCount} templates`);
+    } else {
+      alert(
+        'No templates were imported. Please check the file format and try again.'
+      );
+    }
+
+    // Clear the file input
+    const fileInput = document.getElementById('import-file-input');
+    if (fileInput) {
+      fileInput.value = '';
+    }
   }
 
   // ==========================================
