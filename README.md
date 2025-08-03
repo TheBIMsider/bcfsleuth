@@ -14,15 +14,36 @@ This project demonstrates the power of human-AI collaboration in modern software
 **Why this matters**: Shows how AI tools can empower domain experts to create sophisticated applications while maintaining professional development standards, even without traditional programming backgrounds.
 
 # 📱 Screenshots
-## Easy Upload
-<img width="1030" height="813" alt="BCFSleuth Simple Preview" src="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b" />
 
-## Simple Preview
-<img width="1264" height="1036" alt="Simple  Preview_Phase3c" src="https://github.com/user-attachments/assets/c5244e3a-7f53-4958-901d-c2f25e6c188a" />
+<table>
+  <tr>
+    <td width="50%">
+      <h3>🔄 Easy Upload & Processing</h3>
+      <a href="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b">
+        <img src="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b" alt="BCFSleuth Easy Upload" width="100%"/>
+      </a>
+      <p><em>Drag & drop BCF files with intelligent field discovery</em></p>
+    </td>
+    <td width="50%">
+      <h3>📊 Simple Preview</h3>
+      <a href="https://github.com/user-attachments/assets/c5244e3a-7f53-4958-901d-c2f25e6c188a">
+        <img src="https://github.com/user-attachments/assets/c5244e3a-7f53-4958-901d-c2f25e6c188a" alt="Simple Preview Phase 3c" width="100%"/>
+      </a>
+      <p><em>Quick 5-topic overview with professional styling</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <h3>🔍 Advanced Preview with Filtering</h3>
+      <a href="https://github.com/user-attachments/assets/152c08b9-fc4b-4c03-bc80-b58609057227">
+        <img src="https://github.com/user-attachments/assets/152c08b9-fc4b-4c03-bc80-b58609057227" alt="Advanced Preview with Filtering Phase 3c" width="70%"/>
+      </a>
+      <p><em>Professional data exploration with search, filtering, sorting, and pagination</em></p>
+    </td>
+  </tr>
+</table>
 
-## Advanced Preview with Filtering
-<img width="1117" height="1080" alt="Advanced Preview with Filtering_Phase3c" src="https://github.com/user-attachments/assets/152c08b9-fc4b-4c03-bc80-b58609057227" />
-*Professional data exploration with search, filtering, sorting, and pagination*
+> 💡 **Click any screenshot to view full size**
 
 ## Live Demo [HERE](https://thebimsider.github.io/bcfsleuth/V01/)
 
