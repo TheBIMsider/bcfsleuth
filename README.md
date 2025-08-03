@@ -2,9 +2,9 @@
 
 A modern web-based BCF (Building Collaboration Format) file analyzer and CSV/Excel converter with universal format support, intelligent field discovery, advanced data exploration, and comprehensive configuration management.
 
-## 🚀 **Universal BCF Support - All Formats Supported**
+## 🚀 **Universal BCF Support - All Current Formats Supported**
 
-**BCFSleuth now supports ALL BCF formats with intelligent adaptation:**
+**BCFSleuth now supports ALL Current BCF formats with intelligent adaptation:**
 - ✅ **BCF 2.0** - Full compatibility with legacy BCF files
 - ✅ **BCF 2.1** - Enhanced support with extensions integration  
 - ✅ **BCF 3.0** - Complete support for latest BCF specification
