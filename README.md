@@ -33,19 +33,17 @@ This project demonstrates the power of human-AI collaboration in modern software
     </td>
   </tr>
   <tr>
-    <td colspan="2" align="center">
+    <td width="50%">
       <h3>🔍 Advanced Preview with Filtering</h3>
       <a href="https://github.com/user-attachments/assets/152c08b9-fc4b-4c03-bc80-b58609057227">
-        <img src="https://github.com/user-attachments/assets/152c08b9-fc4b-4c03-bc80-b58609057227" alt="Advanced Preview with Filtering Phase 3c" width="70%"/>
+        <img src="https://github.com/user-attachments/assets/152c08b9-fc4b-4c03-bc80-b58609057227" alt="Advanced Preview with Filtering Phase 3c" width="100%"/>
       </a>
       <p><em>Professional data exploration with search, filtering, sorting, and pagination</em></p>
     </td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center">
+    <td width="50%">
       <h3>⚙️ Configuration Management</h3>
       <a href="https://github.com/user-attachments/assets/949c1f9f-8e21-4a37-bf7b-ef880902e773">
-        <img src="https://github.com/user-attachments/assets/949c1f9f-8e21-4a37-bf7b-ef880902e773" alt="Configuration Management Phase 3d" width="70%"/>
+        <img src="https://github.com/user-attachments/assets/949c1f9f-8e21-4a37-bf7b-ef880902e773" alt="Configuration Management Phase 3d" width="100%"/>
       </a>
       <p><em>Export templates, user preferences, and processing history management</em></p>
     </td>
