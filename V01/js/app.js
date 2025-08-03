@@ -4,6 +4,7 @@ class BCFSleuthApp {
     this.selectedFiles = [];
     this.parsedData = [];
     this.selectedFields = new Set();
+    this.advancedPreview = null;
     this.init();
   }
 
@@ -11,6 +12,8 @@ class BCFSleuthApp {
     this.setupEventListeners();
     this.initializeFieldSelection();
     this.showSection('upload-section');
+    this.advancedPreview = new AdvancedPreview(this);
+    window.bcfApp = this; // Make globally accessible for onclick handlers
   }
 
   setupEventListeners() {
@@ -78,6 +81,12 @@ class BCFSleuthApp {
 
     this.updateFieldCount();
     console.log('Selected fields updated:', Array.from(this.selectedFields)); // Debug log
+    if (this.advancedPreview && this.parsedData.length > 0) {
+      this.advancedPreview.buildAdvancedTableHeaders();
+      if (this.advancedPreview.currentTab === 'advanced') {
+        this.advancedPreview.renderAdvancedTable();
+      }
+    }
   }
 
   updateFieldCount() {
@@ -921,6 +930,10 @@ class BCFSleuthApp {
 
     // Display preview data
     this.displayPreviewTable();
+    if (this.advancedPreview) {
+      this.advancedPreview.initialize();
+      this.advancedPreview.updateData(this.parsedData);
+    }
 
     this.showSection('results-section');
   }
@@ -932,25 +945,55 @@ class BCFSleuthApp {
     // Get first 5 topics across all files
     let topicCount = 0;
     const maxPreview = 5;
+    let totalTopics = 0;
+    let totalComments = 0;
 
+    // Count totals
+    for (const data of this.parsedData) {
+      totalTopics += data.topics.length;
+      for (const topic of data.topics) {
+        totalComments += topic.comments ? topic.comments.length : 0;
+      }
+    }
+
+    // Display first 5 topics
     for (const data of this.parsedData) {
       for (const topic of data.topics) {
         if (topicCount >= maxPreview) break;
 
         const row = document.createElement('tr');
+        row.className = 'row-type-topic';
         row.innerHTML = `
-                    <td>${this.escapeHtml(topic.title || 'Untitled')}</td>
-                    <td>${this.escapeHtml(topic.topicStatus || 'Unknown')}</td>
-                    <td>${this.escapeHtml(topic.priority || 'Normal')}</td>
-                    <td>${this.escapeHtml(
-                      topic.creationAuthor || 'Unknown'
-                    )}</td>
-                    <td>${this.formatDate(topic.creationDate)}</td>
-                `;
+        <td>${this.escapeHtml(topic.title || 'Untitled')}</td>
+        <td><span class="status-badge status-${(topic.topicStatus || 'unknown')
+          .toLowerCase()
+          .replace(/\s+/g, '-')}">${this.escapeHtml(
+          topic.topicStatus || 'Unknown'
+        )}</span></td>
+        <td><span class="priority-badge priority-${(
+          topic.priority || 'normal'
+        ).toLowerCase()}">${this.escapeHtml(
+          topic.priority || 'Normal'
+        )}</span></td>
+        <td>${this.escapeHtml(topic.creationAuthor || 'Unknown')}</td>
+        <td>${this.formatDate(topic.creationDate)}</td>
+      `;
         tbody.appendChild(row);
         topicCount++;
       }
       if (topicCount >= maxPreview) break;
+    }
+
+    // Update simple preview summary
+    const summaryElement = document.getElementById('simple-summary');
+    if (summaryElement) {
+      summaryElement.innerHTML = `
+      Showing ${Math.min(
+        5,
+        totalTopics
+      )} of ${totalTopics} topics, ${totalComments} total comments. 
+      <strong>Switch to Advanced Preview for full functionality.</strong>
+    `;
     }
   }
 
@@ -1102,6 +1145,23 @@ class BCFSleuthApp {
 
     categoryDiv.appendChild(gridDiv);
     return categoryDiv;
+  }
+
+  formatDate(dateString) {
+    if (!dateString) return 'Unknown';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    } catch {
+      return 'Invalid Date';
+    }
+  }
+
+  escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 }
 
