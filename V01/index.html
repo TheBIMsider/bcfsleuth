@@ -76,6 +76,9 @@
             <button class="tab-button" data-tab="advanced">
               Advanced Preview
             </button>
+            <button class="tab-button" data-tab="configuration">
+              Configuration
+            </button>
           </div>
 
           <!-- Simple Preview Tab (Your existing preview enhanced) -->
@@ -104,6 +107,23 @@
 
           <!-- Advanced Preview Tab -->
           <div class="tab-content" id="advanced-tab">
+            <!-- Preview Field Connection Notice -->
+            <div class="preview-notice">
+              <div class="notice-content">
+                <div class="notice-icon">ℹ️</div>
+                <div class="notice-text">
+                  <strong
+                    >Table columns match your export field selection.</strong
+                  >
+                  Change field selection in
+                  <a href="#" onclick="scrollToExportOptions()"
+                    >Export Options</a
+                  >
+                  below to show different columns.
+                </div>
+              </div>
+            </div>
+
             <!-- Data Summary Stats -->
             <div class="data-summary">
               <div class="summary-item">
@@ -178,10 +198,31 @@
               <div class="control-group">
                 <label for="page-size">Show:</label>
                 <select id="page-size" class="control-input">
-                  <option value="25">25 rows</option>
-                  <option value="50" selected>50 rows</option>
+                  <option value="25" selected>25 rows</option>
+                  <option value="50">50 rows</option>
                   <option value="100">100 rows</option>
                 </select>
+              </div>
+              <div class="control-group">
+                <label>Comments:</label>
+                <button
+                  id="expand-all-btn"
+                  class="control-btn"
+                  onclick="window.bcfApp.advancedPreview.expandAllTopics()"
+                >
+                  Expand All
+                </button>
+                <button
+                  id="collapse-all-btn"
+                  class="control-btn"
+                  onclick="window.bcfApp.advancedPreview.collapseAllTopics()"
+                >
+                  Collapse All
+                </button>
+                <span class="control-hint">
+                  <span class="blue-triangle">▶</span> Click blue arrows in
+                  table to expand individual topics
+                </span>
               </div>
             </div>
 
@@ -247,6 +288,178 @@
                     title="Last page"
                   >
                     ⟩⟩
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADD THIS NEW CONFIGURATION TAB -->
+        <div class="tab-content" id="configuration-tab">
+          <div class="configuration-content">
+            <!-- Export Templates Section -->
+            <div class="config-section">
+              <h4>Export Templates</h4>
+              <p class="section-description">
+                Save and manage field selection combinations for quick reuse
+              </p>
+
+              <div class="template-management">
+                <!-- Saved Templates List -->
+                <div class="saved-templates">
+                  <h5>Saved Templates</h5>
+                  <div id="templates-list" class="templates-list">
+                    <div class="empty-state">
+                      <p>
+                        No templates saved yet. Create your first template
+                        below.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Template Creation -->
+                <div class="template-creation">
+                  <h5>Create New Template</h5>
+                  <div class="template-form">
+                    <div class="form-group">
+                      <label for="template-name">Template Name:</label>
+                      <input
+                        type="text"
+                        id="template-name"
+                        placeholder="e.g., Essential BCF Export"
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="template-description"
+                        >Description (optional):</label
+                      >
+                      <input
+                        type="text"
+                        id="template-description"
+                        placeholder="e.g., Essential fields for BCF analysis and reporting"
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="template-filename"
+                        >Custom Filename Template:</label
+                      >
+                      <input
+                        type="text"
+                        id="template-filename"
+                        value="{project_name}_BCF_Export_{date}"
+                        placeholder="e.g., {project_name}_BCF_Export_{date}"
+                      />
+                      <small
+                        >Available variables: {project_name}, {date}, {time},
+                        {template_name}</small
+                      >
+                    </div>
+                    <div class="form-actions">
+                      <button id="save-template-btn" class="btn btn-primary">
+                        Save Template
+                      </button>
+                      <button
+                        id="save-from-current-btn"
+                        class="btn btn-secondary"
+                      >
+                        Save From Current Selection
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Session Preferences Section -->
+            <div class="config-section">
+              <h4>User Preferences</h4>
+              <p class="section-description">
+                Customize your BCFSleuth experience
+              </p>
+
+              <div class="preferences-grid">
+                <div class="pref-group">
+                  <label for="default-export-format"
+                    >Default Export Format:</label
+                  >
+                  <select id="default-export-format">
+                    <option value="excel">Excel (.xlsx)</option>
+                    <option value="csv">CSV</option>
+                  </select>
+                </div>
+
+                <div class="pref-group">
+                  <label for="default-page-size"
+                    >Default Table Page Size:</label
+                  >
+                  <select id="default-page-size">
+                    <option value="25">25 rows</option>
+                    <option value="50" selected>50 rows</option>
+                    <option value="100">100 rows</option>
+                  </select>
+                </div>
+
+                <div class="pref-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      id="remember-field-selections"
+                      checked
+                    />
+                    Remember field selections between sessions
+                  </label>
+                </div>
+
+                <div class="pref-group">
+                  <label>
+                    <input type="checkbox" id="show-tooltips" checked />
+                    Show tooltips in advanced preview
+                  </label>
+                </div>
+
+                <div class="pref-group">
+                  <label>
+                    <input type="checkbox" id="auto-save-session" checked />
+                    Auto-save session data
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button id="save-preferences-btn" class="btn btn-primary">
+                  Save Preferences
+                </button>
+                <button id="reset-preferences-btn" class="btn btn-secondary">
+                  Reset to Defaults
+                </button>
+              </div>
+            </div>
+
+            <!-- Processing History Section -->
+            <div class="config-section">
+              <h4>Processing History</h4>
+              <p class="section-description">
+                View and manage your recent BCF analysis sessions
+              </p>
+
+              <div class="history-container">
+                <div id="processing-history" class="history-list">
+                  <div class="empty-state">
+                    <p>
+                      No processing history yet. Process some BCF files to see
+                      history.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="history-actions">
+                  <button id="clear-history-btn" class="btn btn-secondary">
+                    Clear History
+                  </button>
+                  <button id="export-history-btn" class="btn btn-secondary">
+                    Export History
                   </button>
                 </div>
               </div>
@@ -444,6 +657,7 @@
     <script src="js/csv-exporter.js"></script>
     <script src="js/excel-exporter.js"></script>
     <script src="js/advanced-preview.js"></script>
+    <script src="js/configuration.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>
