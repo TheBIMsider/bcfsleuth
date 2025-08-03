@@ -14,12 +14,13 @@ This project demonstrates the power of human-AI collaboration in modern software
 **Why this matters**: Shows how AI tools can empower domain experts to create sophisticated applications while maintaining professional development standards, even without traditional programming backgrounds.
 
 # 📱 Screenshots
-
-## Simple Preview
 <img width="1030" height="813" alt="BCFSleuth Simple Preview" src="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b" />
 
+## Simple Preview
+<img width="1264" height="1036" alt="Simple  Preview_Phase3c" src="https://github.com/user-attachments/assets/c5244e3a-7f53-4958-901d-c2f25e6c188a" />
+
 ## Advanced Preview with Filtering
-<img width="1117" height="1080" alt="Advanced Preview with Filtering_Phase3c" src="https://github.com/user-attachments/assets/5045f853-24fb-49e1-81ca-8268961b103b" />
+<img width="1117" height="1080" alt="Advanced Preview with Filtering_Phase3c" src="https://github.com/user-attachments/assets/152c08b9-fc4b-4c03-bc80-b58609057227" />
 *Professional data exploration with search, filtering, sorting, and pagination*
 
 ## Live Demo [HERE](https://thebimsider.github.io/bcfsleuth/V01/)
