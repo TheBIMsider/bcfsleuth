@@ -185,6 +185,34 @@ php -S localhost:8000
 - ✅ Just serve the static files
 - ✅ HTTPS recommended (required for some modern browser features)
 
+## 🔒 Data Privacy & Storage
+
+### **Complete Client-Side Privacy**
+BCFSleuth prioritizes your data privacy by storing everything locally in your browser:
+
+- **🏠 Local Storage Only**: All templates, preferences, and processing history stored in your browser's localStorage
+- **🔐 No Data Transmission**: Your BCF data and configurations never leave your device
+- **👤 User Isolation**: Each browser/device maintains completely separate data
+- **🚫 No Accounts Required**: No logins, registrations, or server-side storage
+
+### **What This Means For You:**
+✅ **Complete Privacy**: Your BCF analysis data remains 100% private  
+✅ **No Sharing Risk**: Other users cannot access your templates or history  
+✅ **Works Offline**: Once loaded, works without internet connection  
+✅ **GDPR Compliant**: No personal data collection or transmission  
+
+### **Multi-Device Considerations:**
+❌ **No Cross-Device Sync**: Templates and preferences don't transfer between devices  
+❌ **Browser-Specific**: Chrome and Firefox maintain separate data  
+❌ **Incognito Limitations**: Private browsing sessions don't persist data  
+❌ **Browser Data Clearing**: Will remove all saved templates and preferences  
+
+### **For Teams & Organizations:**
+- Each team member maintains their own templates and preferences
+- Templates can be manually shared by recreating them on each device
+- Consider documenting standard templates for team consistency
+- Future versions may include template import/export capabilities
+
 ## Advanced Data Exploration (Phase 3c)
 
 ### Professional Data Table Features
