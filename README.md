@@ -14,6 +14,7 @@ This project demonstrates the power of human-AI collaboration in modern software
 **Why this matters**: Shows how AI tools can empower domain experts to create sophisticated applications while maintaining professional development standards, even without traditional programming backgrounds.
 
 # 📱 Screenshots
+## Easy Upload
 <img width="1030" height="813" alt="BCFSleuth Simple Preview" src="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b" />
 
 ## Simple Preview
