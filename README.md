@@ -1,6 +1,7 @@
 # BCFSleuth
 
 <img width="512" height="512" alt="BCFSleuth_Logo_Color" src="https://github.com/user-attachments/assets/fdd735de-e809-4736-a01c-0c054071b8e9" />
+
 A modern web-based BCF (Building Collaboration Format) file analyzer and CSV/Excel converter with universal format support, intelligent field discovery, advanced data exploration, and comprehensive configuration management.
 
 ## 🚀 **Universal BCF Support - All Current Formats Supported**
