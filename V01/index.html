@@ -306,66 +306,103 @@
               </p>
 
               <div class="template-management">
-                <!-- Saved Templates List -->
-                <div class="saved-templates">
-                  <h5>Saved Templates</h5>
-                  <div id="templates-list" class="templates-list">
-                    <div class="empty-state">
-                      <p>
-                        No templates saved yet. Create your first template
-                        below.
-                      </p>
-                    </div>
+                <!-- Template Import/Export Actions (moved to top) -->
+                <div class="template-import-export">
+                  <h5>Template Management</h5>
+                  <div class="template-file-actions">
+                    <button
+                      id="export-templates-btn"
+                      class="btn btn-secondary"
+                      title="Download all templates as JSON file"
+                    >
+                      📁 Export Templates
+                    </button>
+                    <button
+                      id="import-templates-btn"
+                      class="btn btn-secondary"
+                      title="Import templates from JSON file"
+                    >
+                      📥 Import Templates
+                    </button>
+                    <input
+                      type="file"
+                      id="import-file-input"
+                      accept=".json"
+                      style="display: none"
+                    />
+                  </div>
+                  <div class="template-file-info">
+                    <small
+                      >Export templates to backup or share with your team.
+                      Import templates from other devices or team
+                      members.</small
+                    >
                   </div>
                 </div>
 
-                <!-- Template Creation -->
-                <div class="template-creation">
-                  <h5>Create New Template</h5>
-                  <div class="template-form">
-                    <div class="form-group">
-                      <label for="template-name">Template Name:</label>
-                      <input
-                        type="text"
-                        id="template-name"
-                        placeholder="e.g., Essential BCF Export"
-                      />
+                <!-- Main Template Management Grid (NEW) -->
+                <div class="template-main-grid">
+                  <!-- Saved Templates (Left Side) -->
+                  <div class="saved-templates">
+                    <h5>Saved Templates</h5>
+                    <div id="templates-list" class="templates-list">
+                      <div class="empty-state">
+                        <p>
+                          No templates saved yet. Create your first template
+                          below.
+                        </p>
+                      </div>
                     </div>
-                    <div class="form-group">
-                      <label for="template-description"
-                        >Description (optional):</label
-                      >
-                      <input
-                        type="text"
-                        id="template-description"
-                        placeholder="e.g., Essential fields for BCF analysis and reporting"
-                      />
-                    </div>
-                    <div class="form-group">
-                      <label for="template-filename"
-                        >Custom Filename Template:</label
-                      >
-                      <input
-                        type="text"
-                        id="template-filename"
-                        value="{project_name}_BCF_Export_{date}"
-                        placeholder="e.g., {project_name}_BCF_Export_{date}"
-                      />
-                      <small
-                        >Available variables: {project_name}, {date}, {time},
-                        {template_name}</small
-                      >
-                    </div>
-                    <div class="form-actions">
-                      <button id="save-template-btn" class="btn btn-primary">
-                        Save Template
-                      </button>
-                      <button
-                        id="save-from-current-btn"
-                        class="btn btn-secondary"
-                      >
-                        Save From Current Selection
-                      </button>
+                  </div>
+
+                  <!-- Template Creation (Right Side) -->
+                  <div class="template-creation">
+                    <h5>Create New Template</h5>
+                    <div class="template-form">
+                      <div class="form-group">
+                        <label for="template-name">Template Name:</label>
+                        <input
+                          type="text"
+                          id="template-name"
+                          placeholder="e.g., Essential BCF Export"
+                        />
+                      </div>
+                      <div class="form-group">
+                        <label for="template-description"
+                          >Description (optional):</label
+                        >
+                        <input
+                          type="text"
+                          id="template-description"
+                          placeholder="e.g., Essential fields for BCF analysis and reporting"
+                        />
+                      </div>
+                      <div class="form-group">
+                        <label for="template-filename"
+                          >Custom Filename Template:</label
+                        >
+                        <input
+                          type="text"
+                          id="template-filename"
+                          value="{project_name}_BCF_Export_{date}"
+                          placeholder="e.g., {project_name}_BCF_Export_{date}"
+                        />
+                        <small
+                          >Available variables: {project_name}, {date}, {time},
+                          {template_name}</small
+                        >
+                      </div>
+                      <div class="form-actions">
+                        <button id="save-template-btn" class="btn btn-primary">
+                          Save Template
+                        </button>
+                        <button
+                          id="save-from-current-btn"
+                          class="btn btn-secondary"
+                        >
+                          Save From Current Selection
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
