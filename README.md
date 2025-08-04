@@ -86,6 +86,12 @@ This project demonstrates advanced human-AI collaboration in enterprise software
   </tr>
 </table>
 
+### **🖼️ Complete Image Viewer System - V2.0 Phase 1**
+<img width="1286" height="1080" alt="BCFSleuth_V02_Phase1_Image_Viewer" src="https://github.com/user-attachments/assets/2df41022-5d8b-4531-b320-de2cb6c9b932" />
+
+*Complete image management interface showing extracted images, bulk download controls, PDF report generation options, and professional lightbox system with zoom controls and navigation.*
+
+
 > 💡 **Click any screenshot to view full size**
 
 ## 🌟 **Live Demo** 
