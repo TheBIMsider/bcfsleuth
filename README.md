@@ -240,7 +240,7 @@ BCFSleuth V2.0 is a comprehensive, client-side BCF management platform that tran
 ## Getting Started
 
 ### Quick Start (Use Live Demo)
-1. Open [BCFSleuth V2.0 Live Demo](https://thebimsider.github.io/bcfsleuth/V01/)
+1. Open [BCFSleuth V2.0 Live Demo](https://thebimsider.github.io/bcfsleuth/V02/)
 2. Drag and drop your BCF file(s) (supports 2.0, 2.1, 3.0 formats)
 3. **NEW: Image Management**
    - View extracted images in professional gallery
