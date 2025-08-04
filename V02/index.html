@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BCFSleuth - BCF File Analyzer</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <h1>BCFSleuth</h1>
+        <p class="tagline">Investigate your BCF files with precision</p>
+      </div>
+    </header>
+
+    <main class="container">
+      <!-- File Upload Section -->
+      <section id="upload-section" class="card">
+        <div id="drop-zone" class="drop-zone">
+          <div class="drop-zone-content">
+            <div class="upload-icon">📁</div>
+            <h3>Drop BCF files here</h3>
+            <p>or click to browse</p>
+            <input type="file" id="file-input" accept=".bcf,.bcfzip" multiple />
+          </div>
+        </div>
+
+        <div id="file-list" class="file-list hidden">
+          <h4>Selected Files:</h4>
+          <ul id="selected-files"></ul>
+          <button id="process-btn" class="btn btn-primary">
+            Process Files
+          </button>
+        </div>
+      </section>
+
+      <!-- Processing Status -->
+      <section id="status-section" class="card hidden">
+        <div id="processing-status">
+          <div class="spinner hidden"></div>
+          <p id="status-text">Ready to process files...</p>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section id="results-section" class="card hidden">
+        <h3>BCF Analysis Results</h3>
+
+        <div id="project-info" class="info-grid">
+          <div class="info-item">
+            <label>Project Name:</label>
+            <span id="project-name">-</span>
+          </div>
+          <div class="info-item">
+            <label>BCF Version:</label>
+            <span id="bcf-version">-</span>
+          </div>
+          <div class="info-item">
+            <label>Total Topics:</label>
+            <span id="topic-count">-</span>
+          </div>
+          <div class="info-item">
+            <label>Files Processed:</label>
+            <span id="files-processed">-</span>
+          </div>
+        </div>
+
+        <!-- Enhanced Data Preview with Tabs -->
+        <div id="data-preview" class="data-preview">
+          <!-- Tab Navigation -->
+          <div class="preview-tabs">
+            <button class="tab-button active" data-tab="simple">
+              Simple Preview
+            </button>
+            <button class="tab-button" data-tab="advanced">
+              Advanced Preview
+            </button>
+            <button class="tab-button" data-tab="image-viewer">
+              Image Viewer
+            </button>
+            <button class="tab-button" data-tab="configuration">
+              Configuration
+            </button>
+          </div>
+
+          <!-- Simple Preview Tab (Your existing preview enhanced) -->
+          <div class="tab-content active" id="simple-tab">
+            <div class="simple-preview">
+              <h4>Quick Preview (First 5 Topics)</h4>
+              <div class="table-container">
+                <table id="preview-table">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Status</th>
+                      <th>Priority</th>
+                      <th>Author</th>
+                      <th>Created</th>
+                    </tr>
+                  </thead>
+                  <tbody id="preview-tbody"></tbody>
+                </table>
+              </div>
+              <div class="preview-summary" id="simple-summary">
+                <!-- Summary will be populated by JavaScript -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Advanced Preview Tab -->
+          <div class="tab-content" id="advanced-tab">
+            <!-- Preview Field Connection Notice -->
+            <div class="preview-notice">
+              <div class="notice-content">
+                <div class="notice-icon">ℹ️</div>
+                <div class="notice-text">
+                  <strong
+                    >Table columns match your export field selection.</strong
+                  >
+                  Change field selection in
+                  <a href="#" onclick="scrollToExportOptions()"
+                    >Export Options</a
+                  >
+                  below to show different columns.
+                </div>
+              </div>
+            </div>
+
+            <!-- Data Summary Stats -->
+            <div class="data-summary">
+              <div class="summary-item">
+                <span class="summary-value" id="summary-total-topics">0</span>
+                <span class="summary-label">Total Topics</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-value" id="summary-total-comments">0</span>
+                <span class="summary-label">Total Comments</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-value" id="summary-open-issues">0</span>
+                <span class="summary-label">Open Issues</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-value" id="summary-high-priority">0</span>
+                <span class="summary-label">High Priority</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-value" id="summary-overdue">0</span>
+                <span class="summary-label">Overdue</span>
+              </div>
+            </div>
+
+            <!-- Advanced Controls -->
+            <div class="advanced-controls">
+              <div class="control-group">
+                <label for="search-input">Search:</label>
+                <input
+                  type="text"
+                  id="search-input"
+                  class="control-input search-input"
+                  placeholder="Search across all fields..."
+                />
+              </div>
+
+              <div class="control-group">
+                <label for="status-filter">Status:</label>
+                <select id="status-filter" class="control-input">
+                  <option value="">All Statuses</option>
+                  <!-- Options will be populated dynamically -->
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label for="priority-filter">Priority:</label>
+                <select id="priority-filter" class="control-input">
+                  <option value="">All Priorities</option>
+                  <!-- Options will be populated dynamically -->
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label for="assignee-filter">Assigned To:</label>
+                <select id="assignee-filter" class="control-input">
+                  <option value="">All Assignees</option>
+                  <!-- Options will be populated dynamically -->
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label for="due-date-filter">Due Date:</label>
+                <select id="due-date-filter" class="control-input">
+                  <option value="">All Dates</option>
+                  <option value="overdue">Overdue</option>
+                  <option value="this-week">This Week</option>
+                  <option value="next-week">Next Week</option>
+                  <option value="no-due-date">No Due Date</option>
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label for="page-size">Show:</label>
+                <select id="page-size" class="control-input">
+                  <option value="25" selected>25 rows</option>
+                  <option value="50">50 rows</option>
+                  <option value="100">100 rows</option>
+                </select>
+              </div>
+              <div class="control-group">
+                <label>Comments:</label>
+                <button
+                  id="expand-all-btn"
+                  class="control-btn"
+                  onclick="window.bcfApp.advancedPreview.expandAllTopics()"
+                >
+                  Expand All
+                </button>
+                <button
+                  id="collapse-all-btn"
+                  class="control-btn"
+                  onclick="window.bcfApp.advancedPreview.collapseAllTopics()"
+                >
+                  Collapse All
+                </button>
+                <span class="control-hint">
+                  <span class="blue-triangle">▶</span> Click blue arrows in
+                  table to expand individual topics
+                </span>
+              </div>
+            </div>
+
+            <!-- Active Filters -->
+            <div
+              class="filter-controls"
+              id="active-filters"
+              style="display: none"
+            >
+              <!-- Active filter tags will be inserted here -->
+            </div>
+
+            <!-- Advanced Table -->
+            <div class="advanced-table-container">
+              <div class="table-wrapper">
+                <table class="advanced-table" id="advanced-table">
+                  <thead>
+                    <tr id="advanced-table-headers">
+                      <!-- Headers will be populated dynamically based on selected fields -->
+                    </tr>
+                  </thead>
+                  <tbody id="advanced-table-body">
+                    <!-- Table rows will be populated by JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination -->
+              <div class="pagination-container">
+                <div class="pagination-info">
+                  Showing <span id="showing-start">0</span> to
+                  <span id="showing-end">0</span> of
+                  <span id="total-filtered">0</span> items
+                </div>
+                <div class="pagination-controls">
+                  <button
+                    class="pagination-button"
+                    id="first-page"
+                    title="First page"
+                  >
+                    ⟨⟨
+                  </button>
+                  <button
+                    class="pagination-button"
+                    id="prev-page"
+                    title="Previous page"
+                  >
+                    ⟨
+                  </button>
+                  <span id="page-numbers">
+                    <!-- Page numbers will be inserted here -->
+                  </span>
+                  <button
+                    class="pagination-button"
+                    id="next-page"
+                    title="Next page"
+                  >
+                    ⟩
+                  </button>
+                  <button
+                    class="pagination-button"
+                    id="last-page"
+                    title="Last page"
+                  >
+                    ⟩⟩
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Image Viewer Tab -->
+        <div class="tab-content" id="image-viewer-tab">
+          <div class="image-viewer-content">
+            <!-- Image Viewer Header -->
+            <div class="image-viewer-header">
+              <div class="viewer-title">
+                <h4>BCF Image Gallery</h4>
+                <p class="viewer-description">
+                  View images and viewpoints from your BCF files
+                </p>
+              </div>
+              <div class="viewer-stats" id="image-viewer-stats">
+                <div class="stat-item">
+                  <span class="stat-value" id="total-images">0</span>
+                  <span class="stat-label">Images</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value" id="total-topics-with-images"
+                    >0</span
+                  >
+                  <span class="stat-label">Topics with Images</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value" id="unique-projects-images">0</span>
+                  <span class="stat-label">Projects</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Image Viewer Controls -->
+            <div class="image-viewer-controls">
+              <div class="control-group">
+                <label for="image-project-filter">Project:</label>
+                <select id="image-project-filter" class="control-input">
+                  <option value="">All Projects</option>
+                  <!-- Options will be populated dynamically -->
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label for="image-status-filter">Status:</label>
+                <select id="image-status-filter" class="control-input">
+                  <option value="">All Statuses</option>
+                  <!-- Options will be populated dynamically -->
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label for="image-search">Search:</label>
+                <input
+                  type="text"
+                  id="image-search"
+                  class="control-input search-input"
+                  placeholder="Search topic titles..."
+                />
+              </div>
+
+              <div class="control-group">
+                <label for="image-sort">Sort by:</label>
+                <select id="image-sort" class="control-input">
+                  <option value="title">Topic Title</option>
+                  <option value="date" selected>Creation Date</option>
+                  <option value="status">Status</option>
+                  <option value="author">Author</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Bulk Download Actions -->
+            <div
+              class="image-bulk-actions"
+              id="image-bulk-actions"
+              style="display: none"
+            >
+              <div class="bulk-actions-header">
+                <h5>Bulk Download</h5>
+                <span class="bulk-count" id="bulk-download-count"
+                  >0 images selected</span
+                >
+              </div>
+              <div class="bulk-actions-buttons">
+                <button
+                  class="btn btn-primary"
+                  onclick="window.bcfApp.imageViewer.downloadAllImages()"
+                >
+                  💾 Download All
+                </button>
+                <button
+                  class="btn btn-secondary"
+                  onclick="window.bcfApp.imageViewer.downloadImagesAsZip()"
+                >
+                  📦 Download as ZIP
+                </button>
+                <button
+                  class="btn btn-secondary"
+                  onclick="window.bcfApp.imageViewer.generatePDFReport()"
+                >
+                  📄 Generate PDF Report
+                </button>
+              </div>
+            </div>
+
+            <!-- No Images Message (shown when no BCF files loaded) -->
+            <div class="no-images-message" id="no-images-message">
+              <div class="no-images-content">
+                <div class="no-images-icon">🖼️</div>
+                <h3>No Images Available</h3>
+                <p>
+                  Process some BCF files first to view their images and
+                  viewpoints here.
+                </p>
+                <p>
+                  <em
+                    >Images will appear as cards with topic information and
+                    image thumbnails.</em
+                  >
+                </p>
+              </div>
+            </div>
+
+            <!-- Image Cards Grid -->
+            <div class="image-cards-container" id="image-cards-container">
+              <!-- Cards will be populated by JavaScript -->
+            </div>
+
+            <!-- Image Viewer Pagination -->
+            <div
+              class="image-pagination-container"
+              id="image-pagination"
+              style="display: none"
+            >
+              <div class="pagination-info">
+                Showing <span id="images-showing-start">0</span> to
+                <span id="images-showing-end">0</span> of
+                <span id="images-total-filtered">0</span> images
+              </div>
+              <div class="pagination-controls">
+                <button
+                  class="pagination-button"
+                  id="images-first-page"
+                  title="First page"
+                >
+                  ⟨⟨
+                </button>
+                <button
+                  class="pagination-button"
+                  id="images-prev-page"
+                  title="Previous page"
+                >
+                  ⟨
+                </button>
+                <span id="images-page-numbers">
+                  <!-- Page numbers will be inserted here -->
+                </span>
+                <button
+                  class="pagination-button"
+                  id="images-next-page"
+                  title="Next page"
+                >
+                  ⟩
+                </button>
+                <button
+                  class="pagination-button"
+                  id="images-last-page"
+                  title="Last page"
+                >
+                  ⟩⟩
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADD THIS NEW CONFIGURATION TAB -->
+        <div class="tab-content" id="configuration-tab">
+          <div class="configuration-content">
+            <!-- Export Templates Section -->
+            <div class="config-section">
+              <h4>Export Templates</h4>
+              <p class="section-description">
+                Save and manage field selection combinations for quick reuse
+              </p>
+
+              <div class="template-management">
+                <!-- Template Import/Export Actions (moved to top) -->
+                <div class="template-import-export">
+                  <h5>Template Management</h5>
+                  <div class="template-file-actions">
+                    <button
+                      id="export-templates-btn"
+                      class="btn btn-secondary"
+                      title="Download all templates as JSON file"
+                    >
+                      📁 Export Templates
+                    </button>
+                    <button
+                      id="import-templates-btn"
+                      class="btn btn-secondary"
+                      title="Import templates from JSON file"
+                    >
+                      📥 Import Templates
+                    </button>
+                    <input
+                      type="file"
+                      id="import-file-input"
+                      accept=".json"
+                      style="display: none"
+                    />
+                  </div>
+                  <div class="template-file-info">
+                    <small
+                      >Export templates to backup or share with your team.
+                      Import templates from other devices or team
+                      members.</small
+                    >
+                  </div>
+                </div>
+
+                <!-- Main Template Management Grid (NEW) -->
+                <div class="template-main-grid">
+                  <!-- Saved Templates (Left Side) -->
+                  <div class="saved-templates">
+                    <h5>Saved Templates</h5>
+                    <div id="templates-list" class="templates-list">
+                      <div class="empty-state">
+                        <p>
+                          No templates saved yet. Create your first template
+                          below.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Template Creation (Right Side) -->
+                  <div class="template-creation">
+                    <h5>Create New Template</h5>
+                    <div class="template-form">
+                      <div class="form-group">
+                        <label for="template-name">Template Name:</label>
+                        <input
+                          type="text"
+                          id="template-name"
+                          placeholder="e.g., Essential BCF Export"
+                        />
+                      </div>
+                      <div class="form-group">
+                        <label for="template-description"
+                          >Description (optional):</label
+                        >
+                        <input
+                          type="text"
+                          id="template-description"
+                          placeholder="e.g., Essential fields for BCF analysis and reporting"
+                        />
+                      </div>
+                      <div class="form-group">
+                        <label for="template-filename"
+                          >Custom Filename Template:</label
+                        >
+                        <input
+                          type="text"
+                          id="template-filename"
+                          value="{project_name}_BCF_Export_{date}"
+                          placeholder="e.g., {project_name}_BCF_Export_{date}"
+                        />
+                        <small
+                          >Available variables: {project_name}, {date}, {time},
+                          {template_name}</small
+                        >
+                      </div>
+                      <div class="form-actions">
+                        <button id="save-template-btn" class="btn btn-primary">
+                          Save Template
+                        </button>
+                        <button
+                          id="save-from-current-btn"
+                          class="btn btn-secondary"
+                        >
+                          Save From Current Selection
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Session Preferences Section -->
+            <div class="config-section">
+              <h4>User Preferences</h4>
+              <p class="section-description">
+                Customize your BCFSleuth experience
+              </p>
+
+              <div class="preferences-grid">
+                <div class="pref-group">
+                  <label for="default-export-format"
+                    >Default Export Format:</label
+                  >
+                  <select id="default-export-format">
+                    <option value="excel">Excel (.xlsx)</option>
+                    <option value="csv">CSV</option>
+                  </select>
+                </div>
+
+                <div class="pref-group">
+                  <label for="default-page-size"
+                    >Default Table Page Size:</label
+                  >
+                  <select id="default-page-size">
+                    <option value="25">25 rows</option>
+                    <option value="50" selected>50 rows</option>
+                    <option value="100">100 rows</option>
+                  </select>
+                </div>
+
+                <div class="pref-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      id="remember-field-selections"
+                      checked
+                    />
+                    Remember field selections between sessions
+                  </label>
+                </div>
+
+                <div class="pref-group">
+                  <label>
+                    <input type="checkbox" id="show-tooltips" checked />
+                    Show tooltips in advanced preview
+                  </label>
+                </div>
+
+                <div class="pref-group">
+                  <label>
+                    <input type="checkbox" id="auto-save-session" checked />
+                    Auto-save session data
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button id="save-preferences-btn" class="btn btn-primary">
+                  Save Preferences
+                </button>
+                <button id="reset-preferences-btn" class="btn btn-secondary">
+                  Reset to Defaults
+                </button>
+              </div>
+            </div>
+
+            <!-- Processing History Section -->
+            <div class="config-section">
+              <h4>Processing History</h4>
+              <p class="section-description">
+                View and manage your recent BCF analysis sessions
+              </p>
+
+              <div class="history-container">
+                <div id="processing-history" class="history-list">
+                  <div class="empty-state">
+                    <p>
+                      No processing history yet. Process some BCF files to see
+                      history.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="history-actions">
+                  <button id="clear-history-btn" class="btn btn-secondary">
+                    Clear History
+                  </button>
+                  <button id="export-history-btn" class="btn btn-secondary">
+                    Export History
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="export-controls">
+          <h4>Export Options</h4>
+
+          <!-- Field Selection -->
+          <div class="field-selection">
+            <h5>
+              Select Fields to Export
+              <span class="field-count" id="field-count"
+                >0 of 25 fields selected</span
+              >
+            </h5>
+
+            <div class="field-selection-controls">
+              <button id="select-all-fields" class="btn btn-secondary">
+                Select All
+              </button>
+              <button id="clear-all-fields" class="btn btn-secondary">
+                Clear All
+              </button>
+              <button id="select-essential" class="btn btn-secondary">
+                Essential Only
+              </button>
+            </div>
+
+            <div class="field-categories">
+              <!-- Topic Information -->
+              <div class="field-category">
+                <h6>Topic Information</h6>
+                <div class="field-grid">
+                  <div class="field-item">
+                    <input type="checkbox" id="field-title" checked />
+                    <label for="field-title">Title</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-description" checked />
+                    <label for="field-description">Description</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-status" checked />
+                    <label for="field-status">Status</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-type" checked />
+                    <label for="field-type">Type</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-priority" checked />
+                    <label for="field-priority">Priority</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-stage" />
+                    <label for="field-stage">Stage</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-labels" />
+                    <label for="field-labels">Labels</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-assigned-to" />
+                    <label for="field-assigned-to">Assigned To</label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dates & Authors -->
+              <div class="field-category">
+                <h6>Dates & Authors</h6>
+                <div class="field-grid">
+                  <div class="field-item">
+                    <input type="checkbox" id="field-creation-date" checked />
+                    <label for="field-creation-date">Creation Date</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-creation-author" checked />
+                    <label for="field-creation-author">Creation Author</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-modified-date" />
+                    <label for="field-modified-date">Modified Date</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-modified-author" />
+                    <label for="field-modified-author">Modified Author</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-due-date" />
+                    <label for="field-due-date">Due Date</label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- File & Project Info -->
+              <div class="field-category">
+                <h6>File & Project Info</h6>
+                <div class="field-grid">
+                  <div class="field-item">
+                    <input type="checkbox" id="field-source-file" checked />
+                    <label for="field-source-file">Source File</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-project-name" checked />
+                    <label for="field-project-name">Project Name</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-bcf-version" />
+                    <label for="field-bcf-version">BCF Version</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-topic-guid" />
+                    <label for="field-topic-guid">Topic GUID</label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Comments & Counts -->
+              <div class="field-category">
+                <h6>Comments & Counts</h6>
+                <div class="field-grid">
+                  <div class="field-item">
+                    <input type="checkbox" id="field-comments-count" checked />
+                    <label for="field-comments-count">Comments Count</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-viewpoints-count" />
+                    <label for="field-viewpoints-count">Viewpoints Count</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-comment-number" checked />
+                    <label for="field-comment-number">Comment Number</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-comment-date" checked />
+                    <label for="field-comment-date">Comment Date</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-comment-author" checked />
+                    <label for="field-comment-author">Comment Author</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-comment-text" checked />
+                    <label for="field-comment-text">Comment Text</label>
+                  </div>
+                  <div class="field-item">
+                    <input type="checkbox" id="field-comment-status" />
+                    <label for="field-comment-status">Comment Status</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="export-buttons">
+            <button id="export-csv" class="btn btn-secondary">
+              Download CSV
+            </button>
+            <button id="export-excel" class="btn btn-primary" disabled>
+              Download Excel
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="container">
+        <p>
+          Inspired by
+          <a href="https://www.bim42.com/products/sloth.html" target="_blank"
+            >Sloth</a
+          >
+          by
+          <strong
+            ><a href="https://www.linkedin.com/in/moreausimon/" target="_blank"
+              >Simon Moreau</a
+            ></strong
+          >
+          at <a href="https://www.bim42.com/" target="_blank">BIM42</a>
+        </p>
+      </div>
+    </footer>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.1/jspdf.umd.min.js"></script>
+    <script>
+      // Debug and setup jsPDF 3.0.1
+      console.log('jsPDF 3.0.1 script loaded');
+      console.log('typeof window.jspdf:', typeof window.jspdf);
+      console.log('jsPDF object:', window.jspdf);
+
+      // jsPDF 3.0.1 uses window.jspdf.jsPDF
+      if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) {
+        window.jsPDF = window.jspdf.jsPDF;
+        console.log('jsPDF 3.0.1 setup complete');
+      } else {
+        console.error('jsPDF 3.0.1 failed to load');
+      }
+    </script>
+
+    <!-- Application Scripts -->
+    <script src="js/bcf-parser.js"></script>
+    <script src="js/csv-exporter.js"></script>
+    <script src="js/excel-exporter.js"></script>
+    <script src="js/advanced-preview.js"></script>
+    <script src="js/configuration.js"></script>
+    <script src="js/image-viewer.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
