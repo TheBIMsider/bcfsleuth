@@ -100,7 +100,7 @@ Generate professional reports in multiple formats:
 </table>
 
 ### **🖼️ Complete Image Viewer System - V2.0 Phase 1**
-<img width="1286" height="1080" alt="BCFSleuth_V02_Phase1_Image_Viewer" src="https://github.com/user-attachments/assets/2df41022-5d8b-4531-b320-de2cb6c9b932" />
+<img width="1286" height="1080" alt="BCFSleuth_V02_Phase1_Image_Viewer" src="https://github.com/user-attachments/assets/6168510e-8f11-4751-be3d-a7370b17a642" />
 
 *Complete image management interface showing extracted images, bulk download controls, PDF & Word report generation options, and professional lightbox system with zoom controls and navigation.*
 
