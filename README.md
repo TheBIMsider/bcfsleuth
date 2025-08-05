@@ -434,8 +434,7 @@ Enhanced compatibility for image management features:
 - **🚀 Phase 2: Advanced Analytics Dashboard** - **PLANNED**
   - Statistical analysis engine with D3.js visualizations
   - Interactive charts for issue trends and resolution patterns
-  - Custom dashboard builder with drag-and-drop layouts
-  - Comparative analysis tools for multi-project benchmarking
+  - Aliblty to customize the pdf report generation base on selctions
 
 ## **Contributing**
 
