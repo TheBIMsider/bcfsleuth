@@ -1639,6 +1639,987 @@ class ImageViewer {
   }
 
   /**
+   * Generate Word document report with images and metadata
+   * Enhanced with better library loading detection
+   */
+  async generateWordReport() {
+    console.log('📝 Starting Word document report generation...');
+
+    if (this.filteredImages.length === 0) {
+      alert('No images to include in Word report. Please check your filters.');
+      return;
+    }
+
+    // ENHANCED: Wait for library to be ready
+    console.log('🔍 Checking if DOCX library is ready...');
+
+    // Wait up to 15 seconds for library to load
+    let attempts = 0;
+    const maxAttempts = 30; // 30 attempts × 500ms = 15 seconds
+
+    while (attempts < maxAttempts) {
+      if (window.docxReady === true && typeof window.docx !== 'undefined') {
+        console.log('✅ DOCX library is ready!');
+        break;
+      }
+
+      if (window.docxReady === false) {
+        alert(
+          'Word functionality is not available because the DOCX library failed to load.\n\n' +
+            'This might be due to:\n' +
+            '• Network connectivity issues\n' +
+            '• Firewall/proxy blocking CDN access\n' +
+            '• Browser extensions blocking scripts\n\n' +
+            'Please check your internet connection and try refreshing the page.'
+        );
+        return;
+      }
+
+      console.log(
+        `⏳ Waiting for DOCX library... (${attempts + 1}/${maxAttempts})`
+      );
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 500ms
+      attempts++;
+    }
+
+    if (attempts >= maxAttempts) {
+      alert(
+        'Word functionality timed out waiting for the DOCX library to load.\n\n' +
+          'Please refresh the page and try again. If the problem persists, ' +
+          'check your internet connection and browser console for errors.'
+      );
+      return;
+    }
+
+    // Final verification
+    const requiredComponents = ['Document', 'Packer', 'Paragraph', 'TextRun'];
+    const missingComponents = requiredComponents.filter(
+      (comp) => !window.docx[comp]
+    );
+
+    if (missingComponents.length > 0) {
+      console.error('❌ Missing docx components:', missingComponents);
+      console.log('Available components:', Object.keys(window.docx));
+      alert(
+        `Word functionality is incomplete. Missing components: ${missingComponents.join(
+          ', '
+        )}`
+      );
+      return;
+    }
+
+    console.log(
+      '✅ DOCX library verification complete - proceeding with document generation'
+    );
+
+    // Show layout options
+    const layout = await this.showWordLayoutDialog();
+    if (!layout) {
+      return; // User cancelled
+    }
+
+    try {
+      // Show progress
+      this.showDownloadProgress(
+        0,
+        this.filteredImages.length,
+        'Generating Word document...'
+      );
+
+      // Generate Word document based on chosen layout
+      let wordDoc;
+      switch (layout) {
+        case 'grid':
+          wordDoc = await this.generateGridWordReport();
+          break;
+        case 'detailed':
+          wordDoc = await this.generateDetailedWordReport();
+          break;
+        case 'summary':
+          wordDoc = await this.generateSummaryWordReport();
+          break;
+        default:
+          throw new Error('Invalid layout choice');
+      }
+
+      // Generate filename and download
+      const filename = this.generateWordFilename(layout);
+      await this.downloadWordDocument(wordDoc, filename);
+
+      // Hide progress and show success
+      this.hideDownloadProgress();
+      this.showDownloadFeedback(`✅ Word document generated: ${filename}`);
+
+      console.log('✅ Word document generated successfully:', filename);
+    } catch (error) {
+      console.error('Error generating Word document:', error);
+      this.hideDownloadProgress();
+      alert('Error generating Word document: ' + error.message);
+    }
+  }
+
+  /**
+   * Show Word document layout selection dialog
+   * Similar to PDF dialog but tailored for Word document features
+   * @returns {Promise<string|null>} - Selected layout or null if cancelled
+   */
+  showWordLayoutDialog() {
+    return new Promise((resolve) => {
+      const dialogHTML = `
+      <div id="word-layout-dialog" class="pdf-layout-dialog">
+        <div class="pdf-dialog-overlay" onclick="document.getElementById('word-layout-dialog').remove(); resolve(null);"></div>
+        <div class="pdf-dialog-content">
+          <div class="pdf-dialog-header">
+            <h3>Word Document Layout</h3>
+            <button class="pdf-dialog-close" onclick="document.getElementById('word-layout-dialog').remove(); resolve(null);">✕</button>
+          </div>
+          
+          <div class="pdf-layout-options">
+            <div class="pdf-layout-option" onclick="window.bcfApp.imageViewer.selectWordLayout('grid')">
+              <div class="pdf-option-icon">📋</div>
+              <h4>Image Grid Table</h4>
+              <p>Images in a structured table format with metadata. Easy to edit and reformat.</p>
+              <div class="pdf-option-details">Best for: Editable project documentation</div>
+            </div>
+            
+            <div class="pdf-layout-option" onclick="window.bcfApp.imageViewer.selectWordLayout('detailed')">
+              <div class="pdf-option-icon">📖</div>
+              <h4>Detailed Report</h4>
+              <p>Each image with comprehensive topic information in separate sections.</p>
+              <div class="pdf-option-details">Best for: Detailed analysis and editing</div>
+            </div>
+            
+            <div class="pdf-layout-option" onclick="window.bcfApp.imageViewer.selectWordLayout('summary')">
+              <div class="pdf-option-icon">📊</div>
+              <h4>Executive Summary</h4>
+              <p>Cover page with statistics plus streamlined image presentation.</p>
+              <div class="pdf-option-details">Best for: Management presentations</div>
+            </div>
+          </div>
+
+          <div class="pdf-dialog-footer">
+            <div class="pdf-image-count">${this.filteredImages.length} images will be included</div>
+            <button class="btn btn-secondary" onclick="document.getElementById('word-layout-dialog').remove(); resolve(null);">Cancel</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+      document.body.insertAdjacentHTML('beforeend', dialogHTML);
+
+      // Store resolve function for layout selection
+      window.wordLayoutResolve = resolve;
+    });
+  }
+
+  /**
+   * Handle Word layout selection
+   * @param {string} layout - Selected layout type
+   */
+  selectWordLayout(layout) {
+    console.log('✅ Word Layout Selected:', layout);
+
+    const dialog = document.getElementById('word-layout-dialog');
+    if (dialog) {
+      dialog.remove();
+    }
+
+    if (window.wordLayoutResolve) {
+      window.wordLayoutResolve(layout);
+      delete window.wordLayoutResolve;
+    }
+  }
+
+  /**
+   * Generate grid layout Word document (images in table format)
+   * Updated for DOCX 9.5.1 API
+   * @returns {Object} - Word document object
+   */
+  async generateGridWordReport() {
+    console.log('📋 Generating Word grid layout document...');
+
+    // UPDATED: DOCX 9.5.1 API structure
+    const {
+      Document,
+      Packer,
+      Paragraph,
+      TextRun,
+      Table,
+      TableRow,
+      TableCell,
+      ImageRun,
+      AlignmentType,
+      HeadingLevel,
+      WidthType,
+    } = window.docx;
+
+    // Create document with enhanced metadata for DOCX 9.5.1
+    const doc = new Document({
+      title: `BCF Image Grid Report - ${this.getCommonProjectName()}`,
+      description: `Generated by BCFSleuth - ${this.filteredImages.length} images`,
+      creator: 'BCFSleuth',
+      sections: [
+        {
+          properties: {},
+          children: await this.createWordGridContent(),
+        },
+      ],
+    });
+
+    return doc;
+  }
+
+  /**
+   * Generate detailed layout Word document (one image per section)
+   * Updated for DOCX 9.5.1 API
+   * @returns {Object} - Word document object
+   */
+  async generateDetailedWordReport() {
+    console.log('📖 Generating Word detailed layout document...');
+
+    const {
+      Document,
+      Packer,
+      Paragraph,
+      TextRun,
+      ImageRun,
+      AlignmentType,
+      HeadingLevel,
+    } = window.docx;
+
+    const doc = new Document({
+      title: `BCF Detailed Image Report - ${this.getCommonProjectName()}`,
+      description: `Generated by BCFSleuth - ${this.filteredImages.length} images`,
+      creator: 'BCFSleuth',
+      sections: [
+        {
+          properties: {},
+          children: await this.createWordDetailedContent(),
+        },
+      ],
+    });
+
+    return doc;
+  }
+
+  /**
+   * Generate summary layout Word document (executive summary format)
+   * Updated for DOCX 9.5.1 API
+   * @returns {Object} - Word document object
+   */
+  async generateSummaryWordReport() {
+    console.log('📊 Generating Word summary layout document...');
+
+    const {
+      Document,
+      Packer,
+      Paragraph,
+      TextRun,
+      Table,
+      TableRow,
+      TableCell,
+      ImageRun,
+      AlignmentType,
+      HeadingLevel,
+    } = window.docx;
+
+    const doc = new Document({
+      title: `BCF Executive Summary - ${this.getCommonProjectName()}`,
+      description: `Generated by BCFSleuth - ${this.filteredImages.length} images`,
+      creator: 'BCFSleuth',
+      sections: [
+        {
+          properties: {},
+          children: await this.createWordSummaryContent(),
+        },
+      ],
+    });
+
+    return doc;
+  }
+
+  /**
+   * Generate detailed layout Word document (one image per section)
+   * @returns {Object} - Word document object
+   */
+  async generateDetailedWordReport() {
+    console.log('📖 Generating Word detailed layout document...');
+
+    const {
+      Document,
+      Packer,
+      Paragraph,
+      TextRun,
+      ImageRun,
+      AlignmentType,
+      HeadingLevel,
+    } = window.docx;
+
+    const doc = new Document({
+      title: `BCF Detailed Image Report - ${this.getCommonProjectName()}`,
+      description: `Generated by BCFSleuth - ${this.filteredImages.length} images`,
+      creator: 'BCFSleuth',
+      sections: [
+        {
+          children: await this.createWordDetailedContent(),
+        },
+      ],
+    });
+
+    return doc;
+  }
+
+  /**
+   * Generate summary layout Word document (executive summary format)
+   * @returns {Object} - Word document object
+   */
+  async generateSummaryWordReport() {
+    console.log('📊 Generating Word summary layout document...');
+
+    const {
+      Document,
+      Packer,
+      Paragraph,
+      TextRun,
+      Table,
+      TableRow,
+      TableCell,
+      ImageRun,
+      AlignmentType,
+      HeadingLevel,
+    } = window.docx;
+
+    const doc = new Document({
+      title: `BCF Executive Summary - ${this.getCommonProjectName()}`,
+      description: `Generated by BCFSleuth - ${this.filteredImages.length} images`,
+      creator: 'BCFSleuth',
+      sections: [
+        {
+          children: await this.createWordSummaryContent(),
+        },
+      ],
+    });
+
+    return doc;
+  }
+
+  /**
+   * Create Word document content for grid layout
+   * @returns {Array} - Array of Word document elements
+   */
+  async createWordGridContent() {
+    const {
+      Paragraph,
+      TextRun,
+      Table,
+      TableRow,
+      TableCell,
+      ImageRun,
+      AlignmentType,
+      HeadingLevel,
+      WidthType,
+    } = window.docx;
+
+    const elements = [];
+
+    // Add title and header
+    elements.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `BCF Image Grid Report`,
+            bold: true,
+            size: 32,
+          }),
+        ],
+        heading: HeadingLevel.TITLE,
+        alignment: AlignmentType.CENTER,
+      })
+    );
+
+    elements.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `Project: ${this.getCommonProjectName()}`,
+            size: 24,
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+      })
+    );
+
+    elements.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `Generated: ${new Date().toLocaleDateString()} | Total Images: ${
+              this.filteredImages.length
+            }`,
+            size: 20,
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+      })
+    );
+
+    // Add spacing
+    elements.push(new Paragraph({ text: '' }));
+
+    // Create table with images (2 columns)
+    const tableRows = [];
+
+    for (let i = 0; i < this.filteredImages.length; i += 2) {
+      const leftImage = this.filteredImages[i];
+      const rightImage = this.filteredImages[i + 1];
+
+      const row = new TableRow({
+        children: [
+          new TableCell({
+            children: await this.createWordImageCell(leftImage),
+            width: { size: 50, type: WidthType.PERCENTAGE },
+          }),
+          new TableCell({
+            children: rightImage
+              ? await this.createWordImageCell(rightImage)
+              : [new Paragraph({ text: '' })],
+            width: { size: 50, type: WidthType.PERCENTAGE },
+          }),
+        ],
+      });
+
+      tableRows.push(row);
+
+      // Update progress
+      this.updateDownloadProgress(
+        i + 1,
+        this.filteredImages.length,
+        'Creating Word table...'
+      );
+    }
+
+    const table = new Table({
+      rows: tableRows,
+      width: { size: 100, type: WidthType.PERCENTAGE },
+    });
+
+    elements.push(table);
+
+    return elements;
+  }
+
+  /**
+   * Create Word image cell content for grid layout
+   * Updated for DOCX 9.5.1 API with improved image handling
+   * @param {Object} image - Image data
+   * @returns {Array} - Array of paragraph elements
+   */
+  async createWordImageCell(image) {
+    const { Paragraph, TextRun, ImageRun, AlignmentType } = window.docx;
+
+    const elements = [];
+
+    try {
+      // UPDATED: Convert base64 to buffer for DOCX 9.5.1
+      const base64Data = image.imageData;
+      const binaryString = atob(base64Data);
+      const imageBuffer = new Uint8Array(binaryString.length);
+
+      for (let i = 0; i < binaryString.length; i++) {
+        imageBuffer[i] = binaryString.charCodeAt(i);
+      }
+
+      // UPDATED: DOCX 9.5.1 ImageRun API
+      elements.push(
+        new Paragraph({
+          children: [
+            new ImageRun({
+              data: imageBuffer,
+              transformation: {
+                width: 200,
+                height: 150,
+              },
+              type: image.imageType.includes('png') ? 'png' : 'jpg', // Specify image type
+            }),
+          ],
+          alignment: AlignmentType.CENTER,
+        })
+      );
+    } catch (error) {
+      console.warn('Error adding image to Word cell:', error);
+      elements.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: '[Image not available]',
+              italics: true,
+              color: '999999',
+            }),
+          ],
+          alignment: AlignmentType.CENTER,
+        })
+      );
+    }
+
+    // Add image metadata with enhanced styling
+    elements.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: image.title || 'Untitled',
+            bold: true,
+            size: 18,
+            color: '2563eb', // Primary blue color
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 200, after: 100 }, // Add spacing
+      })
+    );
+
+    elements.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `${image.status} | ${image.priority} | ${image.author}`,
+            size: 16,
+            color: '64748b', // Secondary gray color
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 },
+      })
+    );
+
+    return elements;
+  }
+
+  /**
+   * Create Word document content for detailed layout
+   * Updated for DOCX 9.5.1 with enhanced formatting
+   * @returns {Array} - Array of Word document elements
+   */
+  async createWordDetailedContent() {
+    const {
+      Paragraph,
+      TextRun,
+      ImageRun,
+      AlignmentType,
+      HeadingLevel,
+      PageBreak,
+    } = window.docx;
+
+    const elements = [];
+
+    // Add title with enhanced styling
+    elements.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `BCF Detailed Image Report`,
+            bold: true,
+            size: 32,
+            color: '2563eb',
+          }),
+        ],
+        heading: HeadingLevel.TITLE,
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 400 },
+      })
+    );
+
+    // Add project info
+    elements.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `Project: ${this.getCommonProjectName()}`,
+            size: 24,
+            color: '475569',
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 },
+      })
+    );
+
+    elements.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `Generated: ${new Date().toLocaleDateString()} | Total Images: ${
+              this.filteredImages.length
+            }`,
+            size: 20,
+            color: '64748b',
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 600 },
+      })
+    );
+
+    // Add each image as a separate section
+    for (let i = 0; i < this.filteredImages.length; i++) {
+      const image = this.filteredImages[i];
+
+      // Update progress
+      this.updateDownloadProgress(
+        i + 1,
+        this.filteredImages.length,
+        'Creating detailed sections...'
+      );
+
+      // Add page break (except for first image)
+      if (i > 0) {
+        elements.push(
+          new Paragraph({
+            children: [new PageBreak()],
+          })
+        );
+      }
+
+      // Add image title
+      elements.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `${i + 1}. ${image.title || 'Untitled'}`,
+              bold: true,
+              size: 24,
+              color: '2563eb',
+            }),
+          ],
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 200, after: 300 },
+        })
+      );
+
+      // Add image
+      try {
+        const binaryString = atob(image.imageData);
+        const imageBuffer = new Uint8Array(binaryString.length);
+
+        for (let j = 0; j < binaryString.length; j++) {
+          imageBuffer[j] = binaryString.charCodeAt(j);
+        }
+
+        elements.push(
+          new Paragraph({
+            children: [
+              new ImageRun({
+                data: imageBuffer,
+                transformation: {
+                  width: 400,
+                  height: 300,
+                },
+                type: image.imageType.includes('png') ? 'png' : 'jpg',
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 200, after: 300 },
+          })
+        );
+      } catch (error) {
+        console.warn('Error adding image to Word document:', error);
+        elements.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: '[Image not available]',
+                italics: true,
+                color: '999999',
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 200, after: 300 },
+          })
+        );
+      }
+
+      // Add metadata section
+      elements.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: 'Topic Details',
+              bold: true,
+              size: 20,
+              color: '374151',
+            }),
+          ],
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 300, after: 200 },
+        })
+      );
+
+      const metadata = [
+        `Status: ${image.status}`,
+        `Priority: ${image.priority}`,
+        `Author: ${image.author}`,
+        `Created: ${this.formatDate(image.creationDate)}`,
+        `Project: ${image.projectName}`,
+        `Description: ${image.description || 'No description available'}`,
+      ];
+
+      metadata.forEach((item) => {
+        elements.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: item,
+                size: 20,
+                color: '1f2937',
+              }),
+            ],
+            spacing: { after: 100 },
+          })
+        );
+      });
+
+      // Add spacing before next section
+      elements.push(
+        new Paragraph({
+          children: [new TextRun({ text: '' })],
+          spacing: { after: 300 },
+        })
+      );
+    }
+
+    return elements;
+  }
+
+  /**
+   * Create Word document content for summary layout
+   * @returns {Array} - Array of Word document elements
+   */
+  async createWordSummaryContent() {
+    const {
+      Paragraph,
+      TextRun,
+      Table,
+      TableRow,
+      TableCell,
+      ImageRun,
+      AlignmentType,
+      HeadingLevel,
+    } = window.docx;
+
+    const elements = [];
+
+    // Add cover content
+    elements.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `BCF Executive Summary`,
+            bold: true,
+            size: 32,
+          }),
+        ],
+        heading: HeadingLevel.TITLE,
+        alignment: AlignmentType.CENTER,
+      })
+    );
+
+    // Add statistics
+    const stats = this.calculateImageStatistics();
+    elements.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: 'Project Statistics',
+            bold: true,
+            size: 24,
+          }),
+        ],
+        heading: HeadingLevel.HEADING_1,
+      })
+    );
+
+    const statLines = [
+      `Total Images: ${this.filteredImages.length}`,
+      `Projects: ${stats.projects.join(', ')}`,
+      `Status Breakdown: ${Object.entries(stats.statusCount)
+        .map(([status, count]) => `${status} (${count})`)
+        .join(', ')}`,
+    ];
+
+    statLines.forEach((line) => {
+      elements.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: line,
+              size: 20,
+            }),
+          ],
+        })
+      );
+    });
+
+    // Add page break
+    elements.push(new Paragraph({ pageBreakBefore: true }));
+
+    // Add images in summary format (similar to grid but with more spacing)
+    elements.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: 'Image Overview',
+            bold: true,
+            size: 24,
+          }),
+        ],
+        heading: HeadingLevel.HEADING_1,
+      })
+    );
+
+    // Add first 10 images in pairs
+    const maxImages = Math.min(10, this.filteredImages.length);
+    for (let i = 0; i < maxImages; i += 2) {
+      const leftImage = this.filteredImages[i];
+      const rightImage = this.filteredImages[i + 1];
+
+      // Create simplified image cells for summary
+      const leftCell = await this.createWordImageCell(leftImage);
+      const rightCell = rightImage
+        ? await this.createWordImageCell(rightImage)
+        : [new Paragraph({ text: '' })];
+
+      const row = new TableRow({
+        children: [
+          new TableCell({ children: leftCell }),
+          new TableCell({ children: rightCell }),
+        ],
+      });
+
+      const table = new Table({
+        rows: [row],
+      });
+
+      elements.push(table);
+      elements.push(new Paragraph({ text: '' })); // Add spacing
+
+      // Update progress
+      this.updateDownloadProgress(
+        i + 1,
+        maxImages,
+        'Creating summary sections...'
+      );
+    }
+
+    if (this.filteredImages.length > 10) {
+      elements.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `... and ${
+                this.filteredImages.length - 10
+              } additional images`,
+              italics: true,
+              size: 18,
+            }),
+          ],
+          alignment: AlignmentType.CENTER,
+        })
+      );
+    }
+
+    return elements;
+  }
+
+  /**
+   * Download Word document - Fixed for browser environment
+   * @param {Object} doc - Word document object
+   * @param {string} filename - Output filename
+   */
+  async downloadWordDocument(doc, filename) {
+    try {
+      const { Packer } = window.docx;
+
+      console.log('🔄 Generating Word document buffer for browser...');
+
+      // FIXED: Use toBlob instead of toBuffer for browser compatibility
+      const blob = await Packer.toBlob(doc);
+
+      console.log('✅ Word document blob generated successfully');
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up
+      URL.revokeObjectURL(url);
+
+      console.log('✅ Word document download triggered:', filename);
+    } catch (error) {
+      console.error('Error downloading Word document:', error);
+
+      // Try fallback method if toBlob fails
+      try {
+        console.log('🔄 Trying fallback download method...');
+        const { Packer } = window.docx;
+
+        // Alternative: Use base64 output
+        const base64String = await Packer.toBase64String(doc);
+
+        // Convert base64 to blob
+        const byteCharacters = atob(base64String);
+        const byteNumbers = new Array(byteCharacters.length);
+
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], {
+          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        });
+
+        // Download the blob
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(url);
+
+        console.log('✅ Fallback Word document download successful:', filename);
+      } catch (fallbackError) {
+        console.error(
+          '❌ Fallback download method also failed:',
+          fallbackError
+        );
+        throw new Error(`Word document generation failed: ${error.message}`);
+      }
+    }
+  }
+  /**
+   * Generate Word document filename
+   * @param {string} layout - Layout type
+   * @returns {string} - Word document filename
+   */
+  generateWordFilename(layout) {
+    const projectName = this.sanitizeFilename(this.getCommonProjectName());
+    const date = new Date().toISOString().split('T')[0];
+    const layoutName = layout.charAt(0).toUpperCase() + layout.slice(1);
+
+    return `${projectName}_BCF_${layoutName}_Report_${date}.docx`;
+  }
+
+  /**
    * Show simplified PDF layout selection dialog (no grouping options)
    * @returns {Promise<string|null>} - Selected layout or null if cancelled
    */

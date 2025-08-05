@@ -492,13 +492,62 @@ class BCFParser {
         this.extractBCF30Fields(topicElement, doc, topic);
       }
 
-      // Extract labels with aliases
+      // Enhanced label extraction with comprehensive BCF format support
+      // This handles various BCF authoring tools and format differences
       const labelElements = doc.querySelectorAll(
-        'Labels Label, Tags Tag, Categories Category'
+        'Labels Label, Tags Tag, Categories Category, TopicLabels TopicLabel'
       );
+
+      // First, extract from standard label elements
       labelElements.forEach((label) => {
-        topic.labels.push(label.textContent?.trim() || '');
+        const labelText = label.textContent?.trim();
+        if (labelText && labelText.length > 0) {
+          topic.labels.push(labelText);
+        }
       });
+
+      // Enhanced: Also check for Labels as direct children with different structures
+      // Some BCF tools store labels differently
+      const labelsContainer = doc.querySelector('Labels, TopicLabels');
+      if (labelsContainer) {
+        // Check for direct text content (some tools use this format)
+        const directLabels = labelsContainer.textContent?.trim();
+        if (directLabels && !topic.labels.length) {
+          // Split by common delimiters and clean up
+          const labelArray = directLabels
+            .split(/[,;|]/)
+            .map((label) => label.trim())
+            .filter((label) => label.length > 0);
+
+          if (labelArray.length > 0) {
+            topic.labels.push(...labelArray);
+          }
+        }
+
+        // Also check for attribute-based labels (some BCF variants)
+        const labelValue =
+          labelsContainer.getAttribute('value') ||
+          labelsContainer.getAttribute('Label');
+        if (labelValue && !topic.labels.length) {
+          topic.labels.push(labelValue.trim());
+        }
+      }
+
+      // Debug logging for label extraction
+      if (topic.labels.length > 0) {
+        console.log(
+          `📋 Found ${topic.labels.length} labels for topic "${topic.title}":`,
+          topic.labels
+        );
+      } else {
+        // Check if Labels element exists but is empty
+        const emptyLabelsContainer = doc.querySelector('Labels, TopicLabels');
+        if (emptyLabelsContainer) {
+          console.log(
+            `📋 Labels container found but empty for topic "${topic.title}"`
+          );
+        }
+      }
 
       // Discover and extract custom fields from Topic element
       this.extractCustomFields(topicElement, topic._customFields, 'topic');

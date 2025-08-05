@@ -376,15 +376,27 @@ class BCFSleuthApp {
       }
 
       bcfData.topics.forEach((topic) => {
-        // Standard BCF 2.x field detection (existing logic)
+        // Enhanced BCF field detection with better labels support
         if (topic.title) discoveredFields.topic.add('title');
         if (topic.description) discoveredFields.topic.add('description');
         if (topic.topicStatus) discoveredFields.topic.add('status');
         if (topic.topicType) discoveredFields.topic.add('type');
         if (topic.priority) discoveredFields.topic.add('priority');
         if (topic.stage) discoveredFields.topic.add('stage');
-        if (topic.labels && topic.labels.length > 0)
-          discoveredFields.topic.add('labels');
+
+        // Enhanced labels detection - always add labels field if any topics exist
+        // This ensures labels appear in field selection even if current topics don't have labels
+        // (Users might have other BCF files with labels, or want to include empty label columns)
+        discoveredFields.topic.add('labels');
+
+        // Additional check: if labels actually contain data, log it for debugging
+        if (topic.labels && topic.labels.length > 0) {
+          console.log(
+            `📋 Topic "${topic.title}" has ${topic.labels.length} labels:`,
+            topic.labels
+          );
+        }
+
         if (topic.assignedTo) discoveredFields.topic.add('assignedTo');
         if (topic.creationDate) discoveredFields.topic.add('creationDate');
         if (topic.creationAuthor) discoveredFields.topic.add('creationAuthor');
@@ -611,7 +623,7 @@ class BCFSleuthApp {
 
     fieldCategories.innerHTML = '';
 
-    // Build Topic Information category
+    // Build Topic Information category with enhanced labels support
     if (discoveredFields.topic.length > 0) {
       const topicCategory = this.buildFieldCategory(
         'Topic Information',
@@ -624,7 +636,7 @@ class BCFSleuthApp {
           { id: 'type', label: 'Type' },
           { id: 'priority', label: 'Priority' },
           { id: 'stage', label: 'Stage' },
-          { id: 'labels', label: 'Labels' },
+          { id: 'labels', label: 'Labels' }, // This ensures labels always appear when topic data exists
           { id: 'assignedTo', label: 'Assigned To' },
         ]
       );
@@ -889,7 +901,7 @@ class BCFSleuthApp {
       'field-type': 'type',
       'field-priority': 'priority',
       'field-stage': 'stage',
-      'field-labels': 'labels',
+      'field-labels': 'labels', // Ensure labels mapping exists for all BCF versions
       'field-assignedTo': 'assignedTo',
       'field-creationDate': 'creationDate',
       'field-creationAuthor': 'creationAuthor',

@@ -135,6 +135,7 @@ class AdvancedPreview {
           topicType: topic.topicType || '', // ADDED: Missing topic type
           priority: topic.priority || '',
           stage: topic.stage || '', // ADDED: Missing stage
+          labels: topic.labels || [], // ADDED: Missing labels field
           assignee: topic.assignedTo || '',
           author: topic.creationAuthor || '',
           created: this.formatDate(topic.creationDate),
@@ -368,7 +369,7 @@ class AdvancedPreview {
       type: 'topicType', // FIXED: Map to correct field
       priority: 'priority',
       stage: 'stage',
-      labels: 'labels',
+      labels: 'labels', // Ensure labels mapping exists
       assignedTo: 'assignee',
       creationDate: 'created',
       creationAuthor: 'author',
