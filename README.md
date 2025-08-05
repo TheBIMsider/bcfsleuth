@@ -432,10 +432,10 @@ Enhanced compatibility for image management features:
 
 ### **Version 2.0 Future Phases**
 - **🚀 Phase 2: Advanced Analytics Dashboard** - **PLANNED**
+  - Customization options for PDF report generation
   - Statistical analysis engine with D3.js visualizations
   - Interactive charts for issue trends and resolution patterns
-  - Aliblty to customize the pdf report generation base on selctions
-
+    
 ## **Contributing**
 
 We welcome contributions to BCFSleuth V2.0! Please feel free to:
