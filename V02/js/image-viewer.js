@@ -1573,8 +1573,7 @@ class ImageViewer {
   }
 
   /**
-   * Generate PDF report with images and metadata
-   * Offers multiple layout options for different use cases
+   * Generate PDF report with images and metadata - Simplified Version
    */
   async generatePDFReport() {
     console.log('📄 Starting PDF report generation...');
@@ -1593,9 +1592,9 @@ class ImageViewer {
       return;
     }
 
-    // Show layout options
-    const layoutChoice = await this.showPDFLayoutDialog();
-    if (!layoutChoice) {
+    // Show simplified layout options (without grouping checkboxes)
+    const layout = await this.showSimplePDFLayoutDialog();
+    if (!layout) {
       return; // User cancelled
     }
 
@@ -1609,7 +1608,7 @@ class ImageViewer {
 
       // Generate PDF based on chosen layout
       let pdf;
-      switch (layoutChoice) {
+      switch (layout) {
         case 'grid':
           pdf = await this.generateGridPDFReport();
           break;
@@ -1624,7 +1623,7 @@ class ImageViewer {
       }
 
       // Generate filename and download
-      const filename = this.generatePDFFilename(layoutChoice);
+      const filename = this.generatePDFFilename(layout);
       pdf.save(filename);
 
       // Hide progress and show success
@@ -1640,50 +1639,50 @@ class ImageViewer {
   }
 
   /**
-   * Show dialog for PDF layout selection
+   * Show simplified PDF layout selection dialog (no grouping options)
    * @returns {Promise<string|null>} - Selected layout or null if cancelled
    */
-  showPDFLayoutDialog() {
+  showSimplePDFLayoutDialog() {
     return new Promise((resolve) => {
       const dialogHTML = `
-        <div id="pdf-layout-dialog" class="pdf-layout-dialog">
-          <div class="pdf-dialog-overlay" onclick="document.getElementById('pdf-layout-dialog').remove(); resolve(null);"></div>
-          <div class="pdf-dialog-content">
-            <div class="pdf-dialog-header">
-              <h3>PDF Report Layout</h3>
-              <button class="pdf-dialog-close" onclick="document.getElementById('pdf-layout-dialog').remove(); resolve(null);">✕</button>
+      <div id="pdf-layout-dialog" class="pdf-layout-dialog">
+        <div class="pdf-dialog-overlay" onclick="document.getElementById('pdf-layout-dialog').remove(); resolve(null);"></div>
+        <div class="pdf-dialog-content">
+          <div class="pdf-dialog-header">
+            <h3>PDF Report Layout</h3>
+            <button class="pdf-dialog-close" onclick="document.getElementById('pdf-layout-dialog').remove(); resolve(null);">✕</button>
+          </div>
+          
+          <div class="pdf-layout-options">
+            <div class="pdf-layout-option" onclick="window.bcfApp.imageViewer.selectSimplePDFLayout('grid')">
+              <div class="pdf-option-icon">📋</div>
+              <h4>Image Grid</h4>
+              <p>4 images per page with basic metadata. Compact overview format.</p>
+              <div class="pdf-option-details">Best for: Quick visual reference</div>
             </div>
             
-            <div class="pdf-layout-options">
-              <div class="pdf-layout-option" onclick="window.bcfApp.imageViewer.selectPDFLayout('grid')">
-                <div class="pdf-option-icon">📋</div>
-                <h4>Image Grid</h4>
-                <p>4 images per page with basic metadata. Compact overview format.</p>
-                <div class="pdf-option-details">Best for: Quick visual reference</div>
-              </div>
-              
-              <div class="pdf-layout-option" onclick="window.bcfApp.imageViewer.selectPDFLayout('detailed')">
-                <div class="pdf-option-icon">📖</div>
-                <h4>Detailed Report</h4>
-                <p>1 image per page with complete topic information and metadata.</p>
-                <div class="pdf-option-details">Best for: Professional documentation</div>
-              </div>
-              
-              <div class="pdf-layout-option" onclick="window.bcfApp.imageViewer.selectPDFLayout('summary')">
-                <div class="pdf-option-icon">📊</div>
-                <h4>Executive Summary</h4>
-                <p>Cover page with statistics plus 2 images per page with key details.</p>
-                <div class="pdf-option-details">Best for: Management reporting</div>
-              </div>
+            <div class="pdf-layout-option" onclick="window.bcfApp.imageViewer.selectSimplePDFLayout('detailed')">
+              <div class="pdf-option-icon">📖</div>
+              <h4>Detailed Report</h4>
+              <p>1 image per page with complete topic information and metadata.</p>
+              <div class="pdf-option-details">Best for: Professional documentation</div>
             </div>
             
-            <div class="pdf-dialog-footer">
-              <div class="pdf-image-count">${this.filteredImages.length} images will be included</div>
-              <button class="btn btn-secondary" onclick="document.getElementById('pdf-layout-dialog').remove(); resolve(null);">Cancel</button>
+            <div class="pdf-layout-option" onclick="window.bcfApp.imageViewer.selectSimplePDFLayout('summary')">
+              <div class="pdf-option-icon">📊</div>
+              <h4>Executive Summary</h4>
+              <p>Cover page with statistics plus 2 images per page with key details.</p>
+              <div class="pdf-option-details">Best for: Management reporting</div>
             </div>
           </div>
+
+          <div class="pdf-dialog-footer">
+            <div class="pdf-image-count">${this.filteredImages.length} images will be included</div>
+            <button class="btn btn-secondary" onclick="document.getElementById('pdf-layout-dialog').remove(); resolve(null);">Cancel</button>
+          </div>
         </div>
-      `;
+      </div>
+    `;
 
       document.body.insertAdjacentHTML('beforeend', dialogHTML);
 
@@ -1697,6 +1696,42 @@ class ImageViewer {
    * @param {string} layout - Selected layout type
    */
   selectPDFLayout(layout) {
+    // Capture grouping options
+    const groupByTopic =
+      document.getElementById('pdf-group-by-topic')?.checked || false;
+    const separatePages =
+      document.getElementById('pdf-separate-pages')?.checked || false;
+
+    // DEBUG: Log what checkboxes were selected
+    console.log('✅ PDF Layout Selected:', {
+      layout: layout,
+      groupByTopic: groupByTopic,
+      separatePages: separatePages,
+    });
+
+    const dialog = document.getElementById('pdf-layout-dialog');
+    if (dialog) {
+      dialog.remove();
+    }
+
+    if (window.pdfLayoutResolve) {
+      // Pass layout and grouping options
+      window.pdfLayoutResolve({
+        layout: layout,
+        groupByTopic: groupByTopic,
+        separatePages: separatePages,
+      });
+      delete window.pdfLayoutResolve;
+    }
+  }
+
+  /**
+   * Handle simplified PDF layout selection (no grouping options)
+   * @param {string} layout - Selected layout type
+   */
+  selectSimplePDFLayout(layout) {
+    console.log('✅ PDF Layout Selected:', layout);
+
     const dialog = document.getElementById('pdf-layout-dialog');
     if (dialog) {
       dialog.remove();
@@ -1709,29 +1744,21 @@ class ImageViewer {
   }
 
   /**
-   * Generate grid layout PDF (4 images per page)
+   * Generate grid layout PDF (4 images per page) - Clean Working Version
    * @returns {jsPDF} - PDF document
    */
   async generateGridPDFReport() {
-    console.log(
-      '📋 Generating grid layout PDF with standardized cover page...'
-    );
+    console.log('📋 Generating grid layout PDF...');
 
     const jsPDF = window.jsPDF;
     const pdf = new jsPDF('portrait', 'mm', 'a4');
 
-    // Debug: Check first image for development
-    if (this.filteredImages.length > 0) {
-      const testImage = this.filteredImages[0];
-      console.log('Grid PDF - First image data check:', {
-        title: testImage.title,
-        type: testImage.imageType,
-        hasData: !!testImage.imageData,
-        dataLength: testImage.imageData?.length || 0,
-      });
-    }
+    // Use filtered images directly
+    const imagesToUse = this.filteredImages;
 
-    // FIXED: Use standardized cover page (same as Executive Summary)
+    console.log(`📊 Processing ${imagesToUse.length} images for grid PDF`);
+
+    // Add standardized cover page
     this.addStandardizedCoverPage(pdf, 'Grid');
 
     // Page setup for grid layout
@@ -1745,28 +1772,28 @@ class ImageViewer {
 
     const imagesPerRow = 2;
     const imagesPerCol = 2;
-    const imagesPerPage = imagesPerRow * imagesPerCol;
+    const imagesPerPage = imagesPerRow * imagesPerCol; // 4 images per page
 
     const imageWidth = (usableWidth - 10) / imagesPerRow; // 10mm gap between images
     const imageHeight = (usableHeight - 40) / imagesPerCol; // Reserve space for page header
 
-    // Process images in 2x2 grid pages (starting from page 2, since page 1 is cover)
-    for (let i = 0; i < this.filteredImages.length; i += imagesPerPage) {
-      // Always add new page for images (cover page is page 1)
+    // Process images in 2x2 grid pages
+    for (let i = 0; i < imagesToUse.length; i += imagesPerPage) {
+      // Add new page for each set of images
       pdf.addPage();
 
-      // Update progress for user feedback
+      // Update progress
       this.updateDownloadProgress(
         i + 1,
-        this.filteredImages.length,
+        imagesToUse.length,
         'Creating grid pages...'
       );
 
-      // FIXED: Clean page header without overlap issues
-      const currentPage = Math.floor(i / imagesPerPage) + 1;
+      // Add page header
+      const currentPageNumber = Math.floor(i / imagesPerPage) + 1;
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(`Images Page ${currentPage}`, pageWidth / 2, margin + 10, {
+      pdf.text(`Images Page ${currentPageNumber}`, pageWidth / 2, margin + 10, {
         align: 'center',
       });
 
@@ -1774,19 +1801,17 @@ class ImageViewer {
       pdf.setLineWidth(0.5);
       pdf.line(margin, margin + 15, pageWidth - margin, margin + 15);
 
-      // FIXED: Add images in 2x2 grid with proper spacing (no overlap)
-      for (
-        let j = 0;
-        j < imagesPerPage && i + j < this.filteredImages.length;
-        j++
-      ) {
-        const image = this.filteredImages[i + j];
+      // Add images in 2x2 grid
+      for (let j = 0; j < imagesPerPage && i + j < imagesToUse.length; j++) {
+        const image = imagesToUse[i + j];
         const row = Math.floor(j / imagesPerRow);
         const col = j % imagesPerRow;
 
-        // SOLVED: Proper positioning that avoids header overlap
+        // Calculate position
         const x = margin + col * (imageWidth + 10);
-        const y = margin + 25 + row * (imageHeight + 15); // Clean spacing from header
+        const y = margin + 25 + row * (imageHeight + 15);
+
+        console.log(`📷 Adding image ${i + j + 1}: ${image.title}`);
 
         await this.addImageToPDF(
           pdf,
@@ -1805,35 +1830,36 @@ class ImageViewer {
       }
     }
 
+    console.log('✅ Grid PDF generation complete');
     return pdf;
   }
 
   /**
-   * Generate detailed layout PDF (1 image per page)
+   * Generate detailed layout PDF (1 image per page) - Simplified Version
    * @returns {jsPDF} - PDF document
    */
   async generateDetailedPDFReport() {
-    console.log(
-      '📖 Generating detailed layout PDF with standardized cover page...'
-    );
+    // SIMPLIFIED: Use filtered images directly
+    const imagesToUse = this.filteredImages;
+    console.log('📖 Generating detailed layout PDF...');
 
     const jsPDF = window.jsPDF;
     const pdf = new jsPDF('p', 'mm', 'a4');
 
-    // UPDATED: Use standardized cover page (consistent with other reports)
+    // Add standardized cover page
     this.addStandardizedCoverPage(pdf, 'Detailed');
 
-    for (let i = 0; i < this.filteredImages.length; i++) {
+    for (let i = 0; i < imagesToUse.length; i++) {
       pdf.addPage();
 
       // Update progress
       this.updateDownloadProgress(
         i + 1,
-        this.filteredImages.length,
+        imagesToUse.length,
         'Adding detailed pages...'
       );
 
-      const image = this.filteredImages[i];
+      const image = imagesToUse[i];
       await this.addDetailedImagePage(pdf, image, i + 1);
 
       // Small delay every 10 images
@@ -1842,22 +1868,23 @@ class ImageViewer {
       }
     }
 
+    console.log('✅ Detailed PDF generation complete');
     return pdf;
   }
 
   /**
-   * Generate summary layout PDF (executive summary + 2 images per page)
+   * Generate summary layout PDF (executive summary + 2 images per page) - Simplified Version
    * @returns {jsPDF} - PDF document
    */
   async generateSummaryPDFReport() {
-    console.log(
-      '📊 Generating summary layout PDF with standardized cover page...'
-    );
+    // SIMPLIFIED: Use filtered images directly
+    const imagesToUse = this.filteredImages;
+    console.log('📊 Generating summary layout PDF...');
 
     const jsPDF = window.jsPDF;
     const pdf = new jsPDF('p', 'mm', 'a4');
 
-    // UPDATED: Use standardized cover page (same template, now consistent)
+    // Add standardized cover page
     this.addStandardizedCoverPage(pdf, 'Executive');
 
     const margin = 15;
@@ -1867,13 +1894,13 @@ class ImageViewer {
     const imageWidth = usableWidth;
     const imageHeight = (pageHeight - 60) / 2; // Two images per page
 
-    for (let i = 0; i < this.filteredImages.length; i += 2) {
+    for (let i = 0; i < imagesToUse.length; i += 2) {
       pdf.addPage();
 
       // Update progress
       this.updateDownloadProgress(
         i + 1,
-        this.filteredImages.length,
+        imagesToUse.length,
         'Creating summary pages...'
       );
 
@@ -1881,15 +1908,15 @@ class ImageViewer {
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
       pdf.text(
-        `Images ${i + 1}-${Math.min(i + 2, this.filteredImages.length)}`,
+        `Images ${i + 1}-${Math.min(i + 2, imagesToUse.length)}`,
         margin,
         margin
       );
 
-      // First image with proper aspect ratio
-      const image1 = this.filteredImages[i];
-      const maxImageWidth = usableWidth * 0.9; // Use 90% of width
-      const maxImageHeight = (pageHeight - 80) / 2 - 30; // Split height between 2 images
+      // First image
+      const image1 = imagesToUse[i];
+      const maxImageWidth = usableWidth * 0.9;
+      const maxImageHeight = (pageHeight - 80) / 2 - 30;
 
       await this.addImageToPDF(
         pdf,
@@ -1901,10 +1928,10 @@ class ImageViewer {
         false
       );
 
-      // Second image (if exists) with proper aspect ratio
-      if (i + 1 < this.filteredImages.length) {
-        const image2 = this.filteredImages[i + 1];
-        const secondImageY = margin + 10 + maxImageHeight + 40; // Add gap between images
+      // Second image (if exists)
+      if (i + 1 < imagesToUse.length) {
+        const image2 = imagesToUse[i + 1];
+        const secondImageY = margin + 10 + maxImageHeight + 40;
 
         await this.addImageToPDF(
           pdf,
@@ -1923,6 +1950,7 @@ class ImageViewer {
       }
     }
 
+    console.log('✅ Summary PDF generation complete');
     return pdf;
   }
 
@@ -2499,5 +2527,98 @@ class ImageViewer {
     });
 
     console.log(`✅ Standardized cover page created for ${reportType} report`);
+  }
+
+  /**
+   * Prepare images for PDF generation based on grouping options
+   * @param {Object} options - Grouping options {groupByTopic, separatePages}
+   * @returns {Object} - Prepared image data with grouping information
+   */
+  prepareImagesForPDF(options) {
+    console.log(
+      `🔧 Preparing ${this.filteredImages.length} images for PDF:`,
+      options
+    );
+
+    // Use this.filteredImages as the source
+    const images = this.filteredImages;
+    const { groupByTopic, separatePages } = options;
+
+    let processedImages = [...images];
+    let topicBreaks = []; // Track where each topic starts for page breaks
+
+    if (groupByTopic) {
+      // Group images by topic GUID, maintaining topic order
+      const topicGroups = new Map();
+      const topicOrder = [];
+
+      // First pass: identify unique topics in order
+      images.forEach((image) => {
+        const topicGuid = image.topicGuid;
+        if (!topicGroups.has(topicGuid)) {
+          topicGroups.set(topicGuid, {
+            topicTitle: image.title,
+            topicGuid: topicGuid,
+            images: [],
+          });
+          topicOrder.push(topicGuid);
+        }
+        topicGroups.get(topicGuid).images.push(image);
+      });
+
+      // Second pass: flatten back to array grouped by topic
+      processedImages = [];
+      topicOrder.forEach((topicGuid, topicIndex) => {
+        const group = topicGroups.get(topicGuid);
+
+        // Mark where this topic starts (for page breaks)
+        topicBreaks.push({
+          startIndex: processedImages.length,
+          topicTitle: group.topicTitle,
+          topicGuid: topicGuid,
+          imageCount: group.images.length,
+        });
+
+        processedImages.push(...group.images);
+      });
+
+      console.log(
+        `📋 Grouped ${images.length} images into ${topicOrder.length} topics:`,
+        topicBreaks.map((t) => `${t.topicTitle} (${t.imageCount} images)`)
+      );
+    } else {
+      console.log(`📋 Using original image order (no grouping)`);
+    }
+
+    // Log first few images after processing for debugging
+    if (processedImages.length > 0) {
+      console.log('📋 First 5 images after processing:');
+      processedImages.slice(0, 5).forEach((img, idx) => {
+        console.log(`  ${idx + 1}. ${img.title} (Topic: ${img.topicGuid})`);
+      });
+    }
+
+    return {
+      images: processedImages,
+      groupByTopic: groupByTopic,
+      separatePages: separatePages,
+      topicBreaks: topicBreaks, // Information about where topics start
+      originalCount: images.length,
+    };
+  }
+
+  /**
+   * Cancel PDF dialog
+   */
+  cancelPDFDialog() {
+    const dialog = document.getElementById('pdf-layout-dialog');
+    if (dialog) {
+      dialog.remove();
+    }
+
+    if (window.pdfLayoutResolve) {
+      window.pdfLayoutResolve(null);
+      delete window.pdfLayoutResolve;
+    }
   }
 }

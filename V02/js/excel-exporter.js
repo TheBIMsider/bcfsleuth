@@ -150,7 +150,7 @@ class ExcelExporter {
         ) {
           // Comments header
           const commentHeaderRow = [
-            '',
+            'Comment #',
             'Comments',
             'Author',
             'Date',
@@ -173,7 +173,8 @@ class ExcelExporter {
             const commentRow = this.buildCommentRow(
               comment,
               selectedFields,
-              index + 1
+              index + 1,
+              topicNumber // Pass topic number for hierarchical numbering
             );
             data.push(commentRow);
           });
@@ -268,7 +269,7 @@ class ExcelExporter {
       viewpointIndex: '', // Empty for topic rows
     };
 
-    const row = [topicNumber];
+    const row = [topicNumber.toString()]; // Convert to string to prevent auto-formatting
     selectedFields.forEach((field) => {
       row.push(fieldMap[field] || '');
     });
@@ -276,7 +277,7 @@ class ExcelExporter {
     return row;
   }
 
-  static buildCommentRow(comment, selectedFields, commentNumber) {
+  static buildCommentRow(comment, selectedFields, commentNumber, topicNumber) {
     const fieldMap = {
       title: '', // Empty for comment rows
       description: '', // Empty for comment rows
@@ -309,7 +310,7 @@ class ExcelExporter {
       viewpointIndex: '', // Empty for comment rows
     };
 
-    const row = [''];
+    const row = [`${topicNumber}.${commentNumber}`]; // Already a string, should be left-aligned
     selectedFields.forEach((field) => {
       row.push(fieldMap[field] || '');
     });
@@ -440,6 +441,38 @@ class ExcelExporter {
             },
           };
         }
+      }
+    }
+
+    // Format main table headers
+    if (headerRowIndex >= 0) {
+      for (let c = 0; c < selectedFields.length + 1; c++) {
+        const headerCell =
+          worksheet[XLSX.utils.encode_cell({ r: headerRowIndex, c })];
+        if (headerCell) {
+          headerCell.s = {
+            font: { bold: true },
+            alignment: { horizontal: 'center' },
+            fill: { fgColor: { rgb: 'E6E6FA' } }, // Light purple background
+            border: {
+              top: { style: 'thin', color: { rgb: '000000' } },
+              bottom: { style: 'thin', color: { rgb: '000000' } },
+              left: { style: 'thin', color: { rgb: '000000' } },
+              right: { style: 'thin', color: { rgb: '000000' } },
+            },
+          };
+        }
+      }
+    }
+
+    // ADDED: Format Topic # column (column A) to be left-aligned
+    for (let r = headerRowIndex + 1; r < rowCount; r++) {
+      const topicNumberCell = worksheet[XLSX.utils.encode_cell({ r, c: 0 })];
+      if (topicNumberCell && topicNumberCell.v) {
+        topicNumberCell.s = {
+          alignment: { horizontal: 'left' }, // Left-align topic numbers
+          font: { bold: false },
+        };
       }
     }
 

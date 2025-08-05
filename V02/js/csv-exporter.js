@@ -13,6 +13,8 @@ class CSVExporter {
     // Collect all rows (topics + their comments)
     const allRows = [];
 
+    let topicNumber = 1; // Add topic counter
+
     bcfDataArray.forEach((bcfData) => {
       console.log(
         'Processing file:',
@@ -33,6 +35,7 @@ class CSVExporter {
         // Add main topic row
         const topicRow = {
           rowType: 'topic',
+          topicNumber: topicNumber, // Add topic number
           sourceFile: bcfData.filename,
           projectName: bcfData.project.name || 'Unknown',
           bcfVersion: bcfData.version || 'Unknown',
@@ -51,6 +54,7 @@ class CSVExporter {
           sortedComments.forEach((comment, index) => {
             const commentRow = {
               rowType: 'comment',
+              topicNumber: `${topicNumber}.${index + 1}`, // Add comment numbering
               sourceFile: bcfData.filename,
               topicGuid: topic.guid,
               commentNumber: index + 1,
@@ -63,6 +67,8 @@ class CSVExporter {
             allRows.push(commentRow);
           });
         }
+
+        topicNumber++; // Increment topic counter after each topic
       });
     });
 
@@ -152,8 +158,8 @@ class CSVExporter {
       viewpointIndex: 'Viewpoint Index',
     };
 
-    // Always include Row Type as first column
-    const headers = ['Row Type'];
+    // Always include Row Type and Topic # as first columns
+    const headers = ['Row Type', 'Topic #'];
 
     selectedFields.forEach((field) => {
       if (fieldHeaderMap[field]) {
@@ -205,8 +211,11 @@ class CSVExporter {
       viewpointIndex: row.viewpointIndex || '',
     };
 
-    // Start with row type
-    const csvRow = [row.rowType === 'topic' ? 'Topic' : 'Comment'];
+    // Start with row type and topic number
+    const csvRow = [
+      row.rowType === 'topic' ? 'Topic' : 'Comment',
+      row.topicNumber || '', // Add topic number as second column
+    ];
 
     // Add selected fields in order
     selectedFields.forEach((field) => {

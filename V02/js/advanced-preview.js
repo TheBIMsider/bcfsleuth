@@ -117,27 +117,33 @@ class AdvancedPreview {
   // Flatten BCF data into table rows
   flattenBCFData(parsedData) {
     const tableData = [];
+    let topicNumber = 1; // ADDED: Counter for topic numbers
 
     parsedData.forEach((bcfFile) => {
       bcfFile.topics.forEach((topic) => {
         // Add topic row
         const topicRow = {
-          type: 'Topic',
+          type: topicNumber, // CHANGED: Use number instead of 'Topic'
           rowType: 'topic',
           sourceFile: bcfFile.filename,
           projectName: bcfFile.project.name || 'Unknown',
           bcfVersion: bcfFile.version || 'Unknown',
           topicGuid: topic.guid,
           title: topic.title || 'Untitled',
+          description: topic.description || '', // ADDED: Missing description
           status: topic.topicStatus || '',
+          topicType: topic.topicType || '', // ADDED: Missing topic type
           priority: topic.priority || '',
+          stage: topic.stage || '', // ADDED: Missing stage
           assignee: topic.assignedTo || '',
           author: topic.creationAuthor || '',
           created: this.formatDate(topic.creationDate),
+          modified: this.formatDate(topic.modifiedDate), // ADDED: Missing modified date
+          modifiedAuthor: topic.modifiedAuthor || '', // ADDED: Missing modified author
           due: this.formatDate(topic.dueDate),
           comments: topic.comments ? topic.comments.length : 0,
           isOverdue: this.isOverdue(topic.dueDate),
-          hasComments: topic.comments && topic.comments.length > 0, // ADD THIS
+          hasComments: topic.comments && topic.comments.length > 0,
           // Store original topic for reference
           _originalTopic: topic,
         };
@@ -154,11 +160,11 @@ class AdvancedPreview {
 
           sortedComments.forEach((comment, index) => {
             const commentRow = {
-              type: 'Comment',
+              type: `${topicNumber}.${index + 1}`,
               rowType: 'comment',
               sourceFile: bcfFile.filename,
               topicGuid: topic.guid,
-              parentTopicGuid: topic.guid, // ADD THIS - for easier filtering
+              parentTopicGuid: topic.guid,
               parentTitle: topic.title,
               title: `Comment ${index + 1}`,
               status: comment.status || '',
@@ -166,9 +172,19 @@ class AdvancedPreview {
               assignee: '',
               author: comment.author || '',
               created: this.formatDate(comment.date),
+              modified: '', // Empty for comments
+              modifiedAuthor: '', // Empty for comments
               due: '',
               comments: '',
               content: comment.comment || '',
+              // ADDED: Comment-specific fields with debug
+              commentNumber: index + 1,
+              commentDate: this.formatDate(comment.date),
+              commentAuthor: comment.author || 'No Author',
+              commentText: comment.comment || 'No Comment Text',
+              commentStatus: comment.status || '',
+              // DEBUG: Log comment data
+              _debug_comment: comment, // Temporary debug field
               // Store original comment for reference
               _originalComment: comment,
             };
@@ -176,6 +192,8 @@ class AdvancedPreview {
             tableData.push(commentRow);
           });
         }
+
+        topicNumber++; // ADDED: Increment counter after each topic
       });
     });
 
@@ -347,7 +365,7 @@ class AdvancedPreview {
       title: 'title',
       description: 'description',
       status: 'status',
-      type: 'type',
+      type: 'topicType', // FIXED: Map to correct field
       priority: 'priority',
       stage: 'stage',
       labels: 'labels',
@@ -366,7 +384,7 @@ class AdvancedPreview {
       commentNumber: 'commentNumber',
       commentDate: 'commentDate',
       commentAuthor: 'commentAuthor',
-      commentText: 'content',
+      commentText: 'commentText', // FIXED: Was 'content', now 'commentText'
       commentStatus: 'commentStatus',
     };
     return mapping[field] || field;
@@ -689,6 +707,12 @@ class AdvancedPreview {
               .replace(/\s+/g, '-')}">${value}</span>`
           : '';
 
+      case 'type':
+      case 'topicType':
+        return value
+          ? `<span class="priority-badge priority-${value.toLowerCase()}">${value}</span>`
+          : '';
+
       case 'priority':
         return value
           ? `<span class="priority-badge priority-${value.toLowerCase()}">${value}</span>`
@@ -984,6 +1008,17 @@ class AdvancedPreview {
     let needsTooltip = false;
     let fullText = '';
 
+    // DEBUG: Log comment fields to help troubleshoot
+    if (originalField.includes('comment') && row.rowType === 'comment') {
+      console.log(`Comment field debug:`, {
+        originalField: originalField,
+        columnField: columnField,
+        rowType: row.rowType,
+        value: value,
+        rawRowData: row,
+      });
+    }
+
     // Format based on field type
     switch (originalField) {
       case 'status':
@@ -1030,6 +1065,74 @@ class AdvancedPreview {
           needsTooltip = true;
         } else {
           cssClass = 'cell-comment';
+        }
+        break;
+
+      case 'commentText':
+        if (value && value.length > 50) {
+          cssClass = 'cell-comment expandable';
+          fullText = value;
+          value = this.truncateText(value, 50);
+          needsTooltip = true;
+        } else {
+          cssClass = 'cell-comment';
+        }
+        break;
+
+      case 'commentNumber':
+        // Only show for comment rows, empty for topics
+        if (row.rowType === 'comment') {
+          value = row.commentNumber || '';
+        } else {
+          value = ''; // Empty for topic rows
+        }
+        break;
+
+      case 'commentDate':
+        // Only show for comment rows
+        if (row.rowType === 'comment') {
+          cssClass = 'cell-date';
+          value = row.commentDate || '';
+        } else {
+          value = ''; // Empty for topic rows
+        }
+        break;
+
+      case 'commentAuthor':
+        // Only show for comment rows
+        if (row.rowType === 'comment') {
+          cssClass = 'cell-author';
+          value = row.commentAuthor || '';
+        } else {
+          value = ''; // Empty for topic rows
+        }
+        break;
+
+      case 'commentText':
+        // Only show for comment rows
+        if (row.rowType === 'comment') {
+          value = row.commentText || '';
+          if (value && value.length > 50) {
+            cssClass = 'cell-comment expandable';
+            fullText = value;
+            value = this.truncateText(value, 50);
+            needsTooltip = true;
+          } else {
+            cssClass = 'cell-comment';
+          }
+        } else {
+          value = ''; // Empty for topic rows
+        }
+        break;
+
+      case 'modifiedDate':
+      case 'modifiedAuthor':
+        // Only show for topic rows
+        if (row.rowType === 'topic') {
+          cssClass = field === 'modifiedAuthor' ? 'cell-author' : 'cell-date';
+          value = value || '';
+        } else {
+          value = '';
         }
         break;
 
