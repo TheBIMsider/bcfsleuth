@@ -398,6 +398,12 @@
                 >
                   📄 Generate PDF Report
                 </button>
+                <button
+                  class="btn btn-secondary"
+                  onclick="window.bcfApp.imageViewer.generateWordReport()"
+                >
+                  📝 Generate Word Report
+                </button>
               </div>
             </div>
 
@@ -866,19 +872,85 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.1/jspdf.umd.min.js"></script>
-    <script>
-      // Debug and setup jsPDF 3.0.1
-      console.log('jsPDF 3.0.1 script loaded');
-      console.log('typeof window.jspdf:', typeof window.jspdf);
-      console.log('jsPDF object:', window.jspdf);
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.1/jspdf.umd.min.js"></script>
 
-      // jsPDF 3.0.1 uses window.jspdf.jsPDF
-      if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) {
-        window.jsPDF = window.jspdf.jsPDF;
-        console.log('jsPDF 3.0.1 setup complete');
-      } else {
-        console.error('jsPDF 3.0.1 failed to load');
+    <!-- Try multiple DOCX sources with fallback -->
+    <script>
+      // Function to load DOCX library with fallback
+      async function loadDocxLibrary() {
+        const sources = [
+          'https://unpkg.com/docx@7.8.2/build/index.js', // Older stable version
+          'https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js',
+          'https://unpkg.com/docx@9.5.1/build/index.js',
+          'https://cdn.jsdelivr.net/npm/docx@9.5.1/build/index.js',
+        ];
+
+        for (const src of sources) {
+          try {
+            console.log(`Trying to load DOCX from: ${src}`);
+
+            const script = document.createElement('script');
+            script.src = src;
+
+            const loadPromise = new Promise((resolve, reject) => {
+              script.onload = () => {
+                setTimeout(() => {
+                  if (typeof window.docx !== 'undefined') {
+                    console.log(`✅ DOCX loaded successfully from: ${src}`);
+                    console.log(
+                      'Available components:',
+                      Object.keys(window.docx)
+                    );
+                    resolve(true);
+                  } else {
+                    reject(
+                      new Error('Library loaded but window.docx not available')
+                    );
+                  }
+                }, 1000); // Wait 1 second for library to initialize
+              };
+
+              script.onerror = () => {
+                reject(new Error(`Failed to load from ${src}`));
+              };
+
+              // Timeout after 10 seconds
+              setTimeout(() => {
+                reject(new Error(`Timeout loading from ${src}`));
+              }, 10000);
+            });
+
+            document.head.appendChild(script);
+            await loadPromise;
+
+            // If we get here, it worked
+            return true;
+          } catch (error) {
+            console.warn(`Failed to load DOCX from ${src}:`, error.message);
+            continue;
+          }
+        }
+
+        console.error('❌ Failed to load DOCX from all sources');
+        return false;
       }
+
+      // Load the library when page is ready
+      document.addEventListener('DOMContentLoaded', async () => {
+        console.log('🔄 Starting DOCX library loading...');
+        const success = await loadDocxLibrary();
+
+        if (success) {
+          console.log('🎉 DOCX library is ready!');
+          window.docxReady = true;
+        } else {
+          console.error('💥 DOCX library failed to load from all sources');
+          window.docxReady = false;
+        }
+      });
     </script>
 
     <!-- Application Scripts -->
