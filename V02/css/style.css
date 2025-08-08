@@ -4339,6 +4339,33 @@ header .container {
   min-height: 0; /* Important for flex growth */
 }
 
+.landing-logo {
+  text-align: center;
+  margin: 40px 0 20px 0;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.landing-logo:hover {
+  opacity: 1;
+}
+
+.landing-logo img {
+  max-width: 200px;
+  height: auto;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+/* Responsive sizing */
+@media (max-width: 768px) {
+  .landing-logo img {
+    max-width: 150px;
+  }
+
+  .landing-logo {
+    margin: 30px 0 15px 0;
+  }
+}
 /* 
 ==================================================
   END OF STYLESHEET
