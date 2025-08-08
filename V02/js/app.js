@@ -6,6 +6,7 @@ class BCFSleuthApp {
     this.selectedFields = new Set();
     this.advancedPreview = null;
     this.imageViewer = null; // Add Image Viewer reference
+    this.analyticsDashboard = null; // Add Analytics Dashboard reference
     this.init();
   }
 
@@ -16,64 +17,138 @@ class BCFSleuthApp {
     this.advancedPreview = new AdvancedPreview(this);
     this.configManager = new ConfigurationManager(this);
     this.imageViewer = new ImageViewer(this); // Initialize Image Viewer
+    this.analyticsDashboard = new AnalyticsDashboard(this); // Initialize Analytics Dashboard
     window.bcfApp = this; // Make globally accessible for onclick handlers
   }
 
   setupEventListeners() {
-    // File input and drop zone
+    console.log('🔧 Setting up event listeners...');
+
+    // File input and drop zone - with safety checks
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
 
-    // Drag and drop events
-    dropZone.addEventListener('dragover', this.handleDragOver.bind(this));
-    dropZone.addEventListener('dragleave', this.handleDragLeave.bind(this));
-    dropZone.addEventListener('drop', this.handleDrop.bind(this));
-    dropZone.addEventListener('click', () => fileInput.click());
+    if (dropZone && fileInput) {
+      console.log('✅ Drop zone and file input found');
 
-    // File input change
-    fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+      // Drag and drop events
+      dropZone.addEventListener('dragover', this.handleDragOver.bind(this));
+      dropZone.addEventListener('dragleave', this.handleDragLeave.bind(this));
+      dropZone.addEventListener('drop', this.handleDrop.bind(this));
+      dropZone.addEventListener('click', () => fileInput.click());
 
-    // Process button
-    document
-      .getElementById('process-btn')
-      .addEventListener('click', this.processFiles.bind(this));
+      // File input change
+      fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+    } else {
+      console.warn('⚠️ Drop zone or file input not found');
+    }
 
-    // Export buttons
-    document
-      .getElementById('export-csv')
-      .addEventListener('click', this.exportCSV.bind(this));
-    document
-      .getElementById('export-excel')
-      .addEventListener('click', this.exportExcel.bind(this));
+    // Process button - with safety check
+    const processBtn = document.getElementById('process-btn');
+    if (processBtn) {
+      processBtn.addEventListener('click', this.processFiles.bind(this));
+      console.log('✅ Process button listener added');
+    } else {
+      console.warn('⚠️ Process button not found');
+    }
 
-    // Field selection controls
-    document
-      .getElementById('select-all-fields')
-      .addEventListener('click', this.selectAllFields.bind(this));
-    document
-      .getElementById('clear-all-fields')
-      .addEventListener('click', this.clearAllFields.bind(this));
-    document
-      .getElementById('select-essential')
-      .addEventListener('click', this.selectEssentialFields.bind(this));
+    // Export buttons - with safety checks
+    const exportCsvBtn = document.getElementById('export-csv');
+    const exportExcelBtn = document.getElementById('export-excel');
 
-    // Field checkboxes
-    document
-      .querySelectorAll('.field-item input[type="checkbox"]')
-      .forEach((checkbox) => {
+    if (exportCsvBtn) {
+      exportCsvBtn.addEventListener('click', this.exportCSV.bind(this));
+      console.log('✅ Export CSV button listener added');
+    } else {
+      console.warn('⚠️ Export CSV button not found');
+    }
+
+    if (exportExcelBtn) {
+      exportExcelBtn.addEventListener('click', this.exportExcel.bind(this));
+      console.log('✅ Export Excel button listener added');
+    } else {
+      console.warn('⚠️ Export Excel button not found');
+    }
+
+    // Field selection controls - with safety checks
+    const selectAllBtn = document.getElementById('select-all-fields');
+    const clearAllBtn = document.getElementById('clear-all-fields');
+    const selectEssentialBtn = document.getElementById('select-essential');
+
+    if (selectAllBtn) {
+      selectAllBtn.addEventListener('click', this.selectAllFields.bind(this));
+      console.log('✅ Select all fields button listener added');
+    }
+
+    if (clearAllBtn) {
+      clearAllBtn.addEventListener('click', this.clearAllFields.bind(this));
+      console.log('✅ Clear all fields button listener added');
+    }
+
+    if (selectEssentialBtn) {
+      selectEssentialBtn.addEventListener(
+        'click',
+        this.selectEssentialFields.bind(this)
+      );
+      console.log('✅ Select essential fields button listener added');
+    }
+
+    // Field checkboxes - with safety check
+    const fieldCheckboxes = document.querySelectorAll(
+      '.field-item input[type="checkbox"]'
+    );
+    console.log(`📋 Found ${fieldCheckboxes.length} field checkboxes`);
+
+    fieldCheckboxes.forEach((checkbox) => {
+      if (checkbox) {
         checkbox.addEventListener(
           'change',
           this.updateFieldSelection.bind(this)
         );
-      });
-
-    // Tab switching event listeners (enhanced for Image Viewer)
-    document.querySelectorAll('.tab-button').forEach((button) => {
-      button.addEventListener('click', (e) => {
-        const tabName = e.target.dataset.tab;
-        this.switchToTab(tabName);
-      });
+      }
     });
+
+    // Tab switching event listeners - enhanced with extensive safety checks
+    const tabButtons = document.querySelectorAll('.preview-tabs .tab-button');
+    console.log(`🔍 Found ${tabButtons.length} tab buttons`);
+
+    if (tabButtons.length === 0) {
+      // Try alternative selector
+      const altTabButtons = document.querySelectorAll('.tab-button');
+      console.log(
+        `🔍 Alternative search found ${altTabButtons.length} tab buttons`
+      );
+
+      altTabButtons.forEach((button, index) => {
+        if (button) {
+          console.log(`📋 Tab button ${index}:`, button.dataset.tab);
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tabName = e.target.dataset.tab;
+            console.log('🔄 Tab clicked:', tabName);
+            if (tabName && this.switchToTab) {
+              this.switchToTab(tabName);
+            }
+          });
+        }
+      });
+    } else {
+      tabButtons.forEach((button, index) => {
+        if (button) {
+          console.log(`📋 Tab button ${index}:`, button.dataset.tab);
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tabName = e.target.dataset.tab;
+            console.log('🔄 Tab clicked:', tabName);
+            if (tabName && this.switchToTab) {
+              this.switchToTab(tabName);
+            }
+          });
+        }
+      });
+    }
+
+    console.log('✅ Event listeners setup complete');
   }
 
   initializeFieldSelection() {
@@ -112,7 +187,7 @@ class BCFSleuthApp {
       fieldCountElement.textContent = `${selected} of ${total} fields selected`;
     }
 
-    // Enable/disable export buttons based on selection
+    // Enable/disable export buttons based on selection with safety checks
     const hasFields = selected > 0;
     const csvButton = document.getElementById('export-csv');
     const excelButton = document.getElementById('export-excel');
@@ -1051,7 +1126,7 @@ class BCFSleuthApp {
     }
   }
 
-  displayResults() {
+  async displayResults() {
     if (this.parsedData.length === 0) return;
 
     // Calculate summary stats
@@ -1065,27 +1140,45 @@ class BCFSleuthApp {
       if (data.version) bcfVersions.add(data.version);
     });
 
-    // Update summary info
-    document.getElementById('project-name').textContent =
-      projectNames.size === 1
-        ? Array.from(projectNames)[0]
-        : `${projectNames.size} projects`;
-    document.getElementById('bcf-version').textContent =
-      bcfVersions.size === 1
-        ? Array.from(bcfVersions)[0]
-        : Array.from(bcfVersions).join(', ');
-    document.getElementById('topic-count').textContent = totalTopics;
-    document.getElementById('files-processed').textContent =
-      this.selectedFiles.length;
+    // Update summary info with safety checks
+    const projectNameElement = document.getElementById('project-name');
+    const bcfVersionElement = document.getElementById('bcf-version');
+    const topicCountElement = document.getElementById('topic-count');
+    const filesProcessedElement = document.getElementById('files-processed');
+
+    if (projectNameElement) {
+      projectNameElement.textContent =
+        projectNames.size === 1
+          ? Array.from(projectNames)[0]
+          : `${projectNames.size} projects`;
+    }
+
+    if (bcfVersionElement) {
+      bcfVersionElement.textContent =
+        bcfVersions.size === 1
+          ? Array.from(bcfVersions)[0]
+          : Array.from(bcfVersions).join(', ');
+    }
+
+    if (topicCountElement) {
+      topicCountElement.textContent = totalTopics;
+    }
+
+    if (filesProcessedElement) {
+      filesProcessedElement.textContent = this.selectedFiles.length;
+    }
 
     // Update field selection UI with discovered custom data
     this.updateFieldSelectionWithCustomData();
 
-    // Enable export buttons (if fields are selected)
+    // Enable export buttons (if fields are selected) with safety checks
     this.updateFieldCount();
 
-    // Update button text
-    document.getElementById('export-excel').textContent = 'Download Excel';
+    // Update button text with safety check
+    const exportExcelButton = document.getElementById('export-excel');
+    if (exportExcelButton) {
+      exportExcelButton.textContent = 'Download Excel';
+    }
 
     // Display preview data
     this.displayPreviewTable();
@@ -1102,7 +1195,106 @@ class BCFSleuthApp {
       this.imageViewer.parsedData = this.parsedData;
     }
 
+    // Initialize Analytics Dashboard with parsed data
+    if (this.analyticsDashboard) {
+      this.analyticsDashboard.initialize();
+      await this.analyticsDashboard.updateData(this.parsedData);
+    }
+
     this.showSection('results-section');
+
+    // Attach export button listeners now that the UI is built
+    this.attachExportListeners();
+  }
+
+  /**
+   * Attach export button event listeners
+   * Called after results are displayed to ensure buttons exist
+   */
+  attachExportListeners() {
+    console.log('🔧 Attaching export listeners...');
+
+    // Find the export controls container
+    const exportControls = document.getElementById('main-export-controls');
+    if (!exportControls) {
+      console.error('❌ Export controls container not found');
+      return;
+    }
+
+    // Check if buttons already exist
+    let exportCsvBtn = document.getElementById('export-csv');
+    let exportExcelBtn = document.getElementById('export-excel');
+
+    if (!exportCsvBtn || !exportExcelBtn) {
+      console.log('🔧 Export buttons not found, creating them...');
+
+      // Create export buttons container if it doesn't exist
+      let exportButtonsContainer =
+        exportControls.querySelector('.export-buttons');
+      if (!exportButtonsContainer) {
+        exportButtonsContainer = document.createElement('div');
+        exportButtonsContainer.className = 'export-buttons';
+        exportButtonsContainer.style.cssText = `
+          margin-top: 1rem;
+          padding: 1rem;
+          border-top: 1px solid #e5e7eb;
+          display: flex;
+          gap: 1rem;
+          justify-content: flex-start;
+        `;
+        exportControls.appendChild(exportButtonsContainer);
+      }
+
+      // Create CSV button if it doesn't exist
+      if (!exportCsvBtn) {
+        exportCsvBtn = document.createElement('button');
+        exportCsvBtn.id = 'export-csv';
+        exportCsvBtn.className = 'btn btn-secondary';
+        exportCsvBtn.textContent = 'Download CSV';
+        exportCsvBtn.style.cssText = `
+          padding: 0.5rem 1rem;
+          background-color: white;
+          color: #374151;
+          border: 1px solid #d1d5db;
+          border-radius: 0.375rem;
+          cursor: pointer;
+        `;
+        exportButtonsContainer.appendChild(exportCsvBtn);
+      }
+
+      // Create Excel button if it doesn't exist
+      if (!exportExcelBtn) {
+        exportExcelBtn = document.createElement('button');
+        exportExcelBtn.id = 'export-excel';
+        exportExcelBtn.className = 'btn btn-primary';
+        exportExcelBtn.textContent = 'Download Excel';
+        exportExcelBtn.disabled = false; // Enable by default after processing
+        exportExcelBtn.style.cssText = `
+          padding: 0.5rem 1rem;
+          background-color: #2563eb;
+          color: white;
+          border: none;
+          border-radius: 0.375rem;
+          cursor: pointer;
+        `;
+        exportButtonsContainer.appendChild(exportExcelBtn);
+      }
+    }
+
+    // Now attach event listeners
+    if (exportCsvBtn) {
+      exportCsvBtn.addEventListener('click', this.exportCSV.bind(this));
+      console.log('✅ Export CSV button listener attached');
+    } else {
+      console.error('❌ Export CSV button still not found');
+    }
+
+    if (exportExcelBtn) {
+      exportExcelBtn.addEventListener('click', this.exportExcel.bind(this));
+      console.log('✅ Export Excel button listener attached');
+    } else {
+      console.error('❌ Export Excel button still not found');
+    }
   }
 
   displayPreviewTable() {
@@ -1436,6 +1628,11 @@ class BCFSleuthApp {
       this.initializeImageViewer().catch((error) => {
         console.error('Error initializing Image Viewer:', error);
       });
+    } else if (tabName === 'analytics') {
+      // Initialize analytics dashboard when tab is opened
+      this.initializeAnalyticsDashboard().catch((error) => {
+        console.error('Error initializing Analytics Dashboard:', error);
+      });
     } else if (tabName === 'configuration' && this.configManager) {
       this.configManager.refreshConfigurationDisplay();
     }
@@ -1470,6 +1667,89 @@ class BCFSleuthApp {
       if (imageCardsContainer) imageCardsContainer.style.display = 'none';
       if (imagePagination) imagePagination.style.display = 'none';
     }
+  }
+
+  /**
+   * Initialize the Analytics Dashboard tab
+   * This handles real-time chart generation when the tab is accessed
+   */
+  async initializeAnalyticsDashboard() {
+    console.log('📊 Initializing Analytics Dashboard...');
+
+    if (
+      this.parsedData &&
+      this.parsedData.length > 0 &&
+      this.analyticsDashboard
+    ) {
+      // BCF files are loaded - update analytics with current data
+      this.analyticsDashboard.initialize();
+      await this.analyticsDashboard.updateData(this.parsedData);
+    } else if (this.analyticsDashboard) {
+      // No BCF files loaded yet - show the no data message
+      this.analyticsDashboard.initialize();
+      this.analyticsDashboard.showNoDataMessage();
+    } else {
+      console.warn('Analytics Dashboard not available');
+    }
+  }
+
+  /**
+   * Enhanced tab switching with export controls visibility management
+   */
+  switchToTab(tabName) {
+    console.log(`Switching to tab: ${tabName}`); // Debug log
+
+    // Update tab buttons
+    document.querySelectorAll('.preview-tabs .tab-button').forEach((button) => {
+      button.classList.remove('active');
+    });
+
+    const activeButton = document.querySelector(
+      `.preview-tabs [data-tab="${tabName}"]`
+    );
+    if (activeButton) {
+      activeButton.classList.add('active');
+    }
+
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach((content) => {
+      content.classList.remove('active');
+    });
+
+    const activeContent = document.getElementById(`${tabName}-tab`);
+    if (activeContent) {
+      activeContent.classList.add('active');
+    }
+
+    // Show/hide export controls based on tab
+    const exportControls = document.getElementById('main-export-controls');
+    if (exportControls) {
+      if (tabName === 'simple' || tabName === 'advanced') {
+        exportControls.style.display = 'block';
+      } else {
+        exportControls.style.display = 'none';
+      }
+    }
+
+    // Handle tab-specific initialization
+    if (tabName === 'advanced' && this.advancedPreview) {
+      this.advancedPreview.buildAdvancedTableHeaders();
+      this.advancedPreview.renderAdvancedTable();
+    } else if (tabName === 'image-viewer') {
+      // Initialize image viewer when tab is first opened
+      this.initializeImageViewer().catch((error) => {
+        console.error('Error initializing Image Viewer:', error);
+      });
+    } else if (tabName === 'analytics') {
+      // Initialize analytics dashboard when tab is opened
+      this.initializeAnalyticsDashboard().catch((error) => {
+        console.error('Error initializing Analytics Dashboard:', error);
+      });
+    } else if (tabName === 'configuration' && this.configManager) {
+      this.configManager.refreshConfigurationDisplay();
+    }
+
+    console.log(`Successfully switched to ${tabName} tab`);
   }
 
   /**

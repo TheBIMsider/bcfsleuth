@@ -8,7 +8,11 @@ class ImageViewer {
     this.pageSize = 12; // Images per page
     this.filters = {
       project: '',
+      title: '',
       status: '',
+      priority: '',
+      author: '',
+      created: '',
       search: '',
     };
     this.sortBy = 'date'; // date, title, status, author
@@ -35,26 +39,29 @@ class ImageViewer {
    * Set up event listeners for controls and interactions
    */
   setupEventListeners() {
-    // Filter controls
-    const projectFilter = document.getElementById('image-project-filter');
-    const statusFilter = document.getElementById('image-status-filter');
+    // Filter controls - Enhanced with all filter types
+    const filterControls = {
+      'image-project-filter': 'project',
+      'image-title-filter': 'title',
+      'image-status-filter': 'status',
+      'image-priority-filter': 'priority',
+      'image-author-filter': 'author',
+      'image-created-filter': 'created',
+    };
+
+    // Set up all dropdown filters
+    Object.entries(filterControls).forEach(([elementId, filterKey]) => {
+      const element = document.getElementById(elementId);
+      if (element) {
+        element.addEventListener('change', (e) => {
+          this.filters[filterKey] = e.target.value;
+          this.applyFilters();
+        });
+      }
+    });
+
+    // Search input with debounce
     const searchInput = document.getElementById('image-search');
-    const sortSelect = document.getElementById('image-sort');
-
-    if (projectFilter) {
-      projectFilter.addEventListener('change', (e) => {
-        this.filters.project = e.target.value;
-        this.applyFilters();
-      });
-    }
-
-    if (statusFilter) {
-      statusFilter.addEventListener('change', (e) => {
-        this.filters.status = e.target.value;
-        this.applyFilters();
-      });
-    }
-
     if (searchInput) {
       let searchTimeout;
       searchInput.addEventListener('input', (e) => {
@@ -62,15 +69,16 @@ class ImageViewer {
         searchTimeout = setTimeout(() => {
           this.filters.search = e.target.value;
           this.applyFilters();
-        }, 300); // 300ms debounce
+        }, 300);
       });
     }
 
+    // Sort dropdown
+    const sortSelect = document.getElementById('image-sort');
     if (sortSelect) {
       sortSelect.addEventListener('change', (e) => {
         this.sortBy = e.target.value;
         this.sortImages();
-        this.renderImages();
       });
     }
 
@@ -363,19 +371,46 @@ class ImageViewer {
    * Populate filter dropdown options based on actual data
    */
   populateFilterOptions() {
-    const projects = new Set();
-    const statuses = new Set();
+    // Collect all unique values for each filter type
+    const filterData = {
+      projects: new Set(),
+      titles: new Set(),
+      statuses: new Set(),
+      priorities: new Set(),
+      authors: new Set(),
+      createdDates: new Set(),
+    };
 
     this.allImages.forEach((image) => {
-      projects.add(image.projectName);
-      statuses.add(image.status);
+      filterData.projects.add(image.projectName);
+      filterData.titles.add(image.title);
+      filterData.statuses.add(image.status);
+      filterData.priorities.add(image.priority);
+      filterData.authors.add(image.author);
+
+      // Extract creation date for filtering (month/year format)
+      if (image.creationDate) {
+        const date = new Date(image.creationDate);
+        const monthYear = date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+        });
+        filterData.createdDates.add(monthYear);
+      }
     });
 
     // Update project filter
     this.updateSelectOptions(
       'image-project-filter',
-      Array.from(projects).sort()
+      Array.from(filterData.projects).sort()
     );
+
+    // Update title filter (limit to reasonable number, sorted alphabetically)
+    const sortedTitles = Array.from(filterData.titles)
+      .filter((title) => title && title.trim())
+      .sort()
+      .slice(0, 50); // Limit to first 50 titles to prevent overwhelming dropdown
+    this.updateSelectOptions('image-title-filter', sortedTitles);
 
     // Update status filter with logical order
     const statusOrder = [
@@ -385,7 +420,7 @@ class ImageViewer {
       'Closed',
       'Rejected',
     ];
-    const sortedStatuses = Array.from(statuses).sort((a, b) => {
+    const sortedStatuses = Array.from(filterData.statuses).sort((a, b) => {
       const aIndex = statusOrder.indexOf(a);
       const bIndex = statusOrder.indexOf(b);
       if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
@@ -394,21 +429,54 @@ class ImageViewer {
       return aIndex - bIndex;
     });
     this.updateSelectOptions('image-status-filter', sortedStatuses);
-  }
 
+    // Update priority filter with logical order
+    const priorityOrder = ['Low', 'Normal', 'Medium', 'High', 'Critical'];
+    const sortedPriorities = Array.from(filterData.priorities)
+      .filter((priority) => priority && priority.trim())
+      .sort((a, b) => {
+        const aIndex = priorityOrder.indexOf(a);
+        const bIndex = priorityOrder.indexOf(b);
+        if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
+        if (aIndex === -1) return 1;
+        if (bIndex === -1) return -1;
+        return aIndex - bIndex;
+      });
+    this.updateSelectOptions('image-priority-filter', sortedPriorities);
+
+    // Update author filter
+    this.updateSelectOptions(
+      'image-author-filter',
+      Array.from(filterData.authors)
+        .filter((author) => author && author.trim())
+        .sort()
+    );
+
+    // Update created date filter
+    const sortedDates = Array.from(filterData.createdDates)
+      .sort((a, b) => {
+        return new Date(a) - new Date(b);
+      })
+      .reverse(); // Most recent first
+    this.updateSelectOptions('image-created-filter', sortedDates, true); // true = append to existing options
+  }
   /**
    * Update select dropdown options
    */
-  updateSelectOptions(selectId, options) {
+  updateSelectOptions(selectId, options, appendToExisting = false) {
     const select = document.getElementById(selectId);
     if (!select) return;
 
     const currentValue = select.value;
-    const firstOption = select.querySelector('option');
 
-    select.innerHTML = '';
-    select.appendChild(firstOption); // Re-add "All" option
+    if (!appendToExisting) {
+      // Clear and rebuild (default behavior)
+      const firstOption = select.querySelector('option');
+      select.innerHTML = '';
+      select.appendChild(firstOption); // Re-add "All" option
+    }
 
+    // Add new options
     options.forEach((option) => {
       const optionElement = document.createElement('option');
       optionElement.value = option;
@@ -417,7 +485,7 @@ class ImageViewer {
     });
 
     // Restore selection if it still exists
-    if (options.includes(currentValue)) {
+    if (currentValue && (options.includes(currentValue) || !appendToExisting)) {
       select.value = currentValue;
     }
   }
@@ -450,8 +518,31 @@ class ImageViewer {
         return false;
       }
 
+      // Title filter
+      if (this.filters.title && image.title !== this.filters.title) {
+        return false;
+      }
+
       // Status filter
       if (this.filters.status && image.status !== this.filters.status) {
+        return false;
+      }
+
+      // Priority filter
+      if (this.filters.priority && image.priority !== this.filters.priority) {
+        return false;
+      }
+
+      // Author filter
+      if (this.filters.author && image.author !== this.filters.author) {
+        return false;
+      }
+
+      // Created date filter
+      if (
+        this.filters.created &&
+        !this.matchesDateFilter(image, this.filters.created)
+      ) {
         return false;
       }
 
@@ -479,6 +570,52 @@ class ImageViewer {
     this.sortImages();
     this.renderImages();
     this.updatePaginationInfo();
+  }
+
+  /**
+   * Check if image matches the selected date filter
+   * @param {Object} image - Image data object
+   * @param {string} filterValue - Selected filter value
+   * @returns {boolean} - True if image matches filter
+   */
+  matchesDateFilter(image, filterValue) {
+    if (!image.creationDate) return false;
+
+    const imageDate = new Date(image.creationDate);
+    const today = new Date();
+
+    switch (filterValue) {
+      case 'today':
+        return imageDate.toDateString() === today.toDateString();
+
+      case 'this-week':
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+        weekStart.setHours(0, 0, 0, 0);
+        return imageDate >= weekStart && imageDate <= today;
+
+      case 'this-month':
+        return (
+          imageDate.getMonth() === today.getMonth() &&
+          imageDate.getFullYear() === today.getFullYear()
+        );
+
+      case 'last-30-days':
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        return imageDate >= thirtyDaysAgo && imageDate <= today;
+
+      default:
+        // Check if it's a month/year format (e.g., "January 2024")
+        if (filterValue.includes(' ')) {
+          const imageMonthYear = imageDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+          });
+          return imageMonthYear === filterValue;
+        }
+        return false;
+    }
   }
 
   /**
@@ -1583,8 +1720,11 @@ class ImageViewer {
       return;
     }
 
-    // Check if jsPDF is available
-    if (typeof window.jsPDF === 'undefined') {
+    // Check if jsPDF constructor is available (same as analytics)
+    if (
+      typeof window.jspdf === 'undefined' ||
+      typeof window.jspdf.jsPDF !== 'function'
+    ) {
       console.error('jsPDF library not found');
       alert(
         'PDF functionality requires jsPDF library. Please refresh the page and try again.'
@@ -2731,7 +2871,7 @@ class ImageViewer {
   async generateGridPDFReport() {
     console.log('📋 Generating grid layout PDF...');
 
-    const jsPDF = window.jsPDF;
+    const jsPDF = window.jspdf.jsPDF;
     const pdf = new jsPDF('portrait', 'mm', 'a4');
 
     // Use filtered images directly
@@ -2824,8 +2964,8 @@ class ImageViewer {
     const imagesToUse = this.filteredImages;
     console.log('📖 Generating detailed layout PDF...');
 
-    const jsPDF = window.jsPDF;
-    const pdf = new jsPDF('p', 'mm', 'a4');
+    const jsPDF = window.jspdf.jsPDF;
+    const pdf = new jsPDF('portrait', 'mm', 'a4');
 
     // Add standardized cover page
     this.addStandardizedCoverPage(pdf, 'Detailed');
@@ -2862,8 +3002,8 @@ class ImageViewer {
     const imagesToUse = this.filteredImages;
     console.log('📊 Generating summary layout PDF...');
 
-    const jsPDF = window.jsPDF;
-    const pdf = new jsPDF('p', 'mm', 'a4');
+    const jsPDF = window.jspdf.jsPDF;
+    const pdf = new jsPDF('portrait', 'mm', 'a4');
 
     // Add standardized cover page
     this.addStandardizedCoverPage(pdf, 'Executive');
