@@ -123,8 +123,6 @@ Generate professional reports in multiple formats:
 
 ## 📱 Screenshots
 
-## 📱 Screenshots
-
 <table>
   <tr>
     <td width="50%">
@@ -159,6 +157,10 @@ Generate professional reports in multiple formats:
     </td>
   </tr>
 </table>
+
+### **🖼️ Complete Image Viewer System - V2.0 Phase 1**
+<img width="1286" height="1080" alt="BCFSleuth_V02_Phase1_Image_Viewer" src="https://github.com/user-attachments/assets/6168510e-8f11-4751-be3d-a7370b17a642" />
+
 
 > 💡 **Click any screenshot to view full size**
 
