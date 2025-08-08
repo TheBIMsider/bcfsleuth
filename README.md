@@ -122,7 +122,8 @@ Generate professional reports in multiple formats:
 - **Export History** - Track and manage previous export configurations
 
 ## 📱 Screenshots
-<img width="1264" height="1036" alt="BCFSleuth_V01_Phase3c_Simple  Preview" src="https://github.com/user-attachments/assets/5e100bc2-e682-4983-80b8-e2ba16df19a8" />
+
+
 
 <table>
   <tr>
@@ -144,8 +145,8 @@ Generate professional reports in multiple formats:
   <tr>
     <td width="50%">
       <h3>🔍 Advanced Preview Tab</h3>
-      <a href="https://github.com/user-attachments/assets/advanced-preview-enhanced">
-        <img src="https://github.com/user-attachments/assets/advanced-preview-enhanced" alt="Enhanced Advanced Preview System" width="100%"/>
+      <a href="https://github.com/user-attachments/assets/1d33deab-71e2-4b72-bc5d-ece17e006256">
+        <img src="https://github.com/user-attachments/assets/1d33deab-71e2-4b72-bc5d-ece17e006256" alt="Enhanced Advanced Preview System" width="100%"/>
       </a>
       <p><em>Sortable table with comment expansion and multi-criteria filtering</em></p>
     </td>
