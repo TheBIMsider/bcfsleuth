@@ -122,6 +122,7 @@ Generate professional reports in multiple formats:
 - **Export History** - Track and manage previous export configurations
 
 ## 📱 Screenshots
+<img width="1264" height="1036" alt="BCFSleuth_V01_Phase3c_Simple  Preview" src="https://github.com/user-attachments/assets/5e100bc2-e682-4983-80b8-e2ba16df19a8" />
 
 <table>
   <tr>
@@ -134,8 +135,8 @@ Generate professional reports in multiple formats:
     </td>
     <td width="50%">
       <h3>📋 Simple Preview Tab</h3>
-      <a href="https://github.com/user-attachments/assets/placeholder-simple-preview">
-        <img src="https://github.com/user-attachments/assets/placeholder-simple-preview" alt="BCFSleuth V2.0 Simple Preview" width="100%"/>
+      <a href="https://github.com/user-attachments/assets/5e100bc2-e682-4983-80b8-e2ba16df19a8">
+        <img src="https://github.com/user-attachments/assets/5e100bc2-e682-4983-80b8-e2ba16df19a8" alt="BCFSleuth V2.0 Simple Preview" width="100%"/>
       </a>
       <p><em>Basic data overview with essential BCF information and quick export</em></p>
     </td>
