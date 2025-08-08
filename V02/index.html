@@ -79,6 +79,7 @@
             <button class="tab-button" data-tab="image-viewer">
               Image Viewer
             </button>
+            <button class="tab-button" data-tab="analytics">Analytics</button>
             <button class="tab-button" data-tab="configuration">
               Configuration
             </button>
@@ -339,10 +340,46 @@
               </div>
 
               <div class="control-group">
+                <label for="image-title-filter">Title:</label>
+                <select id="image-title-filter" class="control-input">
+                  <option value="">All Titles</option>
+                  <!-- Options will be populated dynamically -->
+                </select>
+              </div>
+
+              <div class="control-group">
                 <label for="image-status-filter">Status:</label>
                 <select id="image-status-filter" class="control-input">
                   <option value="">All Statuses</option>
                   <!-- Options will be populated dynamically -->
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label for="image-priority-filter">Priority:</label>
+                <select id="image-priority-filter" class="control-input">
+                  <option value="">All Priorities</option>
+                  <!-- Options will be populated dynamically -->
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label for="image-author-filter">Author:</label>
+                <select id="image-author-filter" class="control-input">
+                  <option value="">All Authors</option>
+                  <!-- Options will be populated dynamically -->
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label for="image-created-filter">Created:</label>
+                <select id="image-created-filter" class="control-input">
+                  <option value="">All Dates</option>
+                  <option value="today">Today</option>
+                  <option value="this-week">This Week</option>
+                  <option value="this-month">This Month</option>
+                  <option value="last-30-days">Last 30 Days</option>
+                  <!-- More options will be populated dynamically -->
                 </select>
               </div>
 
@@ -362,6 +399,7 @@
                   <option value="title">Topic Title</option>
                   <option value="date" selected>Creation Date</option>
                   <option value="status">Status</option>
+                  <option value="priority">Priority</option>
                   <option value="author">Author</option>
                 </select>
               </div>
@@ -473,6 +511,201 @@
                 >
                   ⟩⟩
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div class="tab-content" id="analytics-tab">
+          <div class="analytics-content">
+            <!-- Analytics Header -->
+            <div class="analytics-header">
+              <div class="analytics-title">
+                <h4>BCF Analytics Dashboard</h4>
+                <p class="analytics-description">
+                  Visual insights and trends from your BCF data
+                </p>
+              </div>
+              <div class="analytics-stats" id="analytics-stats">
+                <div class="stat-item">
+                  <span class="stat-value" id="analytics-total-topics">0</span>
+                  <span class="stat-label">Total Topics</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value" id="analytics-total-comments"
+                    >0</span
+                  >
+                  <span class="stat-label">Total Comments</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value" id="analytics-total-projects"
+                    >0</span
+                  >
+                  <span class="stat-label">Projects</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value" id="analytics-avg-comments">0</span>
+                  <span class="stat-label">Avg Comments/Topic</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Analytics Controls -->
+            <div class="analytics-controls">
+              <div class="control-group">
+                <label for="analytics-date-range">Date Range:</label>
+                <select id="analytics-date-range" class="control-input">
+                  <option value="all">All Time</option>
+                  <option value="last-30-days">Last 30 Days</option>
+                  <option value="last-90-days">Last 90 Days</option>
+                  <option value="this-year">This Year</option>
+                </select>
+              </div>
+
+              <div class="control-group">
+                <button id="export-charts-btn" class="btn btn-secondary">
+                  📊 Export Charts (PNG)
+                </button>
+                <button id="export-charts-pdf-btn" class="btn btn-secondary">
+                  📄 Export Charts (PDF)
+                </button>
+                <button id="custom-report-btn" class="btn btn-secondary">
+                  📋 Custom Report
+                </button>
+              </div>
+            </div>
+
+            <!-- No Data Message -->
+            <div class="no-analytics-message" id="no-analytics-message">
+              <div class="no-analytics-content">
+                <div class="no-analytics-icon">📊</div>
+                <h3>No Data Available</h3>
+                <p>
+                  Process some BCF files first to see analytics and insights
+                  here.
+                </p>
+                <p>
+                  <em
+                    >Charts and statistics will appear automatically when data
+                    is loaded.</em
+                  >
+                </p>
+              </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div
+              class="analytics-charts-grid"
+              id="analytics-charts-grid"
+              style="display: none"
+            >
+              <!-- Status Distribution Chart -->
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h5>Status Distribution</h5>
+                  <p>Breakdown of topic statuses</p>
+                </div>
+                <div class="chart-wrapper">
+                  <canvas id="status-chart" width="400" height="300"></canvas>
+                </div>
+              </div>
+
+              <!-- Priority Distribution Chart -->
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h5>Priority Distribution</h5>
+                  <p>Priority levels of topics</p>
+                </div>
+                <div class="chart-wrapper">
+                  <canvas id="priority-chart" width="400" height="300"></canvas>
+                </div>
+              </div>
+
+              <!-- Creation Timeline Chart -->
+              <div class="chart-container chart-container-wide">
+                <div class="chart-header">
+                  <h5>Topic Creation Timeline</h5>
+                  <p>Topics created over time</p>
+                </div>
+                <div class="chart-wrapper">
+                  <canvas id="timeline-chart" width="800" height="300"></canvas>
+                </div>
+              </div>
+
+              <!-- Author Activity Chart -->
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h5>Author Activity</h5>
+                  <p>Topics created by author</p>
+                </div>
+                <div class="chart-wrapper">
+                  <canvas id="author-chart" width="400" height="300"></canvas>
+                </div>
+              </div>
+
+              <!-- Comments Analysis Chart -->
+              <div class="chart-container">
+                <div class="chart-header">
+                  <h5>Comments Analysis</h5>
+                  <p>Comment activity patterns</p>
+                </div>
+                <div class="chart-wrapper">
+                  <canvas id="comments-chart" width="400" height="300"></canvas>
+                </div>
+              </div>
+
+              <!-- Custom Report Builder -->
+              <div
+                class="chart-container chart-container-wide"
+                id="custom-report-container"
+                style="display: none"
+              >
+                <div class="chart-header">
+                  <h5>Custom Report Builder</h5>
+                  <p>Create custom analytics based on selected fields</p>
+                </div>
+                <div class="custom-report-builder">
+                  <div class="report-field-selection">
+                    <h6>Select Fields for Analysis:</h6>
+                    <div class="report-field-grid" id="report-field-grid">
+                      <!-- Dynamic field checkboxes will be populated here -->
+                    </div>
+                  </div>
+                  <div class="report-actions">
+                    <button id="generate-report-btn" class="btn btn-primary">
+                      Generate Analysis
+                    </button>
+                    <div class="export-format-group">
+                      <label for="report-export-format">Export as:</label>
+                      <select
+                        id="report-export-format"
+                        class="control-input"
+                        disabled
+                      >
+                        <option value="text">📄 Text File</option>
+                        <option value="pdf">📄 PDF Document</option>
+                        <option value="word">📝 Word Document</option>
+                      </select>
+                      <button
+                        id="export-custom-report-btn"
+                        class="btn btn-secondary"
+                        disabled
+                      >
+                        Export Report
+                      </button>
+                    </div>
+                    <button
+                      id="close-report-builder-btn"
+                      class="btn btn-secondary"
+                    >
+                      Close Builder
+                    </button>
+                  </div>
+                  <div class="custom-report-results" id="custom-report-results">
+                    <!-- Custom analysis results will appear here -->
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -687,7 +920,8 @@
           </div>
         </div>
 
-        <div class="export-controls">
+        <!-- Export Controls -->
+        <div class="export-controls" id="main-export-controls">
           <h4>Export Options</h4>
 
           <!-- Field Selection -->
@@ -834,17 +1068,17 @@
                     <label for="field-comment-status">Comment Status</label>
                   </div>
                 </div>
+                <!-- Export Buttons (outside the blue field selection area) -->
+                <div class="export-buttons">
+                  <button id="export-csv" class="btn btn-secondary">
+                    Download CSV
+                  </button>
+                  <button id="export-excel" class="btn btn-primary" disabled>
+                    Download Excel
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div class="export-buttons">
-            <button id="export-csv" class="btn btn-secondary">
-              Download CSV
-            </button>
-            <button id="export-excel" class="btn btn-primary" disabled>
-              Download Excel
-            </button>
           </div>
         </div>
       </section>
@@ -868,10 +1102,6 @@
       </div>
     </footer>
 
-    <!-- External Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.1/jspdf.umd.min.js"></script>
     <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -952,6 +1182,179 @@
         }
       });
     </script>
+    <!-- Chart.js Library for Analytics (with fallback) -->
+    <script>
+      // Function to load Chart.js with fallback
+      async function loadChartJS() {
+        const sources = [
+          'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js',
+          'https://unpkg.com/chart.js@3.9.1/dist/chart.min.js',
+        ];
+
+        for (const src of sources) {
+          try {
+            console.log(`Trying to load Chart.js from: ${src}`);
+
+            const script = document.createElement('script');
+            script.src = src;
+
+            const loadPromise = new Promise((resolve, reject) => {
+              script.onload = () => {
+                setTimeout(() => {
+                  if (typeof Chart !== 'undefined') {
+                    console.log(`✅ Chart.js loaded successfully from: ${src}`);
+                    window.chartJSReady = true;
+                    resolve(true);
+                  } else {
+                    reject(new Error('Chart object not available'));
+                  }
+                }, 500);
+              };
+
+              script.onerror = () => {
+                reject(new Error(`Failed to load from ${src}`));
+              };
+
+              setTimeout(() => {
+                reject(new Error(`Timeout loading from ${src}`));
+              }, 10000);
+            });
+
+            document.head.appendChild(script);
+            await loadPromise;
+
+            return true;
+          } catch (error) {
+            console.warn(`Failed to load Chart.js from ${src}:`, error.message);
+            continue;
+          }
+        }
+
+        console.error('❌ Failed to load Chart.js from all sources');
+        window.chartJSReady = false;
+        return false;
+      }
+
+      // Load Chart.js when page is ready
+      document.addEventListener('DOMContentLoaded', async () => {
+        console.log('🔄 Starting Chart.js library loading...');
+        const success = await loadChartJS();
+
+        if (success) {
+          console.log('🎉 Chart.js library is ready!');
+        } else {
+          console.error('💥 Chart.js library failed to load from all sources');
+        }
+      });
+    </script>
+
+    <!-- Chart Lightbox Modal (similar to Image Lightbox) -->
+    <div id="chart-lightbox" class="image-lightbox">
+      <div
+        class="lightbox-overlay"
+        onclick="window.bcfApp.analyticsDashboard.closeChartLightbox()"
+      ></div>
+      <div class="lightbox-content">
+        <!-- Chart Lightbox Header -->
+        <div class="lightbox-header">
+          <div class="lightbox-info">
+            <h3 class="lightbox-title" id="chart-lightbox-title">
+              Chart Title
+            </h3>
+            <div class="lightbox-meta" id="chart-lightbox-meta">
+              <span class="lightbox-status" id="chart-lightbox-type"
+                >Chart Type</span
+              >
+              <span class="lightbox-author" id="chart-lightbox-data-count"
+                >Data Count</span
+              >
+              <span class="lightbox-date" id="chart-lightbox-filters"
+                >Filters Applied</span
+              >
+            </div>
+          </div>
+          <button
+            class="lightbox-close"
+            onclick="window.bcfApp.analyticsDashboard.closeChartLightbox()"
+            title="Close (Esc)"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="lightbox-image-container">
+          <!-- Large Chart Canvas -->
+          <canvas id="lightbox-chart-canvas" class="lightbox-image"></canvas>
+
+          <!-- Navigation Arrows for Chart Types -->
+          <button
+            class="lightbox-nav lightbox-prev"
+            onclick="window.bcfApp.analyticsDashboard.navigateChartLightbox(-1)"
+            title="Previous Chart (←)"
+          >
+            ‹
+          </button>
+          <button
+            class="lightbox-nav lightbox-next"
+            onclick="window.bcfApp.analyticsDashboard.navigateChartLightbox(1)"
+            title="Next Chart (→)"
+          >
+            ›
+          </button>
+
+          <!-- Zoom Controls (reusing image viewer styles) -->
+          <div class="lightbox-zoom-controls">
+            <button
+              onclick="window.bcfApp.analyticsDashboard.zoomChart('in')"
+              title="Zoom In (+)"
+            >
+              🔍+
+            </button>
+            <button
+              onclick="window.bcfApp.analyticsDashboard.zoomChart('out')"
+              title="Zoom Out (-)"
+            >
+              🔍-
+            </button>
+            <button
+              onclick="window.bcfApp.analyticsDashboard.resetChartZoom()"
+              title="Reset Zoom (0)"
+            >
+              ⌂
+            </button>
+            <button
+              onclick="window.bcfApp.analyticsDashboard.fitChartToScreen()"
+              title="Fit to Screen (F)"
+            >
+              ⊞
+            </button>
+          </div>
+        </div>
+
+        <!-- Chart Actions -->
+        <div class="lightbox-actions">
+          <button
+            class="lightbox-action-btn"
+            onclick="window.bcfApp.analyticsDashboard.exportCurrentChart()"
+            title="Export Current Chart"
+          >
+            💾 Export PNG
+          </button>
+          <button
+            class="lightbox-action-btn"
+            onclick="window.bcfApp.analyticsDashboard.showChartDetails()"
+            title="Show Chart Data Details"
+          >
+            ℹ️ Chart Info
+          </button>
+          <div class="lightbox-counter" id="chart-lightbox-counter">
+            1 of 5 charts
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Application Scripts -->
     <script src="js/bcf-parser.js"></script>
@@ -960,6 +1363,7 @@
     <script src="js/advanced-preview.js"></script>
     <script src="js/configuration.js"></script>
     <script src="js/image-viewer.js"></script>
+    <script src="js/analytics-dashboard.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>
