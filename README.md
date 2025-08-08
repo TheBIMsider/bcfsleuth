@@ -123,8 +123,6 @@ Generate professional reports in multiple formats:
 
 ## 📱 Screenshots
 
-
-
 <table>
   <tr>
     <td width="50%">
@@ -161,8 +159,8 @@ Generate professional reports in multiple formats:
   <tr>
     <td width="50%">
       <h3>📊 Analytics Dashboard Tab</h3>
-      <a href="https://github.com/user-attachments/assets/analytics-dashboard-preview">
-        <img src="https://github.com/user-attachments/assets/analytics-dashboard-preview" alt="BCFSleuth V2.0 Analytics Dashboard" width="100%"/>
+      <a href="https://github.com/user-attachments/assets/817dc7eb-066f-4258-b47d-7f6f2973288e">
+        <img src="https://github.com/user-attachments/assets/817dc7eb-066f-4258-b47d-7f6f2973288e" alt="BCFSleuth V2.0 Analytics Dashboard" width="100%"/>
       </a>
       <p><em>Interactive charts with full-screen lightbox viewing and custom analytics</em></p>
     </td>
