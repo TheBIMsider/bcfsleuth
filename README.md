@@ -123,37 +123,39 @@ Generate professional reports in multiple formats:
 
 ## 📱 Screenshots
 
+## 📱 Screenshots
+
 <table>
   <tr>
     <td width="50%">
-      <h3>📊 NEW: Analytics Dashboard with Chart Lightbox</h3>
-      <a href="https://github.com/user-attachments/assets/analytics-dashboard-preview">
-        <img src="https://github.com/user-attachments/assets/analytics-dashboard-preview" alt="BCFSleuth V2.0 Analytics Dashboard" width="100%"/>
-      </a>
-      <p><em>Interactive charts with full-screen lightbox viewing and navigation</em></p>
-    </td>
-    <td width="50%">
-      <h3>🔍 Enhanced Advanced Preview</h3>
-      <a href="https://github.com/user-attachments/assets/advanced-preview-enhanced">
-        <img src="https://github.com/user-attachments/assets/advanced-preview-enhanced" alt="Enhanced Advanced Preview System" width="100%"/>
-      </a>
-      <p><em>Sortable table with comment expansion and multi-criteria filtering</em></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <h3>🖼️ Professional Image Lightbox</h3>
+      <h3>🖼️ NEW: Professional Image Lightbox</h3>
       <a href="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b">
         <img src="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b" alt="BCFSleuth V2.0 Image Lightbox" width="100%"/>
       </a>
       <p><em>Full-screen image viewing with zoom, navigation, and metadata</em></p>
     </td>
     <td width="50%">
+      <h3>📊 NEW: Multi-Format Report Generation</h3>
+      <a href="https://github.com/user-attachments/assets/c5244e3a-7f53-4958-901d-c2f25e6c188a">
+        <img src="https://github.com/user-attachments/assets/c5244e3a-7f53-4958-901d-c2f25e6c188a" alt="PDF and Word Report Generation" width="100%"/>
+      </a>
+      <p><em>Individual downloads, bulk ZIP, PDF reports, and NEW Word documents</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>🔍 Enhanced Data Exploration</h3>
+      <a href="https://github.com/user-attachments/assets/152c08b9-fc4b-4c03-bc80-b58609057227">
+        <img src="https://github.com/user-attachments/assets/152c08b9-fc4b-4c03-bc80-b58609057227" alt="Advanced Preview with Universal BCF Support" width="100%"/>
+      </a>
+      <p><em>Professional data table with universal BCF format support</em></p>
+    </td>
+    <td width="50%">
       <h3>⚙️ Enterprise Configuration</h3>
       <a href="https://github.com/user-attachments/assets/6499579b-08e1-4826-84fc-630605ad60d5">
         <img src="https://github.com/user-attachments/assets/6499579b-08e1-4826-84fc-630605ad60d5" alt="Configuration Management System" width="100%"/>
       </a>
-      <p><em>Template management and user preferences across all BCF versions</em></p>
+      <p><em>Template management working across all BCF versions</em></p>
     </td>
   </tr>
 </table>
