@@ -56,8 +56,8 @@ This project demonstrates advanced human-AI collaboration in enterprise software
     </td>
     <td width="50%">
       <h3>🖼️ Image Viewer Tab</h3>
-      <a href="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b">
-        <img src="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b" alt="BCFSleuth V2.0 Image Lightbox" width="100%"/>
+      <a href="https://github.com/user-attachments/assets/d690867a-d8d9-4aa0-8153-d5eb757bc306">
+        <img src="https://github.com/user-attachments/assets/d690867a-d8d9-4aa0-8153-d5eb757bc306" alt="BCFSleuth V2.0 Image Lightbox" width="100%"/>
       </a>
       <p><em>Professional image gallery with lightbox viewing and bulk operations</em></p>
     </td>
