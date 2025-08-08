@@ -26,6 +26,68 @@ This project demonstrates advanced human-AI collaboration in enterprise software
 - ✅ **Professional Exports** - CSV, Excel, PDF, Word with embedded content
 - ✅ **Mobile Optimized** - Touch-friendly across all features with responsive design
 
+## 📱 Screenshots
+
+<table>
+  <tr>
+    <td width="50%">
+      <h3>🏠 Landing Page - BCF Upload</h3>
+      <a href="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b">
+        <img src="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b" alt="BCFSleuth V2.0 Image Lightbox" width="100%"/>
+      </a>
+      <p><em>Drag and drop interface for BCF file upload with universal format support</em></p>
+    </td>
+    <td width="50%">
+      <h3>📋 Simple Preview Tab</h3>
+      <a href="https://github.com/user-attachments/assets/5e100bc2-e682-4983-80b8-e2ba16df19a8">
+        <img src="https://github.com/user-attachments/assets/5e100bc2-e682-4983-80b8-e2ba16df19a8" alt="BCFSleuth V2.0 Simple Preview" width="100%"/>
+      </a>
+      <p><em>Basic data overview with essential BCF information and quick export</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>🔍 Advanced Preview Tab</h3>
+      <a href="https://github.com/user-attachments/assets/1d33deab-71e2-4b72-bc5d-ece17e006256">
+        <img src="https://github.com/user-attachments/assets/1d33deab-71e2-4b72-bc5d-ece17e006256" alt="Enhanced Advanced Preview System" width="100%"/>
+      </a>
+      <p><em>Sortable table with comment expansion and multi-criteria filtering</em></p>
+    </td>
+    <td width="50%">
+      <h3>🖼️ Image Viewer Tab</h3>
+      <a href="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b">
+        <img src="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b" alt="BCFSleuth V2.0 Image Lightbox" width="100%"/>
+      </a>
+      <p><em>Professional image gallery with lightbox viewing and bulk operations</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>📊 Analytics Dashboard Tab</h3>
+      <a href="https://github.com/user-attachments/assets/817dc7eb-066f-4258-b47d-7f6f2973288e">
+        <img src="https://github.com/user-attachments/assets/817dc7eb-066f-4258-b47d-7f6f2973288e" alt="BCFSleuth V2.0 Analytics Dashboard" width="100%"/>
+      </a>
+      <p><em>Interactive charts with full-screen lightbox viewing and custom analytics</em></p>
+    </td>
+    <td width="50%">
+      <h3>⚙️ Configuration Tab</h3>
+      <a href="https://github.com/user-attachments/assets/6499579b-08e1-4826-84fc-630605ad60d5">
+        <img src="https://github.com/user-attachments/assets/6499579b-08e1-4826-84fc-630605ad60d5" alt="Configuration Management System" width="100%"/>
+      </a>
+      <p><em>Template management and user preferences across all BCF versions</em></p>
+    </td>
+  </tr>
+</table>
+
+> 💡 **Click any screenshot to view full size**
+
+## 🌟 **Live Demo** 
+**[Experience BCFSleuth V2.0 Phase 2 HERE](https://thebimsider.github.io/bcfsleuth/V02/)**
+
+## Overview
+
+BCFSleuth V2.0 Phase 2 is a comprehensive, client-side BCF management platform that transforms how teams work with Building Collaboration Format files. Features universal BCF format support (2.0/2.1/3.0), complete analytics dashboard with interactive charts, enhanced image management with professional viewing capabilities, advanced data exploration with sorting and filtering, and enterprise-grade configuration management. Built with modern web technologies for secure, fast, browser-based processing.
+
 ## 📊 **NEW: Complete Analytics Dashboard (V2.0 Phase 2)**
 
 ### **Interactive Data Visualization**
@@ -120,68 +182,6 @@ Generate professional reports in multiple formats:
 - **Processing History** - Comprehensive tracking with detailed metrics
 - **Session Persistence** - All preferences saved between browser sessions
 - **Export History** - Track and manage previous export configurations
-
-## 📱 Screenshots
-
-<table>
-  <tr>
-    <td width="50%">
-      <h3>🏠 Landing Page - BCF Upload</h3>
-      <a href="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b">
-        <img src="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b" alt="BCFSleuth V2.0 Image Lightbox" width="100%"/>
-      </a>
-      <p><em>Drag and drop interface for BCF file upload with universal format support</em></p>
-    </td>
-    <td width="50%">
-      <h3>📋 Simple Preview Tab</h3>
-      <a href="https://github.com/user-attachments/assets/5e100bc2-e682-4983-80b8-e2ba16df19a8">
-        <img src="https://github.com/user-attachments/assets/5e100bc2-e682-4983-80b8-e2ba16df19a8" alt="BCFSleuth V2.0 Simple Preview" width="100%"/>
-      </a>
-      <p><em>Basic data overview with essential BCF information and quick export</em></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <h3>🔍 Advanced Preview Tab</h3>
-      <a href="https://github.com/user-attachments/assets/1d33deab-71e2-4b72-bc5d-ece17e006256">
-        <img src="https://github.com/user-attachments/assets/1d33deab-71e2-4b72-bc5d-ece17e006256" alt="Enhanced Advanced Preview System" width="100%"/>
-      </a>
-      <p><em>Sortable table with comment expansion and multi-criteria filtering</em></p>
-    </td>
-    <td width="50%">
-      <h3>🖼️ Image Viewer Tab</h3>
-      <a href="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b">
-        <img src="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b" alt="BCFSleuth V2.0 Image Lightbox" width="100%"/>
-      </a>
-      <p><em>Professional image gallery with lightbox viewing and bulk operations</em></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <h3>📊 Analytics Dashboard Tab</h3>
-      <a href="https://github.com/user-attachments/assets/817dc7eb-066f-4258-b47d-7f6f2973288e">
-        <img src="https://github.com/user-attachments/assets/817dc7eb-066f-4258-b47d-7f6f2973288e" alt="BCFSleuth V2.0 Analytics Dashboard" width="100%"/>
-      </a>
-      <p><em>Interactive charts with full-screen lightbox viewing and custom analytics</em></p>
-    </td>
-    <td width="50%">
-      <h3>⚙️ Configuration Tab</h3>
-      <a href="https://github.com/user-attachments/assets/6499579b-08e1-4826-84fc-630605ad60d5">
-        <img src="https://github.com/user-attachments/assets/6499579b-08e1-4826-84fc-630605ad60d5" alt="Configuration Management System" width="100%"/>
-      </a>
-      <p><em>Template management and user preferences across all BCF versions</em></p>
-    </td>
-  </tr>
-</table>
-
-> 💡 **Click any screenshot to view full size**
-
-## 🌟 **Live Demo** 
-**[Experience BCFSleuth V2.0 Phase 2 HERE](https://thebimsider.github.io/bcfsleuth/V02/)**
-
-## Overview
-
-BCFSleuth V2.0 Phase 2 is a comprehensive, client-side BCF management platform that transforms how teams work with Building Collaboration Format files. Features universal BCF format support (2.0/2.1/3.0), complete analytics dashboard with interactive charts, enhanced image management with professional viewing capabilities, advanced data exploration with sorting and filtering, and enterprise-grade configuration management. Built with modern web technologies for secure, fast, browser-based processing.
 
 ## ✅ **Current Features - V2.0 Phase 2 Complete**
 
