@@ -27,7 +27,6 @@ This project demonstrates advanced human-AI collaboration in enterprise software
 - ✅ **Mobile Optimized** - Touch-friendly across all features with responsive design
 
 ## 📱 Screenshots
-<img width="1288" height="1078" alt="BCFSleuth_V02_Phase1_Image_Viewer" src="https://github.com/user-attachments/assets/d690867a-d8d9-4aa0-8153-d5eb757bc306" />
 
 <table>
   <tr>
