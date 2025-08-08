@@ -127,8 +127,8 @@ Generate professional reports in multiple formats:
   <tr>
     <td width="50%">
       <h3>🏠 Landing Page - BCF Upload</h3>
-      <a href="https://github.com/user-attachments/assets/placeholder-landing-page">
-        <img src="https://github.com/user-attachments/assets/placeholder-landing-page" alt="BCFSleuth V2.0 Landing Page" width="100%"/>
+      <a href="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b">
+        <img src="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b" alt="BCFSleuth V2.0 Image Lightbox" width="100%"/>
       </a>
       <p><em>Drag and drop interface for BCF file upload with universal format support</em></p>
     </td>
