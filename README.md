@@ -27,13 +27,14 @@ This project demonstrates advanced human-AI collaboration in enterprise software
 - ✅ **Mobile Optimized** - Touch-friendly across all features with responsive design
 
 ## 📱 Screenshots
+<img width="1508" height="1057" alt="BCFSleuth_V02_Phase2_Landing_Page" src="https://github.com/user-attachments/assets/d919f235-b4ec-4383-a062-4e25eb4b5671" />
 
 <table>
   <tr>
     <td width="50%">
       <h3>🏠 Landing Page - BCF Upload</h3>
-      <a href="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b">
-        <img src="https://github.com/user-attachments/assets/29cf8efc-bb7b-4d6a-8d64-04548fc5fc8b" alt="BCFSleuth V2.0 Image Lightbox" width="100%"/>
+      <a href="https://github.com/user-attachments/assets/d919f235-b4ec-4383-a062-4e25eb4b5671">
+        <img src="https://github.com/user-attachments/assets/d919f235-b4ec-4383-a062-4e25eb4b5671" alt="BCFSleuth V2.0 Image Lightbox" width="100%"/>
       </a>
       <p><em>Drag and drop interface for BCF file upload with universal format support</em></p>
     </td>
