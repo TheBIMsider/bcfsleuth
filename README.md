@@ -82,7 +82,7 @@ This project demonstrates advanced human-AI collaboration in enterprise software
 > 💡 **Click any screenshot to view full size**
 
 ## 🌟 **Live Demo** 
-**[Experience BCFSleuth V2.0 Phase 2 HERE](https://thebimsider.github.io/bcfsleuth/V02/)**
+**[Experience BCFSleuth V2.0 HERE](https://thebimsider.github.io/bcfsleuth/V02/)**
 
 ## Overview
 
