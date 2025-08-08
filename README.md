@@ -1,4 +1,4 @@
-# BCFSleuth V2.0 Phase 2 Complete
+# BCFSleuth V2.0
 
 <img width="512" height="512" alt="BCFSleuth_Logo_Color" src="https://github.com/user-attachments/assets/fdd735de-e809-4736-a01c-0c054071b8e9" />
 
