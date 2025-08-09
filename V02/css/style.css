@@ -4478,6 +4478,49 @@ header .container {
   color: var(--text-primary);
 }
 
+.help-modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Help Header Actions Container */
+.help-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+/* Documentation Link Styling */
+.help-docs-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-md);
+  background: var(--primary);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid var(--primary);
+}
+
+.help-docs-link:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+  color: white; /* Ensure text stays white on hover */
+}
+
+.help-docs-link:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .help-modal-close {
   background: none;
   border: none;
@@ -4742,6 +4785,23 @@ header .container {
 
   .help-modal-header h3 {
     font-size: 1.25rem;
+  }
+
+  /* Stack header elements on mobile */
+  .help-modal-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+  }
+
+  .help-header-actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .help-docs-link {
+    font-size: 0.8rem;
+    padding: var(--space-xs) var(--space-sm);
   }
 
   .help-sections {
