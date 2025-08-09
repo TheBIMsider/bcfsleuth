@@ -142,5 +142,5 @@ This project is licensed under the BSD-3-Clause License.
 
 ---
 
-*Built through human-AI collaboration for the AECO community*  
-*Modern BCF management with enterprise-grade features*
+**Built with ❤️ & 🤖 AI assistance by The BIMsider for the AECO community**  
+*A modern way to investigate your BCF files with precision *
