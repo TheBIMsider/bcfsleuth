@@ -51,7 +51,8 @@ BCFSleuth is a modern, web-based evolution of BCF management tools like the orig
 - **Team Collaboration**: Import/export templates via JSON for standardization
 
 ## Screenshots
-<img width="1216" height="1080" alt="BCFSleuth_V01_Phase3c_Advanced Preview" src="https://github.com/user-attachments/assets/7837fa86-5ad2-4990-8a8d-a88c6ffcba78" />
+<img width="1384" height="1057" alt="BCFSleuth_V02_Phase1_Image_Viewer" src="https://github.com/user-attachments/assets/f520fac0-43ee-4a7f-b247-643b4fcee656" />
+
 
 
 <table>
@@ -74,8 +75,8 @@ BCFSleuth is a modern, web-based evolution of BCF management tools like the orig
   <tr>
     <td colspan="2">
       <h3>🖼️ Professional Image Viewer</h3>
-      <a href="https://github.com/user-attachments/assets/d690867a-d8d9-4aa0-8153-d5eb757bc306">
-        <img src="https://github.com/user-attachments/assets/d690867a-d8d9-4aa0-8153-d5eb757bc306" alt="BCFSleuth V2.0 Image Lightbox" width="100%"/>
+      <a href="https://github.com/user-attachments/assets/f520fac0-43ee-4a7f-b247-643b4fcee656">
+        <img src="https://github.com/user-attachments/assets/f520fac0-43ee-4a7f-b247-643b4fcee656" alt="BCFSleuth V2.0 Image Lightbox" width="100%"/>
       </a>
       <p><em>Professional image gallery with lightbox viewing and bulk operations</em></p>
     </td>
