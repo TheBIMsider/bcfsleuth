@@ -23,8 +23,6 @@ BCFSleuth is a modern, web-based evolution of BCF management tools like the orig
 
 **Universal BCF Support**: Handles all BCF formats (2.0, 2.1, 3.0) with intelligent format detection and adaptation.
 
-## 📖 Read the Full [Documentation](https://thebimsider.github.io/bcfsleuth/Docs/)
-
 ## Key Features
 
 ### 📊 **Analytics Dashboard**
@@ -56,6 +54,8 @@ BCFSleuth is a modern, web-based evolution of BCF management tools like the orig
 - **User Preferences**: Customize defaults for format, pagination, and interface settings
 - **Processing History**: Track all BCF files processed with detailed metrics
 - **Team Collaboration**: Import/export templates via JSON for standardization
+
+## 📖 Read the Full [Documentation](https://thebimsider.github.io/bcfsleuth/Docs/)
 
 ## Screenshots
 
