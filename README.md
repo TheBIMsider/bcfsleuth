@@ -51,13 +51,14 @@ BCFSleuth is a modern, web-based evolution of BCF management tools like the orig
 - **Team Collaboration**: Import/export templates via JSON for standardization
 
 ## Screenshots
+<img width="1426" height="1080" alt="BCFSleuth_V02_Phase2_Analytics" src="https://github.com/user-attachments/assets/049a2e19-ed1e-460f-aee7-8846d8d8eaf3" />
 
 <table>
   <tr>
     <td width="50%">
       <h3>📊 Analytics Dashboard</h3>
-      <a href="https://github.com/user-attachments/assets/817dc7eb-066f-4258-b47d-7f6f2973288e">
-        <img src="https://github.com/user-attachments/assets/817dc7eb-066f-4258-b47d-7f6f2973288e" alt="BCFSleuth V2.0 Analytics Dashboard" width="100%"/>
+      <a href="https://github.com/user-attachments/assets/049a2e19-ed1e-460f-aee7-8846d8d8eaf3">
+        <img src="hhttps://github.com/user-attachments/assets/049a2e19-ed1e-460f-aee7-8846d8d8eaf3" alt="BCFSleuth V2.0 Analytics Dashboard" width="100%"/>
       </a>
       <p><em>Interactive charts with full-screen lightbox viewing</em></p>
     </td>
