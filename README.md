@@ -51,9 +51,6 @@ BCFSleuth is a modern, web-based evolution of BCF management tools like the orig
 - **Team Collaboration**: Import/export templates via JSON for standardization
 
 ## Screenshots
-<img width="1384" height="1057" alt="BCFSleuth_V02_Phase1_Image_Viewer" src="https://github.com/user-attachments/assets/f520fac0-43ee-4a7f-b247-643b4fcee656" />
-
-
 
 <table>
   <tr>
