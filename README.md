@@ -23,6 +23,8 @@ BCFSleuth is a modern, web-based evolution of BCF management tools like the orig
 
 **Universal BCF Support**: Handles all BCF formats (2.0, 2.1, 3.0) with intelligent format detection and adaptation.
 
+## 📖 Complete Ducumenation [HERE](https://thebimsider.github.io/bcfsleuth/Docs/)
+
 ## Key Features
 
 ### 📊 **Analytics Dashboard**
