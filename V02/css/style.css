@@ -4366,6 +4366,404 @@ header .container {
     margin: 30px 0 15px 0;
   }
 }
+
+/* 
+==================================================
+  HELP SYSTEM STYLES
+  Added for Help Modal functionality
+==================================================
+*/
+
+/* Header Layout Enhancement */
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.header-text {
+  flex: 1;
+}
+
+/* Help Button in Header */
+.help-button {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.help-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.help-icon {
+  font-size: 1rem;
+}
+
+/* Help Modal Overlay and Container */
+.help-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.help-modal.hidden {
+  display: none;
+  opacity: 0;
+}
+
+.help-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  cursor: pointer;
+}
+
+/* Help Modal Content */
+.help-modal-content {
+  position: relative;
+  width: 90vw;
+  max-width: 1000px;
+  height: 85vh;
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  z-index: 10001;
+}
+
+/* Help Modal Header */
+.help-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-lg);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--gray-200);
+  flex-shrink: 0;
+}
+
+.help-modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.help-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.help-modal-close:hover {
+  background: var(--gray-200);
+  color: var(--text-primary);
+  transform: scale(1.1);
+}
+
+/* Help Modal Body Layout */
+.help-modal-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Help Content Area */
+.help-sections {
+  flex: 1;
+  padding: var(--space-lg);
+  overflow-y: auto;
+  line-height: 1.6;
+}
+
+/* Individual Help Sections */
+.help-section {
+  display: none;
+}
+
+.help-section.active {
+  display: block;
+}
+
+.help-section h4 {
+  color: var(--primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.help-content {
+  color: var(--text-primary);
+}
+
+/* Help Content Typography */
+.help-content p {
+  margin-bottom: var(--space-md);
+}
+
+.help-content ol,
+.help-content ul {
+  margin: var(--space-md) 0;
+  padding-left: var(--space-xl);
+}
+
+.help-content li {
+  margin-bottom: var(--space-sm);
+}
+
+.help-content h5 {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: var(--space-lg) 0 var(--space-sm) 0;
+}
+
+/* Special Content Sections */
+.help-tip {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin: var(--space-lg) 0;
+  font-size: 0.875rem;
+}
+
+.help-tip strong {
+  color: var(--primary);
+}
+
+/* Tab Explanations */
+.tab-explanation {
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md);
+  border-left: 3px solid var(--primary);
+  background: var(--bg-tertiary);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.tab-explanation h5 {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tab-explanation p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Feature Groups */
+.feature-group {
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm);
+  border-radius: var(--radius-md);
+  background: var(--bg-tertiary);
+}
+
+.feature-group h5 {
+  margin: 0 0 var(--space-xs) 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.feature-group p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* FAQ Items */
+.faq-item {
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--bg-tertiary);
+}
+
+.faq-item h5 {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.faq-item p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Help Navigation Sidebar */
+.help-navigation {
+  width: 200px;
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--gray-200);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.help-nav-btn {
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.help-nav-btn:hover {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.help-nav-btn.active {
+  background: var(--primary);
+  color: white;
+}
+
+/* Scrollbar Styling */
+.help-sections::-webkit-scrollbar {
+  width: 6px;
+}
+
+.help-sections::-webkit-scrollbar-track {
+  background: var(--gray-100);
+  border-radius: var(--radius-sm);
+}
+
+.help-sections::-webkit-scrollbar-thumb {
+  background: var(--gray-400);
+  border-radius: var(--radius-sm);
+}
+
+.help-sections::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500);
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .help-modal-content {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .help-modal-body {
+    flex-direction: column;
+  }
+
+  .help-navigation {
+    width: 100%;
+    max-height: 120px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-sm);
+    border-left: none;
+    border-top: 1px solid var(--gray-200);
+    order: 2;
+  }
+
+  .help-nav-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .help-sections {
+    order: 1;
+    padding: var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .help-modal-header {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .help-modal-header h3 {
+    font-size: 1.25rem;
+  }
+
+  .help-sections {
+    padding: var(--space-sm);
+  }
+
+  .help-section h4 {
+    font-size: 1.125rem;
+  }
+
+  .help-tip {
+    padding: var(--space-sm);
+    font-size: 0.8rem;
+  }
+
+  .tab-explanation,
+  .feature-group,
+  .faq-item {
+    padding: var(--space-sm);
+  }
+}
+
 /* 
 ==================================================
   END OF STYLESHEET
