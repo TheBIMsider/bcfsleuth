@@ -51,21 +51,22 @@ BCFSleuth is a modern, web-based evolution of BCF management tools like the orig
 - **Team Collaboration**: Import/export templates via JSON for standardization
 
 ## Screenshots
-<img width="1426" height="1080" alt="BCFSleuth_V02_Phase2_Analytics" src="https://github.com/user-attachments/assets/049a2e19-ed1e-460f-aee7-8846d8d8eaf3" />
+<img width="1216" height="1080" alt="BCFSleuth_V01_Phase3c_Advanced Preview" src="https://github.com/user-attachments/assets/7837fa86-5ad2-4990-8a8d-a88c6ffcba78" />
+
 
 <table>
   <tr>
     <td width="50%">
       <h3>📊 Analytics Dashboard</h3>
       <a href="https://github.com/user-attachments/assets/049a2e19-ed1e-460f-aee7-8846d8d8eaf3">
-        <img src="hhttps://github.com/user-attachments/assets/049a2e19-ed1e-460f-aee7-8846d8d8eaf3" alt="BCFSleuth V2.0 Analytics Dashboard" width="100%"/>
+        <img src="https://github.com/user-attachments/assets/049a2e19-ed1e-460f-aee7-8846d8d8eaf3" alt="BCFSleuth V2.0 Analytics Dashboard" width="100%"/>
       </a>
       <p><em>Interactive charts with full-screen lightbox viewing</em></p>
     </td>
     <td width="50%">
       <h3>🔍 Advanced Preview</h3>
-      <a href="https://github.com/user-attachments/assets/1d33deab-71e2-4b72-bc5d-ece17e006256">
-        <img src="https://github.com/user-attachments/assets/1d33deab-71e2-4b72-bc5d-ece17e006256" alt="Enhanced Advanced Preview System" width="100%"/>
+      <a href="https://github.com/user-attachments/assets/7837fa86-5ad2-4990-8a8d-a88c6ffcba78">
+        <img src="https://github.com/user-attachments/assets/7837fa86-5ad2-4990-8a8d-a88c6ffcba78" alt="Enhanced Advanced Preview System" width="100%"/>
       </a>
       <p><em>Sortable table with comment expansion and filtering</em></p>
     </td>
