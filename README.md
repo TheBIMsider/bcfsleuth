@@ -15,7 +15,7 @@ BCFSleuth V2.0 is what happens when real-world AECO/BIM experience meets AI codi
 - **🏗️ Domain Expertise**: 25+ years in AECO/BIM guiding the direction and keeping it practical  
 - **🔄 Iterative Workflow**: Build, test, tweak, repeat — until it was rock-solid and ready to use  
 
-**The Innovation**: 25+ years of AECO/BIM experience combined with AI-assisted development to rapidly create a sophisticated, professional-grade BCF management platform while maintaining enterprise quality standards.
+**The result?** A capable, ready-to-work BCF management platform built faster than I thought possible.
 
 ## What BCFSleuth Does
 
