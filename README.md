@@ -55,7 +55,7 @@ BCFSleuth is a modern, web-based evolution of BCF management tools like the orig
 - **Processing History**: Track all BCF files processed with detailed metrics
 - **Team Collaboration**: Import/export templates via JSON for standardization
 
-## 📖 Read the Full [Documentation](https://thebimsider.github.io/bcfsleuth/Docs/)
+## 📖 View Full [Documentation](https://thebimsider.github.io/bcfsleuth/Docs/)
 
 ## Screenshots
 
