@@ -134,7 +134,7 @@ The Building Collaboration Format (BCF) is an open file format supporting workfl
 
 ## Acknowledgments
 
-BCFSleuth is inspired by the original [Sloth](https://www.bim42.com/products/sloth.html) application created by **[Simon Moreau](https://www.linkedin.com/in/moreausimon/)** at **[BIM42](https://www.bim42.com/)**. We're grateful for his pioneering work in BCF processing and contributions to the AECO community.
+BCFSleuth is inspired by the original [Sloth](https://www.bim42.com/products/sloth.html) application created by **[Simon Moreau](https://github.com/simonmoreau/)** at **[BIM42](https://www.bim42.com/)**. We're grateful for his pioneering work in BCF processing and contributions to the AECO community.
 
 ## License
 
