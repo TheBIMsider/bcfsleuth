@@ -7,12 +7,13 @@ A modern web-based BCF (Building Collaboration Format) platform with universal f
 ## 🌟 **[Try BCFSleuth V2.0 Live Demo](https://thebimsider.github.io/bcfsleuth/V02/)**
 
 ## 🤖 AI-Assisted Development
+
 BCFSleuth V2.0 is what happens when real-world AECO/BIM experience meets AI coding horsepower:
 
-🧠 AI Assistant: Claude (Anthropic) helped with architecture ideas, cranked out code, and tracked down bugs
-⚡ Fast Build: Features that would’ve taken months the old way came together in days
-🏗️ Domain Expertise: 25+ years in AECO/BIM guiding the direction and keeping it practical
-🔄 Iterative Workflow: Build, test, tweak, repeat — until it was rock-solid and ready to use
+- **🧠 AI Assistant**: Claude (Anthropic) helped with architecture ideas, cranked out code, and tracked down bugs  
+- **⚡ Fast Build**: Features that would’ve taken months the old way came together in days  
+- **🏗️ Domain Expertise**: 25+ years in AECO/BIM guiding the direction and keeping it practical  
+- **🔄 Iterative Workflow**: Build, test, tweak, repeat — until it was rock-solid and ready to use  
 
 **The Innovation**: 25+ years of AECO/BIM experience combined with AI-assisted development to rapidly create a sophisticated, professional-grade BCF management platform while maintaining enterprise quality standards.
 
