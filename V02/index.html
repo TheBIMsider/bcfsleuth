@@ -9,8 +9,16 @@
   <body>
     <header>
       <div class="container">
-        <h1>BCFSleuth</h1>
-        <p class="tagline">Investigate your BCF files with precision</p>
+        <div class="header-content">
+          <div class="header-text">
+            <h1>BCFSleuth</h1>
+            <p class="tagline">Investigate your BCF files with precision</p>
+          </div>
+          <button id="help-button" class="help-button" title="Open Help Guide">
+            <span class="help-icon">💡</span>
+            Help
+          </button>
+        </div>
       </div>
     </header>
 
@@ -35,8 +43,8 @@
         </div>
       </section>
 
-      <!-- Add this after your drag-and-drop area but before the footer -->
-      <div class="landing-logo">
+      <!-- BCFSleuth Logo - Only visible on landing page -->
+      <div id="landing-logo" class="landing-logo">
         <img src="BCFSleuth_Logo_Color.png" alt="BCFSleuth Logo" />
       </div>
 
@@ -1089,6 +1097,278 @@
       </section>
     </main>
 
+    <!-- Help Center Modal -->
+    <div id="help-modal" class="help-modal hidden">
+      <div class="help-modal-overlay"></div>
+      <div class="help-modal-content">
+        <!-- Help Modal Header -->
+        <div class="help-modal-header">
+          <h3>BCFSleuth Help Guide</h3>
+          <button class="help-modal-close" id="help-modal-close">✕</button>
+        </div>
+
+        <!-- Help Modal Body -->
+        <div class="help-modal-body">
+          <!-- Help Content Sections -->
+          <div class="help-sections">
+            <!-- Quick Start Section -->
+            <div class="help-section active" data-section="quick-start">
+              <h4>🚀 Quick Start</h4>
+              <div class="help-content">
+                <p>Get started with BCFSleuth in 4 simple steps:</p>
+                <ol>
+                  <li>
+                    <strong>Upload Files:</strong> Drag and drop your BCF files
+                    onto the upload area, or click to browse and select files
+                  </li>
+                  <li>
+                    <strong>Process:</strong> Click the "Process Files" button
+                    to analyze your BCF data
+                  </li>
+                  <li>
+                    <strong>Explore:</strong> Use the different tabs to view
+                    your data in various ways
+                  </li>
+                  <li>
+                    <strong>Export:</strong> Choose your desired fields and
+                    download reports in multiple formats
+                  </li>
+                </ol>
+                <div class="help-tip">
+                  <strong>💡 Pro Tip:</strong> Start with the Simple Preview tab
+                  for a quick overview, then move to Advanced Preview for
+                  detailed analysis.
+                </div>
+              </div>
+            </div>
+
+            <!-- Understanding Tabs Section -->
+            <div class="help-section" data-section="tabs">
+              <h4>📋 Understanding the Interface</h4>
+              <div class="help-content">
+                <div class="tab-explanation">
+                  <h5>📋 Simple Preview</h5>
+                  <p>
+                    Shows the first 5 topics in a basic table format. Perfect
+                    for getting a quick overview of your BCF file contents
+                    without any complexity.
+                  </p>
+                </div>
+                <div class="tab-explanation">
+                  <h5>🔍 Advanced Preview</h5>
+                  <p>
+                    A powerful data table with sorting, filtering, and search
+                    capabilities. Use this to dive deep into your data, filter
+                    by status or priority, and expand topics to see comments.
+                  </p>
+                </div>
+                <div class="tab-explanation">
+                  <h5>🖼️ Image Viewer</h5>
+                  <p>
+                    Browse all images and viewpoints from your BCF files in a
+                    visual gallery. Filter images, view them full-screen, and
+                    download individual images or create reports.
+                  </p>
+                </div>
+                <div class="tab-explanation">
+                  <h5>📊 Analytics</h5>
+                  <p>
+                    Visual charts and statistics about your BCF data. See status
+                    distributions, priority breakdowns, timeline trends, and
+                    create custom analytics reports.
+                  </p>
+                </div>
+                <div class="tab-explanation">
+                  <h5>⚙️ Configuration</h5>
+                  <p>
+                    Manage export templates, set user preferences, and view your
+                    processing history. Save field selections as templates for
+                    consistent exports.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- BCF File Basics Section -->
+            <div class="help-section" data-section="bcf-basics">
+              <h4>📄 About BCF Files</h4>
+              <div class="help-content">
+                <p>
+                  <strong>BCF (Building Collaboration Format)</strong> is an
+                  open standard for exchanging issues and comments related to
+                  BIM models.
+                </p>
+
+                <h5>What BCFSleuth extracts from your files:</h5>
+                <ul>
+                  <li>
+                    <strong>Topics:</strong> Individual issues, questions, or
+                    discussion points
+                  </li>
+                  <li>
+                    <strong>Comments:</strong> Conversations and responses
+                    related to each topic
+                  </li>
+                  <li>
+                    <strong>Images/Viewpoints:</strong> Screenshots showing the
+                    location and context of issues
+                  </li>
+                  <li>
+                    <strong>Metadata:</strong> Status, priority, assignments,
+                    due dates, and other project information
+                  </li>
+                  <li>
+                    <strong>Project Info:</strong> BCF version, creation dates,
+                    author information
+                  </li>
+                </ul>
+
+                <div class="help-tip">
+                  <strong>🔒 Your Privacy is Protected:</strong> All file
+                  processing happens entirely in your browser. No data is ever
+                  uploaded to any server or cloud service.
+                </div>
+              </div>
+            </div>
+
+            <!-- Key Features Section -->
+            <div class="help-section" data-section="features">
+              <h4>⭐ Key Features</h4>
+              <div class="help-content">
+                <div class="feature-group">
+                  <h5>Universal Format Support</h5>
+                  <p>
+                    Works with all BCF versions (2.0, 2.1, 3.0) from any BIM
+                    software including Revit, ArchiCAD, Tekla, Solibri, and
+                    more.
+                  </p>
+                </div>
+
+                <div class="feature-group">
+                  <h5>Advanced Filtering & Search</h5>
+                  <p>
+                    Filter data by status, priority, assignee, and due dates.
+                    Search across all fields instantly with real-time results.
+                  </p>
+                </div>
+
+                <div class="feature-group">
+                  <h5>Comment Management</h5>
+                  <p>
+                    Click the blue ▶ arrows in tables to expand topics and view
+                    all associated comments inline.
+                  </p>
+                </div>
+
+                <div class="feature-group">
+                  <h5>Flexible Export Options</h5>
+                  <p>
+                    Export data as CSV, Excel, PDF, or Word documents. Choose
+                    exactly which fields to include in your exports.
+                  </p>
+                </div>
+
+                <div class="feature-group">
+                  <h5>Professional Image Reports</h5>
+                  <p>
+                    Create comprehensive image reports with multiple layout
+                    options, or download images individually or in bulk ZIP
+                    files.
+                  </p>
+                </div>
+
+                <div class="feature-group">
+                  <h5>Visual Analytics</h5>
+                  <p>
+                    Interactive charts showing data patterns, trends, and
+                    distributions. Click any chart for full-screen viewing with
+                    zoom capabilities.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Troubleshooting Section -->
+            <div class="help-section" data-section="troubleshooting">
+              <h4>🔧 Common Questions & Solutions</h4>
+              <div class="help-content">
+                <div class="faq-item">
+                  <h5>❓ My BCF file won't upload</h5>
+                  <p>
+                    Ensure your file has a .bcf or .bcfzip extension. Files must
+                    be valid BCF format. Try refreshing the page and uploading
+                    again.
+                  </p>
+                </div>
+
+                <div class="faq-item">
+                  <h5>❓ I don't see any images in the Image Viewer</h5>
+                  <p>
+                    Not all BCF files contain images. Ensure your BCF file was
+                    exported with viewpoints/screenshots included from your BIM
+                    software.
+                  </p>
+                </div>
+
+                <div class="faq-item">
+                  <h5>❓ Some data fields are missing</h5>
+                  <p>
+                    BCF files vary in content depending on how they were
+                    created. Only fields present in your files will be available
+                    for selection and export.
+                  </p>
+                </div>
+
+                <div class="faq-item">
+                  <h5>❓ Export button is disabled</h5>
+                  <p>
+                    You must select at least one field in the Export Options
+                    section before you can download files.
+                  </p>
+                </div>
+
+                <div class="faq-item">
+                  <h5>❓ Charts aren't loading in Analytics</h5>
+                  <p>
+                    Charts require processed BCF data. Make sure you've
+                    successfully uploaded and processed BCF files first.
+                  </p>
+                </div>
+
+                <div class="faq-item">
+                  <h5>❓ How do I expand comments in the table?</h5>
+                  <p>
+                    Look for blue ▶ arrows in the first column of the Advanced
+                    Preview table. Click these to expand and see all comments
+                    for that topic.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Help Navigation Sidebar -->
+          <div class="help-navigation">
+            <button class="help-nav-btn active" data-section="quick-start">
+              Quick Start
+            </button>
+            <button class="help-nav-btn" data-section="tabs">
+              Interface Guide
+            </button>
+            <button class="help-nav-btn" data-section="bcf-basics">
+              BCF Basics
+            </button>
+            <button class="help-nav-btn" data-section="features">
+              Features
+            </button>
+            <button class="help-nav-btn" data-section="troubleshooting">
+              FAQ
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <footer>
       <div class="container">
         <p>
@@ -1370,5 +1650,221 @@
     <script src="js/image-viewer.js"></script>
     <script src="js/analytics-dashboard.js"></script>
     <script src="js/app.js"></script>
+
+    <!-- Help System JavaScript -->
+    <script>
+      /**
+       * Help System Controller
+       * Manages the help modal, navigation, and user interactions
+       * Simple, self-contained system that works independently
+       */
+      document.addEventListener('DOMContentLoaded', function () {
+        // Get all the DOM elements we need
+        const helpButton = document.getElementById('help-button');
+        const helpModal = document.getElementById('help-modal');
+        const helpModalClose = document.getElementById('help-modal-close');
+        const helpModalOverlay = helpModal?.querySelector(
+          '.help-modal-overlay'
+        );
+        const helpNavButtons = document.querySelectorAll('.help-nav-btn');
+        const helpSections = document.querySelectorAll('.help-section');
+
+        // Only proceed if help elements exist
+        if (!helpButton || !helpModal) {
+          console.log('Help system elements not found');
+          return;
+        }
+
+        /**
+         * Opens the help modal
+         * Prevents body scrolling while modal is open
+         */
+        function openHelpModal() {
+          helpModal.classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+
+          // Focus management for accessibility
+          helpModalClose.focus();
+        }
+
+        /**
+         * Closes the help modal
+         * Restores body scrolling
+         */
+        function closeHelpModal() {
+          helpModal.classList.add('hidden');
+          document.body.style.overflow = '';
+
+          // Return focus to help button
+          helpButton.focus();
+        }
+
+        /**
+         * Shows a specific help section
+         * Updates navigation to reflect current section
+         * @param {string} sectionName - The data-section value to show
+         */
+        function showHelpSection(sectionName) {
+          // Hide all sections
+          helpSections.forEach((section) => {
+            section.classList.remove('active');
+          });
+
+          // Show the requested section
+          const targetSection = document.querySelector(
+            `[data-section="${sectionName}"]`
+          );
+          if (targetSection) {
+            targetSection.classList.add('active');
+          }
+
+          // Update navigation buttons
+          helpNavButtons.forEach((btn) => {
+            btn.classList.remove('active');
+            if (btn.dataset.section === sectionName) {
+              btn.classList.add('active');
+            }
+          });
+
+          // Scroll to top of help content
+          const helpSectionsContainer =
+            document.querySelector('.help-sections');
+          if (helpSectionsContainer) {
+            helpSectionsContainer.scrollTop = 0;
+          }
+        }
+
+        // Event Listeners
+
+        // Open help modal when help button is clicked
+        helpButton.addEventListener('click', openHelpModal);
+
+        // Close help modal when close button is clicked
+        helpModalClose.addEventListener('click', closeHelpModal);
+
+        // Close help modal when overlay is clicked
+        helpModalOverlay.addEventListener('click', closeHelpModal);
+
+        // Close help modal when Escape key is pressed
+        document.addEventListener('keydown', function (event) {
+          if (
+            event.key === 'Escape' &&
+            !helpModal.classList.contains('hidden')
+          ) {
+            closeHelpModal();
+          }
+        });
+
+        // Handle navigation button clicks
+        helpNavButtons.forEach((button) => {
+          button.addEventListener('click', function () {
+            const sectionName = this.dataset.section;
+            showHelpSection(sectionName);
+          });
+        });
+
+        // Initialize: Show the first section by default
+        showHelpSection('quick-start');
+
+        // Make functions available globally for debugging/extension
+        window.helpSystem = {
+          open: openHelpModal,
+          close: closeHelpModal,
+          showSection: showHelpSection,
+        };
+
+        console.log('✅ Help system initialized successfully');
+      });
+
+      /**
+       * Logo Visibility Controller
+       * Shows the BCFSleuth logo ONLY on the initial landing page
+       * Hides it as soon as any files are selected or processing begins
+       */
+      function initLogoController() {
+        const landingLogo = document.getElementById('landing-logo');
+        const fileList = document.getElementById('file-list');
+        const statusSection = document.getElementById('status-section');
+        const resultsSection = document.getElementById('results-section');
+
+        if (!landingLogo || !fileList) return;
+
+        /**
+         * Hides the logo permanently once files are selected
+         */
+        function hideLogo() {
+          landingLogo.style.display = 'none';
+        }
+
+        /**
+         * Shows the logo only in pure landing state
+         */
+        function showLogo() {
+          landingLogo.style.display = 'block';
+        }
+
+        /**
+         * Checks if we're in pure landing state (no files selected)
+         */
+        function updateLogoVisibility() {
+          const fileListVisible = !fileList.classList.contains('hidden');
+          const statusVisible =
+            statusSection && !statusSection.classList.contains('hidden');
+          const resultsVisible =
+            resultsSection && !resultsSection.classList.contains('hidden');
+
+          // Show logo ONLY if no files are selected AND no processing AND no results
+          if (!fileListVisible && !statusVisible && !resultsVisible) {
+            showLogo();
+          } else {
+            hideLogo();
+          }
+        }
+
+        // Watch for file selection changes (when file list appears/disappears)
+        const fileListObserver = new MutationObserver(function (mutations) {
+          mutations.forEach(function (mutation) {
+            if (
+              mutation.type === 'attributes' &&
+              mutation.attributeName === 'class'
+            ) {
+              updateLogoVisibility();
+            }
+          });
+        });
+
+        // Start observing the file list for visibility changes
+        fileListObserver.observe(fileList, {
+          attributes: true,
+          attributeFilter: ['class'],
+        });
+
+        // Also watch status and results if they exist
+        if (statusSection) {
+          const statusObserver = new MutationObserver(updateLogoVisibility);
+          statusObserver.observe(statusSection, {
+            attributes: true,
+            attributeFilter: ['class'],
+          });
+        }
+
+        if (resultsSection) {
+          const resultsObserver = new MutationObserver(updateLogoVisibility);
+          resultsObserver.observe(resultsSection, {
+            attributes: true,
+            attributeFilter: ['class'],
+          });
+        }
+
+        // Initial check - set correct visibility based on current state
+        updateLogoVisibility();
+
+        console.log(
+          '✅ Logo controller initialized - logo only shows on pure landing page'
+        );
+      }
+      // Initialize logo controller when DOM is ready
+      document.addEventListener('DOMContentLoaded', initLogoController);
+    </script>
   </body>
 </html>
