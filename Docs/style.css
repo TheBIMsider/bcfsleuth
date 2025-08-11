@@ -989,6 +989,113 @@ html {
 
 /* 
 ==================================================
+  19. COORDINATE DATA STYLING
+  Special styling for coordinate-related content
+==================================================
+*/
+
+/* Coordinate field highlighting */
+.coordinate-field {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--primary);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+/* Coordinate precision indicator */
+.precision-indicator {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-style: italic;
+  margin-left: var(--space-xs);
+}
+
+/* Viewpoint row styling reference */
+.viewpoint-example {
+  background: linear-gradient(135deg, #fef7f0 0%, #fed7aa 100%);
+  border-left: 3px solid var(--success);
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  margin: var(--space-sm) 0;
+}
+
+/* Coordinate count badge */
+.coordinate-count {
+  background: var(--primary);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: var(--space-xs);
+  display: inline-block;
+}
+
+/* Camera type indicators */
+.camera-type-perspective {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.camera-type-orthogonal {
+  color: var(--success);
+  font-weight: 600;
+}
+
+/* Coordinate table styling */
+.coordinate-table {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin: var(--space-md) 0;
+}
+
+.coordinate-table th {
+  background: var(--primary);
+  color: white;
+  padding: var(--space-sm);
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.coordinate-table td {
+  padding: var(--space-sm);
+  border-bottom: 1px solid var(--gray-200);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+.coordinate-table tr:last-child td {
+  border-bottom: none;
+}
+
+.coordinate-table tr:nth-child(even) {
+  background: var(--bg-primary);
+}
+
+/* Responsive coordinate styling */
+@media (max-width: 768px) {
+  .coordinate-table {
+    font-size: 0.75rem;
+  }
+
+  .coordinate-field {
+    padding: var(--space-xs);
+    font-size: 0.75rem;
+  }
+
+  .coordinate-count {
+    font-size: 0.625rem;
+    padding: 1px 6px;
+  }
+}
+
+/* 
+==================================================
   END OF STYLESHEET
   Your docs now match your app's beautiful design!
 ==================================================

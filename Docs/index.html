@@ -77,8 +77,9 @@
               BCFSleuth is a comprehensive web-based platform for analyzing
               Building Collaboration Format (BCF) files. Built specifically for
               AECO professionals, it provides universal BCF format support,
-              advanced analytics, professional reporting, and complete image
-              management - all running securely in your browser.
+              advanced analytics, professional reporting, complete image
+              management, and comprehensive viewpoint coordinate extraction -
+              all running securely in your browser.
             </p>
 
             <div class="alert alert-info">
@@ -102,8 +103,8 @@
               <p>Drag and drop your BCF files (supports v2.0, 2.1, and 3.0)</p>
             </div>
             <div class="step-container">
-              <h4>2. Explore Data</h4>
-              <p>Use the tabbed interface to navigate different views</p>
+              <h4>2. Configure Fields</h4>
+              <p>Select desired data fields including viewpoint coordinates</p>
             </div>
             <div class="step-container">
               <h4>3. Analyze</h4>
@@ -165,8 +166,47 @@
                     threads with expandable interface
                   </li>
                   <li>
+                    <strong>Viewpoint Data:</strong> Display complete camera
+                    coordinates and viewpoint information
+                  </li>
+                  <li>
+                    <strong>Multiple Viewpoints:</strong> Expandable rows
+                    showing all viewpoints per topic
+                  </li>
+                  <li>
                     <strong>Real-Time Search:</strong> Instant filtering across
                     all BCF data
+                  </li>
+                </ul>
+              </div>
+
+              <div class="feature-box">
+                <h3>📐 Viewpoint Coordinate Support</h3>
+                <ul>
+                  <li>
+                    <strong>Complete Camera Data:</strong> Extract all 18 BCF
+                    coordinate fields including camera positions, directions,
+                    and properties
+                  </li>
+                  <li>
+                    <strong>Multi-Version Support:</strong> Full compatibility
+                    with BCF 2.0, 2.1, and 3.0 coordinate standards
+                  </li>
+                  <li>
+                    <strong>Primary Viewpoint Logic:</strong> Intelligent
+                    selection of main viewpoint with fallback handling
+                  </li>
+                  <li>
+                    <strong>Multiple Viewpoint Display:</strong> Show additional
+                    viewpoints as expandable rows in Advanced Preview
+                  </li>
+                  <li>
+                    <strong>Export Integration:</strong> Include coordinate data
+                    in CSV and Excel exports
+                  </li>
+                  <li>
+                    <strong>Visual Distinction:</strong> Clearly marked
+                    viewpoint rows with distinctive styling
                   </li>
                 </ul>
               </div>
@@ -212,6 +252,10 @@
                     <strong>Template System:</strong> Save and reuse export
                     configurations
                   </li>
+                  <li>
+                    <strong>Coordinate Data:</strong> Include viewpoint
+                    coordinates in all export formats
+                  </li>
                 </ul>
               </div>
 
@@ -233,6 +277,10 @@
                   <li>
                     <strong>Extension Support:</strong> Custom fields and
                     project-specific taxonomies
+                  </li>
+                  <li>
+                    <strong>Camera Standards:</strong> Full BCF camera
+                    specification compliance
                   </li>
                 </ul>
               </div>
@@ -277,6 +325,7 @@
             <ul>
               <li>Detects the BCF version</li>
               <li>Extracts all topics, comments, and images</li>
+              <li>Processes viewpoint coordinate data</li>
               <li>Analyzes the data structure</li>
               <li>Prepares interactive visualizations</li>
             </ul>
@@ -291,12 +340,12 @@
                 information and statistics
               </li>
               <li>
-                <strong>Topic Summary:</strong> See total topics, comments, and
-                images
+                <strong>Topic Summary:</strong> See total topics, comments,
+                images, and viewpoints
               </li>
               <li>
                 <strong>Quick Export:</strong> Use the export button for
-                immediate CSV or Excel download
+                immediate CSV or Excel download with coordinate options
               </li>
               <li>
                 <strong>File Information:</strong> Check BCF version and
@@ -331,6 +380,78 @@
                 rows per page)
               </li>
             </ol>
+
+            <h3>Configuring Viewpoint Coordinate Data</h3>
+
+            <h4>Field Selection (Configuration Tab)</h4>
+            <ol>
+              <li>
+                <strong>Viewpoint Coordinates Section:</strong> Find the
+                dedicated "Viewpoint Coordinates (18 fields)" section
+              </li>
+              <li>
+                <strong>Section Control:</strong> Use the section checkbox to
+                select/deselect all coordinate fields at once
+              </li>
+              <li>
+                <strong>Individual Fields:</strong> Expand the section to select
+                specific coordinate fields:
+                <div class="alert alert-info">
+                  <strong>BCF Standard Coordinate Fields:</strong>
+                  <ul>
+                    <li>Camera Type (Perspective/Orthogonal)</li>
+                    <li>Camera Position (X, Y, Z coordinates)</li>
+                    <li>Camera Direction (X, Y, Z vectors)</li>
+                    <li>Camera Up Vector (X, Y, Z vectors)</li>
+                    <li>Field of View (for perspective cameras)</li>
+                    <li>View to World Scale (for orthogonal cameras)</li>
+                  </ul>
+                  <strong>Legacy Compatibility Fields:</strong>
+                  <ul>
+                    <li>Legacy Camera Position (X, Y, Z)</li>
+                    <li>Legacy Camera Target (X, Y, Z)</li>
+                  </ul>
+                </div>
+              </li>
+              <li>
+                <strong>Default Behavior:</strong> Coordinate fields are
+                unchecked by default to avoid overwhelming new users with
+                additional data columns
+              </li>
+              <li>
+                <strong>Template Integration:</strong> Save coordinate field
+                selections in templates for consistent use
+              </li>
+            </ol>
+
+            <h4>Understanding Viewpoint Data</h4>
+            <ul>
+              <li>
+                <strong>Primary Viewpoint:</strong> Each topic shows coordinates
+                from its main viewpoint
+              </li>
+              <li>
+                <strong>Multiple Viewpoints:</strong> Topics with additional
+                viewpoints show them as expandable rows with distinctive orange
+                background and green left border
+              </li>
+              <li>
+                <strong>Visual Distinction:</strong> Viewpoint rows clearly
+                differentiated from white topic rows and light blue comment rows
+              </li>
+              <li>
+                <strong>Coordinate Precision:</strong> All coordinates displayed
+                with 3-decimal precision
+              </li>
+              <li>
+                <strong>Camera Types:</strong> Clear indication of Perspective
+                vs Orthogonal camera properties
+              </li>
+              <li>
+                <strong>BCF Compliance:</strong> Full support for all BCF
+                coordinate specifications
+              </li>
+            </ul>
 
             <h4>Visual Analytics (Analytics Dashboard Tab)</h4>
             <p>
@@ -420,25 +541,47 @@
 
             <h3>Creating Reports and Exports</h3>
 
-            <h4>Data Export Options</h4>
+            <h4>Data Export Options with Coordinates</h4>
             <ol>
               <li>
                 <strong>Choose Export Format:</strong>
                 <ul>
                   <li>
-                    <strong>CSV:</strong> Universal format for data analysis
+                    <strong>CSV:</strong> Universal format with complete
+                    coordinate data
                   </li>
                   <li>
                     <strong>Excel:</strong> Professional formatted spreadsheets
+                    with coordinate columns
                   </li>
                 </ul>
               </li>
               <li>
                 <strong>Select Fields:</strong> Use the Configuration tab to:
                 <ul>
-                  <li>Choose which BCF fields to include</li>
-                  <li>Save field selections as templates</li>
-                  <li>Apply saved templates for consistent exports</li>
+                  <li>Choose standard BCF fields plus viewpoint coordinates</li>
+                  <li>Select all 18 coordinate fields or specific subsets</li>
+                  <li>Save coordinate selections as templates</li>
+                  <li>
+                    Apply saved templates for consistent coordinate exports
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <strong>Coordinate Export Structure:</strong>
+                <ul>
+                  <li>
+                    <strong>Topic Rows:</strong> Include primary viewpoint
+                    coordinate data
+                  </li>
+                  <li>
+                    <strong>Viewpoint Rows:</strong> Additional rows for each
+                    extra viewpoint with complete coordinates
+                  </li>
+                  <li>
+                    <strong>Field Consistency:</strong> Same coordinate data
+                    across Advanced Preview and exports
+                  </li>
                 </ul>
               </li>
               <li>
@@ -602,6 +745,47 @@
                 formats for different stakeholders
               </li>
             </ul>
+
+            <h4>Working with Coordinate Data</h4>
+            <ul>
+              <li>
+                <strong>Camera Analysis:</strong> Use coordinate exports for
+                camera position analysis and clash detection workflows
+              </li>
+              <li>
+                <strong>Survey Integration:</strong> Export precise coordinates
+                for integration with survey data and site positioning
+              </li>
+              <li>
+                <strong>Model Validation:</strong> Compare viewpoint positions
+                against design intent and construction progress
+              </li>
+              <li>
+                <strong>Spatial Quality Control:</strong> Verify issue locations
+                using precise camera coordinates for field verification
+              </li>
+              <li>
+                <strong>Cross-Platform Coordination:</strong> Share exact
+                viewpoint positions between different BIM software platforms
+              </li>
+              <li>
+                <strong>Progress Documentation:</strong> Track spatial context
+                of issues over time using coordinate-based analysis
+              </li>
+              <li>
+                <strong>Viewpoint Management:</strong> Review multiple
+                viewpoints to understand different perspectives on the same
+                issue
+              </li>
+              <li>
+                <strong>Precision Requirements:</strong> 3-decimal precision
+                suitable for most AECO coordinate needs
+              </li>
+              <li>
+                <strong>Template Strategy:</strong> Create coordinate-specific
+                templates for different analysis types
+              </li>
+            </ul>
           </section>
 
           <section id="interface">
@@ -621,10 +805,16 @@
             <div class="feature-box">
               <h4>Advanced Preview</h4>
               <ul>
-                <li>Sortable data table with all BCF fields</li>
+                <li>
+                  Sortable data table with all BCF fields including coordinates
+                </li>
                 <li>Multi-criteria filtering and search</li>
                 <li>Comment expansion and detailed view</li>
-                <li>Export preview integration</li>
+                <li>Viewpoint expansion showing multiple camera positions</li>
+                <li>
+                  Visual distinction between topic, comment, and viewpoint rows
+                </li>
+                <li>Export preview integration with coordinate data</li>
               </ul>
             </div>
 
@@ -651,7 +841,11 @@
             <div class="feature-box">
               <h4>Configuration</h4>
               <ul>
-                <li>Export template management</li>
+                <li>
+                  Export template management including coordinate field
+                  selection
+                </li>
+                <li>Viewpoint coordinate section with 18 field options</li>
                 <li>User preferences and defaults</li>
                 <li>Processing history and tracking</li>
                 <li>Team collaboration features</li>
@@ -668,20 +862,37 @@
               <div class="feature-box">
                 <h4>CSV Export</h4>
                 <ul>
-                  <li>Hierarchical structure with all BCF fields</li>
-                  <li>Customizable field selection</li>
-                  <li>Template-based configuration</li>
-                  <li>Universal compatibility</li>
+                  <li>
+                    Hierarchical structure with all BCF fields plus coordinates
+                  </li>
+                  <li>
+                    Complete viewpoint coordinate data in dedicated columns
+                  </li>
+                  <li>
+                    Customizable field selection including all 18 coordinate
+                    fields
+                  </li>
+                  <li>Template-based configuration with coordinate options</li>
+                  <li>Universal compatibility for CAD and analysis software</li>
                 </ul>
               </div>
 
               <div class="feature-box">
                 <h4>Excel Reports</h4>
                 <ul>
-                  <li>Professional formatting with headers and styling</li>
-                  <li>Multi-sheet organization for complex projects</li>
-                  <li>RFI-style layouts for stakeholder review</li>
+                  <li>
+                    Professional formatting with headers and coordinate styling
+                  </li>
+                  <li>
+                    Multi-sheet organization for complex projects with viewpoint
+                    data
+                  </li>
+                  <li>
+                    RFI-style layouts for stakeholder review including camera
+                    information
+                  </li>
                   <li>Embedded formulas and calculations</li>
+                  <li>Coordinate precision formatting (3 decimal places)</li>
                 </ul>
               </div>
 
