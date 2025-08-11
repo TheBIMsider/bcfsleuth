@@ -2,7 +2,7 @@
 
 <img width="512" height="512" alt="BCFSleuth_Logo_Color" src="https://github.com/user-attachments/assets/fdd735de-e809-4736-a01c-0c054071b8e9" />
 
-A modern web-based BCF (Building Collaboration Format) platform with universal format support, analytics dashboard, and professional reporting capabilities.
+A modern web-based BCF (Building Collaboration Format) platform with universal format support, analytics dashboard, viewpoint coordinate extraction, and professional reporting capabilities.
 
 # 🌟 **[Try BCFSleuth V2.0 Live Demo](https://thebimsider.github.io/bcfsleuth/V02/)**
 
@@ -11,15 +11,15 @@ A modern web-based BCF (Building Collaboration Format) platform with universal f
 BCFSleuth V2.0 is what happens when real-world AECO/BIM experience meets AI coding horsepower:
 
 - **🧠 AI Assistant**: Claude (Anthropic) helped with architecture ideas, cranked out code, and tracked down bugs  
-- **⚡ Fast Build**: Features that would’ve taken months the old way came together in days  
+- **⚡ Fast Build**: Features that would've taken months the old way came together in days  
 - **🏗️ Domain Expertise**: 25+ years in AECO/BIM guiding the direction and keeping it practical  
 - **🔄 Iterative Workflow**: Build, test, tweak, repeat — until it was rock-solid and ready to use  
 
-The result? A capable, ready-to-work BCF management platform built faster than I thought possible.
+The result? A capable, ready-to-work BCF management platform built faster than I thought possible
 
 ## What BCFSleuth Does
 
-BCFSleuth is a modern, web-based evolution of BCF management tools like the original Sloth. It processes BCF files entirely in your browser - no uploads, no accounts, complete privacy. Drag in your BCF files and get instant access to data analysis, image management, and professional reports.
+BCFSleuth is a modern, web-based evolution of BCF management tools like the original Sloth. It processes BCF files entirely in your browser - no uploads, no accounts, complete privacy. Drag in your BCF files and get instant access to data analysis, image management, viewpoint coordinate extraction, and professional reports.
 
 **Universal BCF Support**: Handles all BCF formats (2.0, 2.1, 3.0) with intelligent format detection and adaptation.
 
@@ -36,8 +36,16 @@ BCFSleuth is a modern, web-based evolution of BCF management tools like the orig
 ### 🔍 **Advanced Data Preview**
 - **Smart Table**: Sortable columns with multi-criteria filtering (search, status, priority, assignee, dates)
 - **Comment Expansion**: Click to view full comment threads without losing context
+- **Viewpoint Coordinates**: Display complete camera data with expandable viewpoint rows
 - **Real-time Search**: Instant filtering across all BCF fields
 - **Export Preview**: See exactly what will be exported before generating reports
+
+### 📐 **Viewpoint Coordinate Extraction**
+- **Complete Camera Data**: Extract all 18 BCF coordinate fields including positions, directions, and properties
+- **Multi-Version Support**: Full compatibility with BCF 2.0, 2.1, and 3.0 coordinate standards
+- **Multiple Viewpoints**: Handle topics with multiple viewpoints and display them as expandable rows
+- **Export Integration**: Include precise coordinate data in CSV and Excel exports
+- **Visual Organization**: Clearly distinguish viewpoint rows with distinctive styling
 
 ### 🖼️ **Professional Image Management**
 - **Gallery View**: All BCF images with metadata in organized layout
@@ -48,16 +56,15 @@ BCFSleuth is a modern, web-based evolution of BCF management tools like the orig
 ### 📄 **Multi-Format Reports**
 - **PDF Reports**: Three layout options with project statistics and embedded images
 - **Word Documents**: Fully editable reports perfect for stakeholder collaboration
-- **Excel Export**: Formatted spreadsheets with headers and styling
-- **CSV Export**: Clean data format for further analysis
+- **Excel Export**: Formatted spreadsheets with headers, styling, and coordinate data
+- **CSV Export**: Clean data format with complete coordinate fields for further analysis
 
 ### ⚙️ **Enterprise Configuration**
-- **Template System**: Save field selection templates for consistent team exports
+- **Template System**: Save field selection templates including coordinate options for consistent team exports
+- **Coordinate Controls**: Section-level selection for all 18 coordinate fields with smart defaults
 - **User Preferences**: Customize defaults for format, pagination, and interface settings
 - **Processing History**: Track all BCF files processed with detailed metrics
 - **Team Collaboration**: Import/export templates via JSON for standardization
-
-
 
 ## Screenshots
 
@@ -75,7 +82,7 @@ BCFSleuth is a modern, web-based evolution of BCF management tools like the orig
       <a href="https://github.com/user-attachments/assets/7837fa86-5ad2-4990-8a8d-a88c6ffcba78">
         <img src="https://github.com/user-attachments/assets/7837fa86-5ad2-4990-8a8d-a88c6ffcba78" alt="Enhanced Advanced Preview System" width="100%"/>
       </a>
-      <p><em>Sortable table with comment expansion and filtering</em></p>
+      <p><em>Sortable table with comment expansion, viewpoint coordinates, and filtering</em></p>
     </td>
   </tr>
   <tr>
@@ -93,16 +100,17 @@ BCFSleuth is a modern, web-based evolution of BCF management tools like the orig
 
 1. **[Open BCFSleuth V2.0](https://thebimsider.github.io/bcfsleuth/V02/)**
 2. **Drag & Drop** your BCF file (supports all versions: 2.0, 2.1, 3.0)
-3. **Explore Your Data**:
+3. **Configure Fields** (optional): Enable viewpoint coordinate fields in Configuration tab for spatial analysis
+4. **Explore Your Data**:
    - **Analytics tab**: View interactive charts and create custom analysis
-   - **Advanced Preview**: Sort, filter, and expand comments in your BCF data
+   - **Advanced Preview**: Sort, filter, and expand comments and viewpoints in your BCF data
    - **Image Viewer**: Browse all images with professional lightbox viewing
    - **Configuration**: Set up templates and preferences for your workflow
-4. **Generate Reports**: Export as CSV, Excel, PDF, or Word with embedded charts and images
+5. **Generate Reports**: Export as CSV, Excel, PDF, or Word with embedded charts, images, and coordinate data
 
 ## Privacy & Security
 
-**Complete Client-Side Processing**: All BCF data, images, and analytics remain in your browser. No uploads, no accounts, no data transmission. Your project information never leaves your device.
+**Complete Client-Side Processing**: All BCF data, images, coordinate information, and analytics remain in your browser. No uploads, no accounts, no data transmission. Your project information never leaves your device.
 
 ## Self-Hosting
 
@@ -124,7 +132,8 @@ python -m http.server 8000
 
 - **Dependencies**: Chart.js, JSZip, SheetJS, jsPDF, docx
 - **Browser Support**: Chrome 90+, Firefox 85+, Safari 14+, Edge 90+
-- **Performance**: Handles 1000+ topics with 300+ images efficiently
+- **Performance**: Handles 1000+ topics with 300+ images and complete coordinate data efficiently
+- **BCF Compliance**: Full support for BCF coordinate specifications across all versions
 - **Code Quality**: 8,000+ lines of production-quality JavaScript
 
 ## Development & Contributing
@@ -139,7 +148,7 @@ We welcome contributions from the AECO community:
 
 ## About BCF
 
-The Building Collaboration Format (BCF) is an open file format supporting workflow communication in BIM processes. Learn more at [buildingSMART International](https://www.buildingsmart.org/standards/bsi-standards/bim-collaboration-format/).
+The Building Collaboration Format (BCF) is an open file format supporting workflow communication in BIM processes. BCF viewpoint coordinates provide precise camera positioning information enabling spatial context for issues and comments. Learn more at [buildingSMART International](https://www.buildingsmart.org/standards/bsi-standards/bim-collaboration-format/).
 
 ## Acknowledgments
 
