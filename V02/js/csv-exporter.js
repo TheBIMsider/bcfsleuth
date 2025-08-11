@@ -32,16 +32,94 @@ class CSVExporter {
           'comments'
         );
 
-        // Add main topic row
+        // Add main topic row with primary viewpoint's BCF data (same logic as comments)
         const topicRow = {
           rowType: 'topic',
-          topicNumber: topicNumber, // Add topic number
+          topicNumber: topicNumber,
           sourceFile: bcfData.filename,
           projectName: bcfData.project.name || 'Unknown',
           bcfVersion: bcfData.version || 'Unknown',
           topicGuid: topic.guid,
           ...topic,
         };
+
+        // Add primary viewpoint's BCF camera data to topic row
+        // Priority: 1) viewpoint.bcfv, 2) first viewpoint with coordinates
+        if (topic.viewpoints && topic.viewpoints.length > 0) {
+          console.log(`🎯 Finding primary viewpoint for topic: ${topic.title}`);
+
+          // Method 1: Look for the main viewpoint.bcfv file (highest priority)
+          let primaryViewpoint = topic.viewpoints.find((vp) => {
+            return (
+              vp.viewpointFile === 'viewpoint.bcfv' ||
+              vp.guid === 'viewpoint-generic' ||
+              (vp.viewpointFile &&
+                vp.viewpointFile.toLowerCase().includes('viewpoint.bcfv'))
+            );
+          });
+
+          // Method 2: If no main viewpoint.bcfv, use first viewpoint with camera data
+          if (!primaryViewpoint) {
+            primaryViewpoint = topic.viewpoints.find((vp) => {
+              return vp.cameraType || vp.CameraViewPoint || vp.cameraPosition;
+            });
+          }
+
+          // Method 3: Last resort - use any viewpoint
+          if (!primaryViewpoint && topic.viewpoints.length > 0) {
+            primaryViewpoint = topic.viewpoints[0];
+          }
+
+          if (primaryViewpoint) {
+            console.log(
+              `📍 Using primary viewpoint: ${primaryViewpoint.guid} (${
+                primaryViewpoint.viewpointFile || 'no file'
+              })`
+            );
+
+            // Add ALL BCF camera data to the main topic row
+            topicRow.cameraType = primaryViewpoint.cameraType || '';
+            topicRow.CameraViewPointX =
+              primaryViewpoint.CameraViewPoint?.X ?? null;
+            topicRow.CameraViewPointY =
+              primaryViewpoint.CameraViewPoint?.Y ?? null;
+            topicRow.CameraViewPointZ =
+              primaryViewpoint.CameraViewPoint?.Z ?? null;
+            topicRow.CameraDirectionX =
+              primaryViewpoint.CameraDirection?.X ?? null;
+            topicRow.CameraDirectionY =
+              primaryViewpoint.CameraDirection?.Y ?? null;
+            topicRow.CameraDirectionZ =
+              primaryViewpoint.CameraDirection?.Z ?? null;
+            topicRow.CameraUpVectorX =
+              primaryViewpoint.CameraUpVector?.X ?? null;
+            topicRow.CameraUpVectorY =
+              primaryViewpoint.CameraUpVector?.Y ?? null;
+            topicRow.CameraUpVectorZ =
+              primaryViewpoint.CameraUpVector?.Z ?? null;
+            topicRow.FieldOfView = primaryViewpoint.FieldOfView ?? null;
+            topicRow.ViewToWorldScale =
+              primaryViewpoint.ViewToWorldScale ?? null;
+
+            // Add legacy coordinate data for backward compatibility
+            topicRow.cameraPosX = primaryViewpoint.cameraPosition?.x ?? null;
+            topicRow.cameraPosY = primaryViewpoint.cameraPosition?.y ?? null;
+            topicRow.cameraPosZ = primaryViewpoint.cameraPosition?.z ?? null;
+            topicRow.cameraTargetX = primaryViewpoint.cameraTarget?.x ?? null;
+            topicRow.cameraTargetY = primaryViewpoint.cameraTarget?.y ?? null;
+            topicRow.cameraTargetZ = primaryViewpoint.cameraTarget?.z ?? null;
+
+            console.log('📍 Added complete BCF camera data to topic row:', {
+              topicGuid: topic.guid,
+              cameraType: topicRow.cameraType,
+              CameraViewPointX: topicRow.CameraViewPointX,
+              CameraViewPointY: topicRow.CameraViewPointY,
+              CameraViewPointZ: topicRow.CameraViewPointZ,
+              hasLegacyCoords: topicRow.cameraPosX !== null,
+            });
+          }
+        }
+
         allRows.push(topicRow);
 
         // Add comment rows underneath (sorted by date)
@@ -65,6 +143,136 @@ class CSVExporter {
               ...comment,
             };
             allRows.push(commentRow);
+          });
+        }
+
+        // Add viewpoint coordinate rows (only if coordinate fields are selected)
+        // This works exactly like comments - create separate rows for each viewpoint
+        const coordinateFields = [
+          'cameraType',
+          'CameraViewPointX',
+          'CameraViewPointY',
+          'CameraViewPointZ',
+          'CameraDirectionX',
+          'CameraDirectionY',
+          'CameraDirectionZ',
+          'CameraUpVectorX',
+          'CameraUpVectorY',
+          'CameraUpVectorZ',
+          'FieldOfView',
+          'ViewToWorldScale',
+          'cameraPosX',
+          'cameraPosY',
+          'cameraPosZ',
+          'cameraTargetX',
+          'cameraTargetY',
+          'cameraTargetZ',
+        ];
+        const hasCoordinateFields = selectedFields.some((field) =>
+          coordinateFields.includes(field)
+        );
+
+        console.log('🔍 CSV Export Debug:', {
+          topicTitle: topic.title,
+          selectedFields: selectedFields.length,
+          hasCoordinateFields: hasCoordinateFields,
+          viewpointCount: topic.viewpoints ? topic.viewpoints.length : 0,
+          selectedCoordinateFields: selectedFields.filter((field) =>
+            coordinateFields.includes(field)
+          ),
+        });
+
+        // Create viewpoint rows for ALL viewpoints with coordinate data (like multiple comments)
+        if (
+          hasCoordinateFields &&
+          topic.viewpoints &&
+          topic.viewpoints.length > 0
+        ) {
+          // Filter viewpoints that have ANY coordinate data (more comprehensive check)
+          const coordinateViewpoints = topic.viewpoints.filter((viewpoint) => {
+            return (
+              // Check for BCF camera data
+              viewpoint.cameraType ||
+              (viewpoint.CameraViewPoint &&
+                (viewpoint.CameraViewPoint.X !== null ||
+                  viewpoint.CameraViewPoint.Y !== null ||
+                  viewpoint.CameraViewPoint.Z !== null)) ||
+              (viewpoint.CameraDirection &&
+                (viewpoint.CameraDirection.X !== null ||
+                  viewpoint.CameraDirection.Y !== null ||
+                  viewpoint.CameraDirection.Z !== null)) ||
+              (viewpoint.CameraUpVector &&
+                (viewpoint.CameraUpVector.X !== null ||
+                  viewpoint.CameraUpVector.Y !== null ||
+                  viewpoint.CameraUpVector.Z !== null)) ||
+              viewpoint.FieldOfView !== null ||
+              viewpoint.ViewToWorldScale !== null ||
+              // Check for legacy coordinate data
+              (viewpoint.cameraPosition &&
+                (viewpoint.cameraPosition.x !== null ||
+                  viewpoint.cameraPosition.y !== null ||
+                  viewpoint.cameraPosition.z !== null)) ||
+              (viewpoint.cameraTarget &&
+                (viewpoint.cameraTarget.x !== null ||
+                  viewpoint.cameraTarget.y !== null ||
+                  viewpoint.cameraTarget.z !== null))
+            );
+          });
+
+          console.log(
+            `📍 Found ${coordinateViewpoints.length} viewpoints with coordinate data for topic: ${topic.title}`
+          );
+
+          coordinateViewpoints.forEach((viewpoint, index) => {
+            const viewpointRow = {
+              rowType: 'viewpoint',
+              topicNumber: `${topicNumber}.V${index + 1}`,
+              sourceFile: bcfData.filename,
+              projectName: bcfData.project.name || 'Unknown',
+              bcfVersion: bcfData.version || 'Unknown',
+              topicGuid: topic.guid,
+              viewpointNumber: index + 1,
+              viewpointGuid: viewpoint.guid || '',
+
+              // Add complete BCF camera data
+              cameraType: viewpoint.cameraType || '',
+              CameraViewPointX: viewpoint.CameraViewPoint?.X ?? null,
+              CameraViewPointY: viewpoint.CameraViewPoint?.Y ?? null,
+              CameraViewPointZ: viewpoint.CameraViewPoint?.Z ?? null,
+              CameraDirectionX: viewpoint.CameraDirection?.X ?? null,
+              CameraDirectionY: viewpoint.CameraDirection?.Y ?? null,
+              CameraDirectionZ: viewpoint.CameraDirection?.Z ?? null,
+              CameraUpVectorX: viewpoint.CameraUpVector?.X ?? null,
+              CameraUpVectorY: viewpoint.CameraUpVector?.Y ?? null,
+              CameraUpVectorZ: viewpoint.CameraUpVector?.Z ?? null,
+              FieldOfView: viewpoint.FieldOfView ?? null,
+              ViewToWorldScale: viewpoint.ViewToWorldScale ?? null,
+
+              // Legacy coordinate data for backward compatibility
+              cameraPosX: viewpoint.cameraPosition?.x ?? null,
+              cameraPosY: viewpoint.cameraPosition?.y ?? null,
+              cameraPosZ: viewpoint.cameraPosition?.z ?? null,
+              cameraTargetX: viewpoint.cameraTarget?.x ?? null,
+              cameraTargetY: viewpoint.cameraTarget?.y ?? null,
+              cameraTargetZ: viewpoint.cameraTarget?.z ?? null,
+            };
+
+            allRows.push(viewpointRow);
+
+            console.log(
+              `📍 Added viewpoint row ${index + 1}/${
+                coordinateViewpoints.length
+              }:`,
+              {
+                topicNumber: viewpointRow.topicNumber,
+                viewpointGuid: viewpointRow.viewpointGuid,
+                cameraType: viewpointRow.cameraType,
+                hasCoordinates: !!(
+                  viewpointRow.CameraViewPointX || viewpointRow.cameraPosX
+                ),
+                viewpointFile: viewpoint.viewpointFile || 'unknown',
+              }
+            );
           });
         }
 
@@ -121,6 +329,28 @@ class CSVExporter {
       'referenceLinks',
       'headerFiles',
       'viewpointIndex',
+
+      // NEW: Viewpoint coordinate fields (all BCF versions)
+      'cameraPosX',
+      'cameraPosY',
+      'cameraPosZ',
+      'cameraTargetX',
+      'cameraTargetY',
+      'cameraTargetZ',
+
+      // NEW: Complete BCF camera fields (all BCF versions)
+      'cameraType',
+      'CameraViewPointX',
+      'CameraViewPointY',
+      'CameraViewPointZ',
+      'CameraDirectionX',
+      'CameraDirectionY',
+      'CameraDirectionZ',
+      'CameraUpVectorX',
+      'CameraUpVectorY',
+      'CameraUpVectorZ',
+      'FieldOfView',
+      'ViewToWorldScale',
     ];
   }
 
@@ -156,6 +386,27 @@ class CSVExporter {
       documentReferences: 'Document References',
       headerFiles: 'Header Files',
       viewpointIndex: 'Viewpoint Index',
+      // Complete BCF camera field headers
+      cameraType: 'Camera Type',
+      CameraViewPointX: 'CameraViewPoint X',
+      CameraViewPointY: 'CameraViewPoint Y',
+      CameraViewPointZ: 'CameraViewPoint Z',
+      CameraDirectionX: 'CameraDirection X',
+      CameraDirectionY: 'CameraDirection Y',
+      CameraDirectionZ: 'CameraDirection Z',
+      CameraUpVectorX: 'CameraUpVector X',
+      CameraUpVectorY: 'CameraUpVector Y',
+      CameraUpVectorZ: 'CameraUpVector Z',
+      FieldOfView: 'FieldOfView',
+      ViewToWorldScale: 'ViewToWorldScale',
+
+      // Legacy coordinate field headers
+      cameraPosX: 'Camera Position X (Legacy)',
+      cameraPosY: 'Camera Position Y (Legacy)',
+      cameraPosZ: 'Camera Position Z (Legacy)',
+      cameraTargetX: 'Camera Target X (Legacy)',
+      cameraTargetY: 'Camera Target Y (Legacy)',
+      cameraTargetZ: 'Camera Target Z (Legacy)',
     };
 
     // Always include Row Type and Topic # as first columns
@@ -209,11 +460,40 @@ class CSVExporter {
         row.headerFiles || row._originalTopic?.headerFiles
       ),
       viewpointIndex: row.viewpointIndex || '',
+
+      // Complete BCF camera field mappings
+      cameraType: row.cameraType || '',
+      CameraViewPointX: this.formatCoordinate(row.CameraViewPointX),
+      CameraViewPointY: this.formatCoordinate(row.CameraViewPointY),
+      CameraViewPointZ: this.formatCoordinate(row.CameraViewPointZ),
+      CameraDirectionX: this.formatCoordinate(row.CameraDirectionX),
+      CameraDirectionY: this.formatCoordinate(row.CameraDirectionY),
+      CameraDirectionZ: this.formatCoordinate(row.CameraDirectionZ),
+      CameraUpVectorX: this.formatCoordinate(row.CameraUpVectorX),
+      CameraUpVectorY: this.formatCoordinate(row.CameraUpVectorY),
+      CameraUpVectorZ: this.formatCoordinate(row.CameraUpVectorZ),
+      FieldOfView: this.formatCoordinate(row.FieldOfView),
+      ViewToWorldScale: this.formatCoordinate(row.ViewToWorldScale),
+
+      // Legacy coordinate field mappings
+      cameraPosX: this.formatCoordinate(row.cameraPosX),
+      cameraPosY: this.formatCoordinate(row.cameraPosY),
+      cameraPosZ: this.formatCoordinate(row.cameraPosZ),
+      cameraTargetX: this.formatCoordinate(row.cameraTargetX),
+      cameraTargetY: this.formatCoordinate(row.cameraTargetY),
+      cameraTargetZ: this.formatCoordinate(row.cameraTargetZ),
     };
 
     // Start with row type and topic number
+    let rowTypeDisplay = 'Topic';
+    if (row.rowType === 'comment') {
+      rowTypeDisplay = 'Comment';
+    } else if (row.rowType === 'viewpoint') {
+      rowTypeDisplay = 'Viewpoint';
+    }
+
     const csvRow = [
-      row.rowType === 'topic' ? 'Topic' : 'Comment',
+      rowTypeDisplay,
       row.topicNumber || '', // Add topic number as second column
     ];
 
@@ -234,7 +514,7 @@ class CSVExporter {
         } else {
           csvRow.push(fieldMap[field] || '');
         }
-      } else {
+      } else if (row.rowType === 'comment') {
         // For comment rows, show comment data or empty for topic-specific fields
         if (
           [
@@ -256,11 +536,58 @@ class CSVExporter {
             'bcfVersion',
             'commentsCount',
             'viewpointsCount',
+            'cameraPosX',
+            'cameraPosY',
+            'cameraPosZ',
+            'cameraTargetX',
+            'cameraTargetY',
+            'cameraTargetZ',
           ].includes(field)
         ) {
           csvRow.push('');
         } else {
           csvRow.push(fieldMap[field] || '');
+        }
+      } else if (row.rowType === 'viewpoint') {
+        // For viewpoint rows, show coordinate data and basic metadata only
+        const coordinateFields = [
+          'cameraType',
+          'CameraViewPointX',
+          'CameraViewPointY',
+          'CameraViewPointZ',
+          'CameraDirectionX',
+          'CameraDirectionY',
+          'CameraDirectionZ',
+          'CameraUpVectorX',
+          'CameraUpVectorY',
+          'CameraUpVectorZ',
+          'FieldOfView',
+          'ViewToWorldScale',
+          'cameraPosX',
+          'cameraPosY',
+          'cameraPosZ',
+          'cameraTargetX',
+          'cameraTargetY',
+          'cameraTargetZ',
+        ];
+        const metadataFields = [
+          'sourceFile',
+          'projectName',
+          'bcfVersion',
+          'topicGuid',
+        ];
+        const viewpointSpecificFields = [
+          'viewpointsCount', // Show this for viewpoint rows
+        ];
+
+        if (
+          coordinateFields.includes(field) ||
+          metadataFields.includes(field) ||
+          viewpointSpecificFields.includes(field)
+        ) {
+          csvRow.push(fieldMap[field] || '');
+        } else {
+          csvRow.push(''); // Empty for topic/comment specific fields
         }
       }
     });
@@ -443,5 +770,23 @@ class CSVExporter {
         return parts.join(' | ');
       })
       .join('; ');
+  }
+
+  /**
+   * Format coordinate values for CSV export
+   * Handles null/undefined values and rounds to 3 decimal places
+   */
+  static formatCoordinate(value) {
+    if (value === null || value === undefined || value === '') {
+      return '';
+    }
+
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+      return '';
+    }
+
+    // Round to 3 decimal places for reasonable precision
+    return numValue.toFixed(3);
   }
 }

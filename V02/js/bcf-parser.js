@@ -563,8 +563,40 @@ class BCFParser {
         `Topic ${topic.title} parsed with ${topic.comments.length} comments`
       );
 
+      // DEBUG: Log the actual markup.bcf content to understand structure
+      console.log(
+        `📄 Markup.bcf content for topic ${topic.title}:`,
+        doc.documentElement.outerHTML.substring(0, 1000)
+      );
+
       // Parse viewpoints
       this.parseViewpoints(doc, topic);
+
+      // Extract viewpoint coordinates from ZIP files
+      await this.extractViewpointCoordinatesFromZip(zip, topicGuid, topic);
+
+      // Debug: Log coordinate extraction results
+      const coordinatesFound = topic.viewpoints.filter(
+        (vp) =>
+          (vp.cameraPosition && vp.cameraPosition.x !== null) ||
+          (vp.cameraTarget && vp.cameraTarget.x !== null)
+      );
+
+      console.log(
+        `🎯 Topic "${topic.title}" viewpoint coordinate extraction complete:`,
+        {
+          viewpointCount: topic.viewpoints.length,
+          coordinatesFound: coordinatesFound.length,
+          allViewpoints: topic.viewpoints.map((vp) => ({
+            guid: vp.guid,
+            hasCoordinates:
+              (vp.cameraPosition && vp.cameraPosition.x !== null) ||
+              (vp.cameraTarget && vp.cameraTarget.x !== null),
+            cameraPos: vp.cameraPosition,
+            cameraTarget: vp.cameraTarget,
+          })),
+        }
+      );
 
       // Store ZIP reference for lazy image loading (don't extract images yet)
       topic._zipReference = zip;
@@ -700,20 +732,414 @@ class BCFParser {
   }
 
   static parseViewpoints(doc, topic) {
-    const viewpointElements = doc.querySelectorAll('Viewpoints Viewpoint');
-    viewpointElements.forEach((viewpointEl) => {
+    const viewpoints = doc.querySelectorAll('Viewpoint');
+    topic.viewpoints = [];
+
+    console.log(
+      `🔍 Found ${viewpoints.length} viewpoints for topic: ${topic.title}`
+    );
+
+    viewpoints.forEach((viewpointElement, index) => {
+      // Try different ways to get the GUID
+      let guid =
+        viewpointElement.getAttribute('Guid') ||
+        viewpointElement.getAttribute('guid') ||
+        viewpointElement.getAttribute('ViewPointGuid');
+
+      console.log(`🔍 Raw viewpoint element for index ${index}:`, {
+        tagName: viewpointElement.tagName,
+        attributes: Array.from(viewpointElement.attributes).map(
+          (attr) => `${attr.name}="${attr.value}"`
+        ),
+        textContent: viewpointElement.textContent.substring(0, 100),
+      });
+
+      // If still no GUID, try to extract from child elements
+      if (!guid) {
+        // Some BCF files store the viewpoint reference as text content
+        const viewpointText = viewpointElement.textContent.trim();
+        if (viewpointText && viewpointText.includes('.bcfv')) {
+          // Extract GUID from filename like "8d12438d-da94-4dce-a976-1b375cdd0b60.bcfv"
+          guid = viewpointText.replace('.bcfv', '').replace(/^.*\//, '');
+        }
+      }
+
+      // If still no GUID, generate one based on content
+      if (!guid) {
+        guid = `viewpoint-${topic.guid}-${index}`;
+        console.warn(
+          `⚠️ No GUID found for viewpoint ${index}, generated: ${guid}`
+        );
+      }
+
       const viewpoint = {
-        guid: viewpointEl.getAttribute('Guid'),
-        viewpoint: viewpointEl.getAttribute('Viewpoint'),
-        snapshot: viewpointEl.getAttribute('Snapshot'),
-        index: viewpointEl.getAttribute('Index'),
-        // Enhanced: store image data and metadata
-        imageData: null,
-        imageType: null,
-        hasImage: false,
+        guid: guid,
+        viewpointFile: null,
+        snapshot: null,
+        index: index,
       };
+
+      // Extract viewpoint file reference
+      const viewpointFileElement = viewpointElement.querySelector('Viewpoint');
+      if (viewpointFileElement) {
+        viewpoint.viewpointFile = viewpointFileElement.textContent;
+      } else {
+        // Some BCF files store the viewpoint reference as direct text content
+        const textContent = viewpointElement.textContent.trim();
+        if (textContent && textContent.includes('.bcfv')) {
+          viewpoint.viewpointFile = textContent;
+        }
+      }
+
+      // Extract snapshot reference
+      const snapshotElement = viewpointElement.querySelector('Snapshot');
+      if (snapshotElement) {
+        viewpoint.snapshot = snapshotElement.textContent;
+      }
+
+      // Initialize coordinate structures (will be populated later from .bcfv files)
+      this.extractViewpointCoordinates(doc, viewpoint);
+
       topic.viewpoints.push(viewpoint);
+
+      console.log(
+        `📍 Viewpoint ${index + 1}: GUID=${viewpoint.guid}, File=${
+          viewpoint.viewpointFile
+        }, Snapshot=${viewpoint.snapshot}`
+      );
     });
+
+    console.log(
+      `✅ Parsed ${topic.viewpoints.length} viewpoints for topic: ${topic.title}`
+    );
+  }
+
+  /**
+   * Extract viewpoint coordinates from BCF files (supports BCF 2.0, 2.1, and 3.0)
+   * BCF files store camera coordinates in the viewpoint.bcfv file for each viewpoint
+   * @param {Document} doc - The markup document (we'll need to parse viewpoint files separately)
+   * @param {Object} viewpoint - The viewpoint object to populate with coordinates
+   */
+  static extractViewpointCoordinates(doc, viewpoint) {
+    // Initialize coordinate structures with null values
+    viewpoint.cameraPosition = { x: null, y: null, z: null };
+    viewpoint.cameraTarget = { x: null, y: null, z: null };
+
+    console.log(
+      `🔧 Initialized coordinate structures for viewpoint ${viewpoint.guid}`
+    );
+  }
+
+  /**
+   * Extract viewpoint coordinates from the ZIP file's .bcfv files
+   * This method is called during topic parsing when ZIP access is available
+   * Supports BCF 2.0, 2.1, and 3.0 coordinate formats
+   * @param {JSZip} zip - The BCF ZIP file
+   * @param {string} topicGuid - The topic GUID
+   * @param {Object} topic - The topic object containing viewpoints
+   */
+
+  static async extractViewpointCoordinatesFromZip(zip, topicGuid, topic) {
+    console.log(`🎯 Starting coordinate extraction for topic: ${topic.title}`);
+
+    // First, discover ALL .bcfv files in this topic folder
+    const allBcfvFiles = [];
+    zip.forEach((relativePath, file) => {
+      if (
+        relativePath.startsWith(topicGuid + '/') &&
+        relativePath.endsWith('.bcfv')
+      ) {
+        const fileName = relativePath.split('/').pop();
+        allBcfvFiles.push({
+          path: relativePath,
+          name: fileName,
+          guid: this.extractGuidFromViewpointFilename(fileName),
+        });
+      }
+    });
+
+    console.log(
+      `🔍 Found ${allBcfvFiles.length} .bcfv files in topic ${topicGuid}:`,
+      allBcfvFiles
+    );
+
+    if (allBcfvFiles.length === 0) {
+      console.log(`📍 No .bcfv files found in topic ${topicGuid}`);
+      return;
+    }
+
+    // Process each .bcfv file and create/update viewpoints
+    for (const bcfvFile of allBcfvFiles) {
+      try {
+        console.log(`🔄 Processing viewpoint file: ${bcfvFile.path}`);
+
+        // Find or create viewpoint object
+        let viewpoint = topic.viewpoints.find(
+          (vp) => vp.guid === bcfvFile.guid
+        );
+
+        if (!viewpoint) {
+          // Create new viewpoint if not found in markup
+          viewpoint = {
+            guid: bcfvFile.guid,
+            viewpointFile: bcfvFile.name,
+            snapshot: null,
+            index: topic.viewpoints.length,
+            cameraPosition: { x: null, y: null, z: null },
+            cameraTarget: { x: null, y: null, z: null },
+          };
+          topic.viewpoints.push(viewpoint);
+          console.log(
+            `➕ Created new viewpoint object for GUID: ${bcfvFile.guid}`
+          );
+        }
+
+        // Parse the viewpoint XML file
+        const viewpointFile = zip.file(bcfvFile.path);
+        const viewpointXml = await viewpointFile.async('text');
+        console.log(
+          `📄 Viewpoint XML content (first 200 chars):`,
+          viewpointXml.substring(0, 200)
+        );
+
+        const parser = new DOMParser();
+        const viewpointDoc = parser.parseFromString(viewpointXml, 'text/xml');
+
+        // Check for parsing errors
+        const parserError = viewpointDoc.querySelector('parsererror');
+        if (parserError) {
+          console.error(
+            `❌ XML parsing error for ${bcfvFile.guid}:`,
+            parserError.textContent
+          );
+          continue;
+        }
+
+        // Extract camera position and target coordinates
+        this.parseViewpointCameraData(viewpointDoc, viewpoint);
+
+        if (
+          viewpoint.cameraPosition.x !== null ||
+          viewpoint.cameraTarget.x !== null
+        ) {
+          console.log(
+            `✅ Successfully extracted coordinates for viewpoint ${viewpoint.guid}`
+          );
+        } else {
+          console.log(
+            `❌ No coordinates extracted for viewpoint ${viewpoint.guid}`
+          );
+        }
+      } catch (error) {
+        console.error(
+          `⚠️ Error extracting coordinates from ${bcfvFile.path}:`,
+          error
+        );
+      }
+    }
+
+    // Final extraction summary with detailed coordinate data
+    const viewpointsWithCoordinates = topic.viewpoints.filter((vp) => {
+      return (
+        vp.cameraType ||
+        vp.CameraViewPoint ||
+        vp.CameraDirection ||
+        vp.CameraUpVector ||
+        vp.FieldOfView !== null ||
+        vp.ViewToWorldScale !== null ||
+        vp.cameraPosition ||
+        vp.cameraTarget
+      );
+    });
+
+    console.log(`🎯 Coordinate extraction complete for topic: ${topic.title}`, {
+      totalViewpoints: topic.viewpoints.length,
+      viewpointsWithCoordinates: viewpointsWithCoordinates.length,
+      coordinateBreakdown: viewpointsWithCoordinates.map((vp) => ({
+        guid: vp.guid,
+        file: vp.viewpointFile,
+        cameraType: vp.cameraType,
+        hasBCFCoords: !!(vp.CameraViewPoint || vp.CameraDirection),
+        hasLegacyCoords: !!(vp.cameraPosition || vp.cameraTarget),
+        isComplete: !!(
+          vp.cameraType &&
+          vp.CameraViewPoint &&
+          vp.CameraDirection
+        ),
+      })),
+    });
+  }
+
+  /**
+   * Extract GUID from various viewpoint filename formats
+   * Handles: viewpoint.bcfv, {guid}.bcfv, Viewpoint_{guid}.bcfv
+   * @param {string} filename - The viewpoint filename
+   * @returns {string} - The extracted GUID or generated identifier
+   */
+  static extractGuidFromViewpointFilename(filename) {
+    // Remove .bcfv extension
+    const nameWithoutExt = filename.replace(/\.bcfv$/, '');
+
+    // Pattern 1: Viewpoint_{guid}.bcfv
+    if (nameWithoutExt.startsWith('Viewpoint_')) {
+      const guid = nameWithoutExt.replace('Viewpoint_', '');
+      console.log(`📍 Extracted GUID from Viewpoint_ format: ${guid}`);
+      return guid;
+    }
+
+    // Pattern 2: {guid}.bcfv (direct GUID)
+    if (nameWithoutExt.match(/^[0-9a-f-]{36}$/i)) {
+      console.log(`📍 Direct GUID format: ${nameWithoutExt}`);
+      return nameWithoutExt;
+    }
+
+    // Pattern 3: viewpoint.bcfv (generic)
+    if (nameWithoutExt === 'viewpoint') {
+      const genericGuid = 'viewpoint-generic';
+      console.log(`📍 Generic viewpoint file, using GUID: ${genericGuid}`);
+      return genericGuid;
+    }
+
+    // Pattern 4: Any other format - use the filename as identifier
+    console.log(`📍 Unknown format, using filename as GUID: ${nameWithoutExt}`);
+    return nameWithoutExt;
+  }
+
+  /**
+   * Parse camera data from viewpoint XML document
+   * Extracts complete camera information with BCF naming conventions
+   * Handles both PerspectiveCamera and OrthogonalCamera elements
+   * Works across BCF 2.0, 2.1, and 3.0 formats
+   * @param {Document} viewpointDoc - The parsed viewpoint XML document
+   * @param {Object} viewpoint - The viewpoint object to populate
+   */
+  static parseViewpointCameraData(viewpointDoc, viewpoint) {
+    // Try PerspectiveCamera first
+    let cameraElement = viewpointDoc.querySelector('PerspectiveCamera');
+    let cameraType = 'Perspective';
+
+    // Fallback to OrthogonalCamera if PerspectiveCamera not found
+    if (!cameraElement) {
+      cameraElement = viewpointDoc.querySelector('OrthogonalCamera');
+      cameraType = 'Orthogonal';
+    }
+
+    if (!cameraElement) {
+      console.log(`📷 No camera element found in viewpoint ${viewpoint.guid}`);
+      return;
+    }
+
+    console.log(
+      `📷 Found ${cameraType} camera for viewpoint ${viewpoint.guid}`
+    );
+
+    // Initialize all camera properties with BCF naming
+    viewpoint.cameraType = cameraType;
+    viewpoint.CameraViewPoint = { X: null, Y: null, Z: null };
+    viewpoint.CameraDirection = { X: null, Y: null, Z: null };
+    viewpoint.CameraUpVector = { X: null, Y: null, Z: null };
+    viewpoint.FieldOfView = null; // Perspective cameras only
+    viewpoint.ViewToWorldScale = null; // Orthogonal cameras only
+
+    // Extract CameraViewPoint
+    const cameraViewPoint = cameraElement.querySelector('CameraViewPoint');
+    if (cameraViewPoint) {
+      const xElement = cameraViewPoint.querySelector('X');
+      const yElement = cameraViewPoint.querySelector('Y');
+      const zElement = cameraViewPoint.querySelector('Z');
+
+      if (xElement && yElement && zElement) {
+        viewpoint.CameraViewPoint = {
+          X: parseFloat(xElement.textContent),
+          Y: parseFloat(yElement.textContent),
+          Z: parseFloat(zElement.textContent),
+        };
+        console.log(`✅ Extracted CameraViewPoint:`, viewpoint.CameraViewPoint);
+      }
+    }
+
+    // Extract CameraDirection
+    const cameraDirection = cameraElement.querySelector('CameraDirection');
+    if (cameraDirection) {
+      const xElement = cameraDirection.querySelector('X');
+      const yElement = cameraDirection.querySelector('Y');
+      const zElement = cameraDirection.querySelector('Z');
+
+      if (xElement && yElement && zElement) {
+        viewpoint.CameraDirection = {
+          X: parseFloat(xElement.textContent),
+          Y: parseFloat(yElement.textContent),
+          Z: parseFloat(zElement.textContent),
+        };
+        console.log(`✅ Extracted CameraDirection:`, viewpoint.CameraDirection);
+      }
+    }
+
+    // Extract CameraUpVector
+    const cameraUpVector = cameraElement.querySelector('CameraUpVector');
+    if (cameraUpVector) {
+      const xElement = cameraUpVector.querySelector('X');
+      const yElement = cameraUpVector.querySelector('Y');
+      const zElement = cameraUpVector.querySelector('Z');
+
+      if (xElement && yElement && zElement) {
+        viewpoint.CameraUpVector = {
+          X: parseFloat(xElement.textContent),
+          Y: parseFloat(yElement.textContent),
+          Z: parseFloat(zElement.textContent),
+        };
+        console.log(`✅ Extracted CameraUpVector:`, viewpoint.CameraUpVector);
+      }
+    }
+
+    // Extract camera-type specific properties
+    if (cameraType === 'Perspective') {
+      // Extract FieldOfView for perspective cameras
+      const fieldOfView = cameraElement.querySelector('FieldOfView');
+      if (fieldOfView) {
+        viewpoint.FieldOfView = parseFloat(fieldOfView.textContent);
+        console.log(`✅ Extracted FieldOfView:`, viewpoint.FieldOfView);
+      }
+    } else if (cameraType === 'Orthogonal') {
+      // Extract ViewToWorldScale for orthogonal cameras
+      const viewToWorldScale = cameraElement.querySelector('ViewToWorldScale');
+      if (viewToWorldScale) {
+        viewpoint.ViewToWorldScale = parseFloat(viewToWorldScale.textContent);
+        console.log(
+          `✅ Extracted ViewToWorldScale:`,
+          viewpoint.ViewToWorldScale
+        );
+      }
+    }
+
+    // Keep the old format for backward compatibility
+    viewpoint.cameraPosition = {
+      x: viewpoint.CameraViewPoint.X,
+      y: viewpoint.CameraViewPoint.Y,
+      z: viewpoint.CameraViewPoint.Z,
+    };
+
+    // Calculate target for backward compatibility (optional)
+    if (viewpoint.CameraDirection.X !== null) {
+      const distance = 10.0;
+      viewpoint.cameraTarget = {
+        x: viewpoint.CameraViewPoint.X + viewpoint.CameraDirection.X * distance,
+        y: viewpoint.CameraViewPoint.Y + viewpoint.CameraDirection.Y * distance,
+        z: viewpoint.CameraViewPoint.Z + viewpoint.CameraDirection.Z * distance,
+      };
+    }
+
+    console.log(
+      `🎯 Complete camera data extracted for viewpoint ${viewpoint.guid}:`,
+      {
+        type: cameraType,
+        CameraViewPoint: viewpoint.CameraViewPoint,
+        CameraDirection: viewpoint.CameraDirection,
+        CameraUpVector: viewpoint.CameraUpVector,
+        FieldOfView: viewpoint.FieldOfView,
+        ViewToWorldScale: viewpoint.ViewToWorldScale,
+      }
+    );
   }
 
   static getElementText(parentOrDoc, tagName) {

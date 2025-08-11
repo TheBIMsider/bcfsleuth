@@ -167,7 +167,23 @@ class BCFSleuthApp {
       });
 
     this.updateFieldCount();
-    console.log('Selected fields updated:', Array.from(this.selectedFields)); // Debug log
+
+    // Enhanced debug logging for coordinate fields
+    const coordinateFieldsSelected = Array.from(this.selectedFields).filter(
+      (field) =>
+        field.includes('Camera') ||
+        field.includes('FieldOfView') ||
+        field.includes('ViewToWorldScale') ||
+        field.includes('cameraPos') ||
+        field.includes('cameraTarget')
+    );
+
+    console.log('Selected fields updated:', {
+      totalSelected: this.selectedFields.size,
+      coordinateFields: coordinateFieldsSelected.length,
+      coordinateFieldList: coordinateFieldsSelected,
+      allSelected: Array.from(this.selectedFields),
+    });
     if (this.advancedPreview && this.parsedData.length > 0) {
       this.advancedPreview.buildAdvancedTableHeaders();
       if (this.advancedPreview.currentTab === 'advanced') {
@@ -203,23 +219,44 @@ class BCFSleuthApp {
   }
 
   selectAllFields() {
+    // Select all individual field checkboxes
     document
       .querySelectorAll('.field-item input[type="checkbox"]')
       .forEach((checkbox) => {
         checkbox.checked = true;
       });
+
+    // Update all section checkboxes to checked state
+    document
+      .querySelectorAll('.section-checkbox')
+      .forEach((sectionCheckbox) => {
+        sectionCheckbox.checked = true;
+        sectionCheckbox.indeterminate = false;
+      });
+
     this.updateFieldSelection();
+    console.log('📋 Selected all fields and updated section checkboxes');
   }
 
   clearAllFields() {
+    // Clear all individual field checkboxes
     document
       .querySelectorAll('.field-item input[type="checkbox"]')
       .forEach((checkbox) => {
         checkbox.checked = false;
       });
-    this.updateFieldSelection();
-  }
 
+    // Update all section checkboxes to unchecked state
+    document
+      .querySelectorAll('.section-checkbox')
+      .forEach((sectionCheckbox) => {
+        sectionCheckbox.checked = false;
+        sectionCheckbox.indeterminate = false;
+      });
+
+    this.updateFieldSelection();
+    console.log('📋 Cleared all fields and updated section checkboxes');
+  }
   selectEssentialFields() {
     // Clear all first
     this.clearAllFields();
@@ -249,7 +286,24 @@ class BCFSleuthApp {
     });
 
     this.updateFieldSelection();
-    console.log('Essential fields selected'); // Debug log
+
+    // Update section checkbox states after essential field selection
+    setTimeout(() => {
+      document
+        .querySelectorAll('.section-checkbox')
+        .forEach((sectionCheckbox) => {
+          const categoryDiv = sectionCheckbox.closest('.field-category');
+          const individualCheckboxes = categoryDiv.querySelectorAll(
+            '.field-item input[type="checkbox"]'
+          );
+          this.updateSectionCheckboxState(
+            sectionCheckbox,
+            individualCheckboxes
+          );
+        });
+    }, 100);
+
+    console.log('📋 Essential fields selected and section states updated');
   }
 
   updateFieldSelectionWithCustomData() {
@@ -524,6 +578,52 @@ class BCFSleuthApp {
         // Viewpoints and comments detection (existing logic)
         if (topic.viewpoints && topic.viewpoints.length > 0) {
           discoveredFields.metadata.add('viewpointsCount');
+
+          // Check for viewpoint coordinates (available in all BCF versions)
+          const hasCoordinates = topic.viewpoints.some(
+            (vp) =>
+              (vp.cameraPosition &&
+                (vp.cameraPosition.x !== null ||
+                  vp.cameraPosition.y !== null ||
+                  vp.cameraPosition.z !== null)) ||
+              (vp.cameraTarget &&
+                (vp.cameraTarget.x !== null ||
+                  vp.cameraTarget.y !== null ||
+                  vp.cameraTarget.z !== null))
+          );
+
+          if (hasCoordinates) {
+            // Add all BCF camera fields to metadata
+            discoveredFields.metadata.add('cameraType');
+            discoveredFields.metadata.add('CameraViewPointX');
+            discoveredFields.metadata.add('CameraViewPointY');
+            discoveredFields.metadata.add('CameraViewPointZ');
+            discoveredFields.metadata.add('CameraDirectionX');
+            discoveredFields.metadata.add('CameraDirectionY');
+            discoveredFields.metadata.add('CameraDirectionZ');
+            discoveredFields.metadata.add('CameraUpVectorX');
+            discoveredFields.metadata.add('CameraUpVectorY');
+            discoveredFields.metadata.add('CameraUpVectorZ');
+            discoveredFields.metadata.add('FieldOfView');
+            discoveredFields.metadata.add('ViewToWorldScale');
+
+            // Keep old names for backward compatibility
+            discoveredFields.metadata.add('cameraPosX');
+            discoveredFields.metadata.add('cameraPosY');
+            discoveredFields.metadata.add('cameraPosZ');
+            discoveredFields.metadata.add('cameraTargetX');
+            discoveredFields.metadata.add('cameraTargetY');
+            discoveredFields.metadata.add('cameraTargetZ');
+            console.log('✅ Found viewpoint coordinates in BCF data:', {
+              topicTitle: topic.title,
+              viewpointCount: topic.viewpoints.length,
+              coordinateViewpoints: topic.viewpoints.filter(
+                (vp) =>
+                  (vp.cameraPosition && vp.cameraPosition.x !== null) ||
+                  (vp.cameraTarget && vp.cameraTarget.x !== null)
+              ).length,
+            });
+          }
 
           // BCF 3.0: Check for viewpoint index (if BCF 3.0 content present)
           if (bcfFormat === '3.0' && hasBCF30Content) {
@@ -823,6 +923,79 @@ class BCFSleuthApp {
       );
     }
 
+    // Build Viewpoint Coordinates section (new section at bottom)
+    const coordinateFields = discoveredFields.metadata.filter((field) =>
+      [
+        'cameraType',
+        'CameraViewPointX',
+        'CameraViewPointY',
+        'CameraViewPointZ',
+        'CameraDirectionX',
+        'CameraDirectionY',
+        'CameraDirectionZ',
+        'CameraUpVectorX',
+        'CameraUpVectorY',
+        'CameraUpVectorZ',
+        'FieldOfView',
+        'ViewToWorldScale',
+        'cameraPosX',
+        'cameraPosY',
+        'cameraPosZ',
+        'cameraTargetX',
+        'cameraTargetY',
+        'cameraTargetZ',
+      ].includes(field)
+    );
+
+    console.log('🎯 Coordinate fields found:', coordinateFields);
+    console.log('🎯 All metadata fields:', discoveredFields.metadata);
+
+    if (coordinateFields.length > 0) {
+      console.log('🎯 Building Viewpoint Coordinates section...');
+
+      const coordinatesCategory = this.buildFieldCategory(
+        'Viewpoint Coordinates',
+        coordinateFields,
+        customData,
+        [
+          { id: 'cameraType', label: 'Camera Type' },
+          { id: 'CameraViewPointX', label: 'CameraViewPoint X' },
+          { id: 'CameraViewPointY', label: 'CameraViewPoint Y' },
+          { id: 'CameraViewPointZ', label: 'CameraViewPoint Z' },
+          { id: 'CameraDirectionX', label: 'CameraDirection X' },
+          { id: 'CameraDirectionY', label: 'CameraDirection Y' },
+          { id: 'CameraDirectionZ', label: 'CameraDirection Z' },
+          { id: 'CameraUpVectorX', label: 'CameraUpVector X' },
+          { id: 'CameraUpVectorY', label: 'CameraUpVector Y' },
+          { id: 'CameraUpVectorZ', label: 'CameraUpVector Z' },
+          { id: 'FieldOfView', label: 'FieldOfView (Perspective)' },
+          { id: 'ViewToWorldScale', label: 'ViewToWorldScale (Orthogonal)' },
+          { id: 'cameraPosX', label: 'Camera Position X (Legacy)' },
+          { id: 'cameraPosY', label: 'Camera Position Y (Legacy)' },
+          { id: 'cameraPosZ', label: 'Camera Position Z (Legacy)' },
+          { id: 'cameraTargetX', label: 'Camera Target X (Legacy)' },
+          { id: 'cameraTargetY', label: 'Camera Target Y (Legacy)' },
+          { id: 'cameraTargetZ', label: 'Camera Target Z (Legacy)' },
+        ]
+      );
+
+      // Uncheck these by default (as requested)
+      coordinatesCategory
+        .querySelectorAll('input[type="checkbox"]')
+        .forEach((checkbox) => {
+          checkbox.checked = false;
+        });
+
+      fieldCategories.appendChild(coordinatesCategory);
+      console.log(
+        '✅ Added Viewpoint Coordinates section with',
+        coordinateFields.length,
+        'fields'
+      );
+    } else {
+      console.log('❌ No coordinate fields detected in metadata');
+    }
+
     // Re-attach event listeners to new checkboxes
     this.attachFieldSelectionListeners();
 
@@ -839,9 +1012,63 @@ class BCFSleuthApp {
     const categoryDiv = document.createElement('div');
     categoryDiv.className = 'field-category';
 
-    const header = document.createElement('h6');
-    header.textContent = categoryName;
-    categoryDiv.appendChild(header);
+    // Create header with section-level checkbox
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'category-header';
+    headerDiv.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      padding: 0.5rem;
+      background-color: #f8f9fa;
+      border-radius: 0.375rem;
+      border: 1px solid #e5e7eb;
+    `;
+
+    // Section checkbox
+    const sectionCheckbox = document.createElement('input');
+    sectionCheckbox.type = 'checkbox';
+    sectionCheckbox.id = `section-${categoryName
+      .toLowerCase()
+      .replace(/\s+/g, '-')}`;
+    sectionCheckbox.className = 'section-checkbox';
+    sectionCheckbox.style.cssText = `
+      width: 1.1rem;
+      height: 1.1rem;
+      cursor: pointer;
+    `;
+
+    // Section label
+    const sectionLabel = document.createElement('label');
+    sectionLabel.setAttribute('for', sectionCheckbox.id);
+    sectionLabel.style.cssText = `
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      margin: 0;
+      user-select: none;
+    `;
+    sectionLabel.textContent = categoryName;
+
+    // Field count indicator
+    const fieldCount = fieldDefinitions.filter((def) =>
+      availableFields.includes(def.id)
+    ).length;
+    const countSpan = document.createElement('span');
+    countSpan.className = 'section-field-count';
+    countSpan.style.cssText = `
+      font-size: 0.875rem;
+      color: #6b7280;
+      font-weight: normal;
+      margin-left: 0.25rem;
+    `;
+    countSpan.textContent = `(${fieldCount} fields)`;
+    sectionLabel.appendChild(countSpan);
+
+    headerDiv.appendChild(sectionCheckbox);
+    headerDiv.appendChild(sectionLabel);
+    categoryDiv.appendChild(headerDiv);
 
     const gridDiv = document.createElement('div');
     gridDiv.className = 'field-grid';
@@ -885,7 +1112,79 @@ class BCFSleuthApp {
     });
 
     categoryDiv.appendChild(gridDiv);
+
+    // Add event listener for section-level checkbox
+    sectionCheckbox.addEventListener('change', (e) => {
+      const isChecked = e.target.checked;
+      const categoryCheckboxes = gridDiv.querySelectorAll(
+        'input[type="checkbox"]'
+      );
+
+      console.log(
+        `📋 Section "${categoryName}" ${
+          isChecked ? 'checked' : 'unchecked'
+        } - updating ${categoryCheckboxes.length} fields`
+      );
+
+      // Update all checkboxes in this category
+      categoryCheckboxes.forEach((checkbox) => {
+        checkbox.checked = isChecked;
+      });
+
+      // Update the main field selection
+      this.updateFieldSelection();
+
+      // Update the section checkbox state based on individual checkboxes
+      this.updateSectionCheckboxState(sectionCheckbox, categoryCheckboxes);
+    });
+
+    // Add event listeners to individual checkboxes to update section state
+    const individualCheckboxes = gridDiv.querySelectorAll(
+      'input[type="checkbox"]'
+    );
+    individualCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener('change', () => {
+        this.updateSectionCheckboxState(sectionCheckbox, individualCheckboxes);
+      });
+    });
+
+    // Set initial section checkbox state
+    setTimeout(() => {
+      this.updateSectionCheckboxState(sectionCheckbox, individualCheckboxes);
+    }, 100);
+
     return categoryDiv;
+  }
+
+  /**
+   * Update section checkbox state based on individual field checkboxes
+   * - Checked: if all individual checkboxes are checked
+   * - Unchecked: if no individual checkboxes are checked
+   * - Indeterminate: if some but not all individual checkboxes are checked
+   */
+  updateSectionCheckboxState(sectionCheckbox, individualCheckboxes) {
+    const checkedCount = Array.from(individualCheckboxes).filter(
+      (cb) => cb.checked
+    ).length;
+    const totalCount = individualCheckboxes.length;
+
+    if (checkedCount === 0) {
+      // No checkboxes checked
+      sectionCheckbox.checked = false;
+      sectionCheckbox.indeterminate = false;
+    } else if (checkedCount === totalCount) {
+      // All checkboxes checked
+      sectionCheckbox.checked = true;
+      sectionCheckbox.indeterminate = false;
+    } else {
+      // Some checkboxes checked (indeterminate state)
+      sectionCheckbox.checked = false;
+      sectionCheckbox.indeterminate = true;
+    }
+
+    console.log(
+      `📋 Section checkbox state updated: ${checkedCount}/${totalCount} checked, indeterminate: ${sectionCheckbox.indeterminate}`
+    );
   }
 
   getCustomIndicator(fieldId, customData) {
@@ -1000,6 +1299,27 @@ class BCFSleuthApp {
       'field-documentReferences': 'documentReferences',
       'field-headerFiles': 'headerFiles',
       'field-viewpointIndex': 'viewpointIndex',
+      // Complete BCF camera coordinate mappings (available in all BCF versions)
+      'field-cameraType': 'cameraType',
+      'field-CameraViewPointX': 'CameraViewPointX',
+      'field-CameraViewPointY': 'CameraViewPointY',
+      'field-CameraViewPointZ': 'CameraViewPointZ',
+      'field-CameraDirectionX': 'CameraDirectionX',
+      'field-CameraDirectionY': 'CameraDirectionY',
+      'field-CameraDirectionZ': 'CameraDirectionZ',
+      'field-CameraUpVectorX': 'CameraUpVectorX',
+      'field-CameraUpVectorY': 'CameraUpVectorY',
+      'field-CameraUpVectorZ': 'CameraUpVectorZ',
+      'field-FieldOfView': 'FieldOfView',
+      'field-ViewToWorldScale': 'ViewToWorldScale',
+
+      // Legacy coordinate mappings (for backward compatibility)
+      'field-cameraPosX': 'cameraPosX',
+      'field-cameraPosY': 'cameraPosY',
+      'field-cameraPosZ': 'cameraPosZ',
+      'field-cameraTargetX': 'cameraTargetX',
+      'field-cameraTargetY': 'cameraTargetY',
+      'field-cameraTargetZ': 'cameraTargetZ',
     };
   }
 
@@ -1205,6 +1525,77 @@ class BCFSleuthApp {
 
     // Attach export button listeners now that the UI is built
     this.attachExportListeners();
+
+    // FINAL VALIDATION: Test coordinate field availability
+    this.validateCoordinateFieldImplementation();
+  }
+
+  /**
+   * Validate that coordinate fields are properly implemented
+   * This helps debug any remaining issues
+   */
+  validateCoordinateFieldImplementation() {
+    console.log('🔍 FINAL VALIDATION: Coordinate Field Implementation');
+
+    // Check UI field discovery
+    const coordinateCheckboxes = document.querySelectorAll(
+      'input[id*="Camera"], input[id*="FieldOfView"], input[id*="ViewToWorldScale"], input[id*="cameraPos"], input[id*="cameraTarget"]'
+    );
+    console.log(
+      `✅ Found ${coordinateCheckboxes.length} coordinate checkboxes in UI`
+    );
+
+    // Check parsed data
+    let totalTopicsWithCoordinates = 0;
+    let totalViewpointsWithCoordinates = 0;
+
+    this.parsedData.forEach((bcfData) => {
+      bcfData.topics.forEach((topic) => {
+        if (topic.viewpoints && topic.viewpoints.length > 0) {
+          const coordinateViewpoints = topic.viewpoints.filter(
+            (vp) => vp.cameraType || vp.CameraViewPoint || vp.cameraPosition
+          );
+
+          if (coordinateViewpoints.length > 0) {
+            totalTopicsWithCoordinates++;
+            totalViewpointsWithCoordinates += coordinateViewpoints.length;
+          }
+        }
+      });
+    });
+
+    console.log('✅ Coordinate data summary:', {
+      topicsWithCoordinates: totalTopicsWithCoordinates,
+      viewpointsWithCoordinates: totalViewpointsWithCoordinates,
+      coordinateFieldsInUI: coordinateCheckboxes.length,
+      implementationComplete:
+        coordinateCheckboxes.length >= 18 && totalViewpointsWithCoordinates > 0,
+    });
+
+    // Test field mapping
+    const mapping = this.getFieldMapping();
+    const coordinateFieldMappings = Object.keys(mapping).filter(
+      (key) =>
+        key.includes('Camera') ||
+        key.includes('FieldOfView') ||
+        key.includes('ViewToWorldScale') ||
+        key.includes('cameraPos') ||
+        key.includes('cameraTarget')
+    );
+
+    console.log('✅ Field mapping validation:', {
+      coordinateFieldMappings: coordinateFieldMappings.length,
+      mappingComplete: coordinateFieldMappings.length >= 18,
+    });
+
+    if (
+      coordinateCheckboxes.length >= 18 &&
+      coordinateFieldMappings.length >= 18
+    ) {
+      console.log('🎉 COORDINATE FIELD IMPLEMENTATION COMPLETE!');
+    } else {
+      console.warn('⚠️ Coordinate field implementation may be incomplete');
+    }
   }
 
   /**
