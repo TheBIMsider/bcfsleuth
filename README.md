@@ -12,8 +12,8 @@ BCFSleuth V2.0 is what happens when real-world AECO/BIM experience meets AI codi
 
 - **🧠 AI Assistant**: Claude (Anthropic) helped with architecture ideas, cranked out code, and tracked down bugs  
 - **⚡ Fast Build**: Features that would've taken months the old way came together in days  
-- **🏗️ Domain Expertise**: 25+ years in AECO/BIM guiding the direction and keeping it practical  
-- **🔄 Iterative Workflow**: Build, test, tweak, repeat — until it was rock-solid and ready to use  
+- **🗗️ Domain Expertise**: 25+ years in AECO/BIM guiding the direction and keeping it practical  
+- **🔄 Iterative Workflow**: Build, test, tweak, repeat – until it was rock-solid and ready to use  
 
 The result? A capable, ready-to-work BCF management platform built faster than I thought possible
 
@@ -66,99 +66,35 @@ BCFSleuth is a modern, web-based evolution of BCF management tools like the orig
 - **Processing History**: Track all BCF files processed with detailed metrics
 - **Team Collaboration**: Import/export templates via JSON for standardization
 
-## Screenshots
+## Architecture & Code Quality
 
-<table>
-  <tr>
-    <td width="50%">
-      <h3>📊 Analytics Dashboard</h3>
-      <a href="https://github.com/user-attachments/assets/049a2e19-ed1e-460f-aee7-8846d8d8eaf3">
-        <img src="https://github.com/user-attachments/assets/049a2e19-ed1e-460f-aee7-8846d8d8eaf3" alt="BCFSleuth V2.0 Analytics Dashboard" width="100%"/>
-      </a>
-      <p><em>Interactive charts with full-screen lightbox viewing</em></p>
-    </td>
-    <td width="50%">
-      <h3>🔍 Advanced Preview</h3>
-      <a href="https://github.com/user-attachments/assets/7837fa86-5ad2-4990-8a8d-a88c6ffcba78">
-        <img src="https://github.com/user-attachments/assets/7837fa86-5ad2-4990-8a8d-a88c6ffcba78" alt="Enhanced Advanced Preview System" width="100%"/>
-      </a>
-      <p><em>Sortable table with comment expansion, viewpoint coordinates, and filtering</em></p>
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2">
-      <h3>🖼️ Professional Image Viewer</h3>
-      <a href="https://github.com/user-attachments/assets/f520fac0-43ee-4a7f-b247-643b4fcee656">
-        <img src="https://github.com/user-attachments/assets/f520fac0-43ee-4a7f-b247-643b4fcee656" alt="BCFSleuth V2.0 Image Lightbox" width="100%"/>
-      </a>
-      <p><em>Professional image gallery with lightbox viewing and bulk operations</em></p>
-    </td>
-  </tr>
-</table>
+**Production-Ready Codebase**: Professional architecture with centralized utilities, optimized performance, and A+ code quality.
 
-## Quick Start
+### File Structure
 
-1. **[Open BCFSleuth V2.0](https://thebimsider.github.io/bcfsleuth/V02/)**
-2. **Drag & Drop** your BCF file (supports all versions: 2.0, 2.1, 3.0)
-3. **Configure Fields** (optional): Enable viewpoint coordinate fields in Configuration tab for spatial analysis
-4. **Explore Your Data**:
-   - **Analytics tab**: View interactive charts and create custom analysis
-   - **Advanced Preview**: Sort, filter, and expand comments and viewpoints in your BCF data
-   - **Image Viewer**: Browse all images with professional lightbox viewing
-   - **Configuration**: Set up templates and preferences for your workflow
-5. **Generate Reports**: Export as CSV, Excel, PDF, or Word with embedded charts, images, and coordinate data
-
-## Privacy & Security
-
-**Complete Client-Side Processing**: All BCF data, images, coordinate information, and analytics remain in your browser. No uploads, no accounts, no data transmission. Your project information never leaves your device.
-
-## Self-Hosting
-
-BCFSleuth is pure HTML/CSS/JavaScript - no build process required.
-
-```bash
-# Clone or download
-git clone https://github.com/TheBIMsider/bcfsleuth.git
-cd bcfsleuth
-
-# Serve locally
-python -m http.server 8000
-# or upload to any web server
+```
+BCFSleuth/
+├── index.html                  # Main application interface
+├── css/
+│   └── style.css              # Application styling
+├── js/
+│   ├── utils/                 # Shared utility modules
+│   │   ├── coordinate-utils.js # Coordinate handling utilities
+│   │   ├── pdf-utils.js       # PDF generation utilities
+│   │   └── color-manager.js   # Color management system
+│   ├── app.js                 # Main application logic
+│   ├── bcf-parser.js          # BCF file parsing engine
+│   ├── advanced-preview.js    # Data preview and filtering
+│   ├── image-viewer.js        # Image management and reports
+│   ├── analytics-dashboard.js # Interactive charts and analytics
+│   ├── excel-exporter.js      # Excel report generation
+│   ├── csv-exporter.js        # CSV export functionality
+│   └── configuration.js       # Settings and template management
 ```
 
-**Hosting Options**: GitHub Pages, Netlify, Vercel, or any traditional web hosting.
-
-## Technical Details
-
-- **Dependencies**: Chart.js, JSZip, SheetJS, jsPDF, docx
-- **Browser Support**: Chrome 90+, Firefox 85+, Safari 14+, Edge 90+
-- **Performance**: Handles 1000+ topics with 300+ images and complete coordinate data efficiently
-- **BCF Compliance**: Full support for BCF coordinate specifications across all versions
-- **Code Quality**: 8,000+ lines of production-quality JavaScript
-
-## Development & Contributing
-
-We welcome contributions from the AECO community:
-- 🐛 Report bugs via GitHub Issues
-- 💡 Suggest features for openBIM workflows
-- 🔧 Submit pull requests
-- 📝 Improve documentation
-
-**Development Approach**: Human AECO expertise + AI implementation = rapid delivery of professional-grade tools.
-
-## About BCF
-
-The Building Collaboration Format (BCF) is an open file format supporting workflow communication in BIM processes. BCF viewpoint coordinates provide precise camera positioning information enabling spatial context for issues and comments. Learn more at [buildingSMART International](https://www.buildingsmart.org/standards/bsi-standards/bim-collaboration-format/).
-
-## Acknowledgments
-
-BCFSleuth is inspired by the original **[Sloth](https://www.bim42.com/products/sloth.html)** application created by **[Simon Moreau](https://github.com/simonmoreau/)** at **[BIM42](https://www.bim42.com/)**. We're grateful for his pioneering work in BCF processing and contributions to the AECO community.
-
-## License
-
-This project is licensed under the BSD-3-Clause License.
-
----
-
-*Built with ❤️ & 🤖 AI assistance by The BIMsider for the AECO community*  
-*A modern way to investigate your BCF files with precision*
+### Technical Features
+- **95% Code Duplication Reduction**: Centralized utilities eliminate redundancy
+- **Optimized Methods**: Large methods broken into focused, testable units
+- **Debug Mode**: Comprehensive logging system for troubleshooting
+- **Error Handling**: Standardized user feedback across all operations
+- **Performance**: Handles 1000+ topics with 300+ images efficiently
