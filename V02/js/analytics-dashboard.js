@@ -11,6 +11,15 @@ class AnalyticsDashboard {
     };
     this.isInitialized = false;
 
+    // Verify ColorManager is available
+    if (typeof ColorManager === 'undefined') {
+      console.error(
+        '❌ ColorManager not available - color consistency may be affected'
+      );
+    } else {
+      console.log('✅ ColorManager ready for analytics dashboard');
+    }
+
     // Chart.js default configuration for all charts
     this.chartDefaults = {
       responsive: true,
@@ -42,91 +51,8 @@ class AnalyticsDashboard {
         easing: 'easeInOutQuart',
       },
     };
-
-    // ENHANCED: Comprehensive color palette system for unlimited status/priority support
-    this.colorPalettes = {
-      // BCF-specific semantic colors for statuses - meaningful colors for common BCF states
-      statusColors: {
-        Open: '#ef4444', // Red - urgent attention needed
-        'In Progress': '#3b82f6', // Blue - work in progress
-        'Under Review': '#8b5cf6', // Purple - review state
-        Closed: '#10b981', // Green - completed
-        Rejected: '#6b7280', // Gray - rejected/cancelled
-        ReOpened: '#f59e0b', // Amber - reopened issue
-        Unknown: '#d1d5db', // Light gray - unknown state
-
-        // Enhanced mappings for common BCF status variations
-        New: '#06b6d4', // Cyan - new issues
-        Information: '#0ea5e9', // Sky blue - information
-        'Ready for Review': '#ec4899', // Pink - ready for review
-        Fixed: '#84cc16', // Lime green - fixed (different from closed)
-        'In dispute': '#dc2626', // Dark red - disputed
-        'In review': '#7c3aed', // Violet - in review
-
-        // Additional status variations
-        Resolved: '#059669', // Emerald - resolved (darker green)
-        'On Hold': '#f97316', // Orange - on hold
-        Pending: '#eab308', // Yellow - pending
-        Active: '#14b8a6', // Teal - active
-        Inactive: '#94a3b8', // Slate - inactive
-      },
-
-      // BCF-specific semantic colors for priorities - intuitive color progression
-      priorityColors: {
-        Low: '#10b981', // Green - low priority
-        Normal: '#3b82f6', // Blue - normal priority
-        Medium: '#f59e0b', // Amber - medium priority
-        High: '#f97316', // Orange - high priority
-        Critical: '#ef4444', // Red - critical priority
-        Urgent: '#dc2626', // Dark red - urgent
-        Minor: '#6ee7b7', // Light green - minor
-        Major: '#fb923c', // Light orange - major
-      },
-
-      // Extended color palette for unlimited categories
-      // Enhanced colorblind-friendly palette with maximum distinction
-      extendedPalette: [
-        '#ef4444', // Red
-        '#3b82f6', // Blue
-        '#f59e0b', // Amber
-        '#8b5cf6', // Purple
-        '#06b6d4', // Cyan
-        '#ec4899', // Pink
-        '#84cc16', // Lime
-        '#f97316', // Orange
-        '#14b8a6', // Teal
-        '#6366f1', // Indigo
-        '#dc2626', // Dark red
-        '#0ea5e9', // Sky
-        '#7c3aed', // Violet
-        '#65a30d', // Green
-        '#be123c', // Rose
-        '#0d9488', // Dark teal
-        '#4f46e5', // Blue violet
-        '#a16207', // Yellow-brown
-        '#9333ea', // Purple-pink
-        '#047857', // Dark green
-        '#db2777', // Deep pink
-        '#059669', // Emerald-green
-        '#1e40af', // Dark blue
-        '#7f1d1d', // Dark red-brown
-        '#365314', // Dark olive
-      ],
-
-      // Fallback grayscale if we somehow exhaust all colors
-      grayscaleFallback: [
-        '#374151',
-        '#4b5563',
-        '#6b7280',
-        '#9ca3af',
-        '#d1d5db',
-        '#1f2937',
-        '#111827',
-        '#030712',
-        '#f9fafb',
-        '#f3f4f6',
-      ],
-    };
+    // Color management now handled by ColorManager utility
+    // No need for local color palette storage
   }
 
   /**
@@ -568,11 +494,12 @@ class AnalyticsDashboard {
     const labels = Object.keys(statusCounts);
     const data = Object.values(statusCounts);
 
-    // ENHANCED: Use new comprehensive color system
-    const backgroundColors = this.getChartColors(labels, 'status');
+    // Use ColorManager for consistent status colors
+    const statusColorMap = ColorManager.getStatusColors(labels);
+    const backgroundColors = labels.map((label) => statusColorMap[label]);
 
     console.log(
-      `🎨 Status Chart: Generated ${backgroundColors.length} colors for ${labels.length} statuses`
+      `🎨 Status Chart: Generated ${backgroundColors.length} colors for ${labels.length} statuses via ColorManager`
     );
 
     this.charts.status = new Chart(ctx, {
@@ -662,15 +589,16 @@ class AnalyticsDashboard {
     const labels = sortedPriorities;
     const data = labels.map((priority) => priorityCounts[priority] || 0);
 
-    // ENHANCED: Use new comprehensive color system
-    const backgroundColors = this.getChartColors(labels, 'priority');
+    // Use ColorManager for consistent priority colors
+    const priorityColorMap = ColorManager.getPriorityColors(labels);
+    const backgroundColors = labels.map((label) => priorityColorMap[label]);
     // Generate border colors by darkening the background colors
     const borderColors = backgroundColors.map((color) =>
       this.darkenColor(color)
     );
 
     console.log(
-      `🎨 Priority Chart: Generated ${backgroundColors.length} colors for ${labels.length} priorities`
+      `🎨 Priority Chart: Generated ${backgroundColors.length} colors for ${labels.length} priorities via ColorManager`
     );
 
     this.charts.priority = new Chart(ctx, {
@@ -883,13 +811,8 @@ class AnalyticsDashboard {
 
     const labels = Object.keys(commentRanges);
     const data = Object.values(commentRanges);
-    const backgroundColors = [
-      '#ef4444', // No comments - red
-      '#f59e0b', // 1-2 comments - amber
-      '#10b981', // 3-5 comments - green
-      '#3b82f6', // 6-10 comments - blue
-      '#8b5cf6', // 10+ comments - purple
-    ];
+    // Use ColorManager for consistent comment range colors
+    const backgroundColors = ColorManager.generateChartPalette(labels.length);
 
     this.charts.comments = new Chart(ctx, {
       type: 'pie',
@@ -959,153 +882,26 @@ class AnalyticsDashboard {
   }
 
   /**
-   * ENHANCED: Get optimized color for status with dynamic distribution
-   * Now handles ANY status names with maximum color distinction
-   * @param {string} status - Status name
-   * @param {Array} allStatuses - All statuses in this chart for collision-free coloring
-   * @returns {string} - Color hex code
-   */
-  getStatusColor(status, allStatuses = []) {
-    // For statuses, we want maximum distinction, so use the extended palette
-    // but with intelligent distribution to avoid similar colors
-    return this.generateDistinctColor(status, 'status', allStatuses);
-  }
-
-  /**
-   * NEW: Generate maximally distinct colors for dynamic values
-   * Uses status position in the filtered list to ensure no color collisions
-   * @param {string} value - The value to generate color for
-   * @param {string} type - Type context (status/priority) for logging
-   * @param {Array} allValues - All values in this chart to determine position
-   * @returns {string} - Hex color code
-   */
-  generateDistinctColor(value, type = 'default', allValues = []) {
-    if (!value) return '#94a3b8'; // Default gray for empty values
-
-    // NEW: Use the position of this value in the sorted list instead of hash
-    // This ensures no collisions and maximizes color distinction
-    let valueIndex = 0;
-
-    if (allValues && allValues.length > 0) {
-      // Sort all values alphabetically to ensure consistent ordering
-      const sortedValues = [...allValues].sort();
-      valueIndex = sortedValues.indexOf(value);
-
-      // If not found (shouldn't happen), fall back to length
-      if (valueIndex === -1) {
-        valueIndex = sortedValues.length;
-      }
-    } else {
-      // Fallback: create a simple hash if no allValues provided
-      let hash = 0;
-      const valueStr = value.toString().toLowerCase();
-      for (let i = 0; i < valueStr.length; i++) {
-        const char = valueStr.charCodeAt(i);
-        hash = (hash << 5) - hash + char;
-        hash = hash & hash;
-      }
-      valueIndex = Math.abs(hash);
-    }
-
-    // Create a maximally distinct color palette
-    const distinctColors = [
-      '#ef4444', // Red
-      '#06b6d4', // Cyan
-      '#10b981', // Green
-      '#8b5cf6', // Purple
-      '#f59e0b', // Amber
-      '#ec4899', // Pink
-      '#3b82f6', // Blue
-      '#84cc16', // Lime
-      '#f97316', // Orange
-      '#14b8a6', // Teal
-      '#dc2626', // Dark red
-      '#7c3aed', // Violet
-      '#0ea5e9', // Sky
-      '#65a30d', // Dark green
-      '#be123c', // Rose
-      '#6366f1', // Indigo
-      '#0d9488', // Dark teal
-      '#a16207', // Brown
-      '#9333ea', // Purple-pink
-      '#047857', // Emerald
-      '#db2777', // Deep pink
-      '#1e40af', // Dark blue
-      '#365314', // Olive
-      '#7f1d1d', // Dark brown
-      '#4c1d95', // Dark purple
-    ];
-
-    // Use modulo to cycle through distinct colors
-    const colorIndex = valueIndex % distinctColors.length;
-    const selectedColor = distinctColors[colorIndex];
-
-    console.log(
-      `🎨 Generated distinct color for ${type} "${value}": ${selectedColor} (position: ${
-        colorIndex + 1
-      }/${distinctColors.length}, valueIndex: ${valueIndex})`
-    );
-
-    return selectedColor;
-  }
-
-  /**
-   * ENHANCED: Get optimized color for priority with dynamic support
-   * Handles both standard and custom priority names
-   * @param {string} priority - Priority name
-   * @param {Array} allPriorities - All priorities in this chart for collision-free coloring
-   * @returns {string} - Color hex code
-   */
-  getPriorityColor(priority, allPriorities = []) {
-    // Try semantic priority colors first for common ones
-    if (this.colorPalettes.priorityColors[priority]) {
-      console.log(
-        `🎯 Semantic match for priority "${priority}": ${this.colorPalettes.priorityColors[priority]}`
-      );
-      return this.colorPalettes.priorityColors[priority];
-    }
-
-    // For custom priorities, use distinct color generation
-    return this.generateDistinctColor(priority, 'priority', allPriorities);
-  }
-
-  /**
-   * Fallback method - now just calls generateDistinctColor
-   * @param {string} value - The value to generate color for
-   * @param {string} type - Type context
-   * @returns {string} - Hex color code
-   */
-  generateConsistentColor(value, type = 'default') {
-    return this.generateDistinctColor(value, type);
-  }
-
-  /**
-   * NEW: Get complete color array for chart data with enhanced distribution
-   * This is the main method that creates color arrays for Chart.js
+   * Get chart colors using ColorManager
    * @param {Array} labels - Array of labels needing colors
-   * @param {string} colorType - 'status', 'priority', or 'extended'
-   * @returns {Array} - Array of hex colors matching label count
+   * @param {string} colorType - 'status', 'priority', or 'generic'
+   * @returns {Array} - Array of hex colors
    */
-  getChartColors(labels, colorType = 'extended') {
-    console.log(`🎨 Generating ${labels.length} colors for ${colorType} chart`);
-    console.log(`🏷️ Labels: ${labels.join(', ')}`);
-
-    const colors = labels.map((label) => {
-      switch (colorType) {
-        case 'status':
-          return this.getStatusColor(label, labels); // Pass all labels
-        case 'priority':
-          return this.getPriorityColor(label, labels); // Pass all labels
-        default:
-          return this.generateDistinctColor(label, colorType, labels); // Pass all labels
-      }
-    });
-
+  getChartColors(labels, colorType = 'generic') {
     console.log(
-      `🎨 Color assignment complete:`,
-      labels.map((label, i) => `${label}: ${colors[i]}`)
+      `🎨 Getting ${labels.length} colors for ${colorType} chart via ColorManager`
     );
-    return colors;
+
+    switch (colorType) {
+      case 'status':
+        const statusColors = ColorManager.getStatusColors(labels);
+        return labels.map((label) => statusColors[label]);
+      case 'priority':
+        const priorityColors = ColorManager.getPriorityColors(labels);
+        return labels.map((label) => priorityColors[label]);
+      default:
+        return ColorManager.generateChartPalette(labels.length);
+    }
   }
 
   /**

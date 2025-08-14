@@ -19,6 +19,13 @@ class BCFSleuthApp {
     this.imageViewer = new ImageViewer(this); // Initialize Image Viewer
     this.analyticsDashboard = new AnalyticsDashboard(this); // Initialize Analytics Dashboard
     window.bcfApp = this; // Make globally accessible for onclick handlers
+
+    // Initialize debug mode control
+    window.BCF_DEBUG_MODE = localStorage.getItem('bcf_debug') === 'true';
+    console.log(
+      '🔧 BCFSleuth initialized. Debug mode:',
+      window.BCF_DEBUG_MODE ? 'ON' : 'OFF'
+    );
   }
 
   setupEventListeners() {
@@ -1368,7 +1375,10 @@ class BCFSleuthApp {
     );
 
     if (bcfFiles.length === 0) {
-      this.showError('Please select valid BCF files (.bcf or .bcfzip)');
+      this.showUserFeedback(
+        'Please select valid BCF files (.bcf or .bcfzip)',
+        'error'
+      );
       return;
     }
 
@@ -1429,7 +1439,10 @@ class BCFSleuthApp {
       this.displayResults();
     } catch (error) {
       console.error('Error processing files:', error);
-      this.showError(`Error processing files: ${error.message}`);
+      this.showUserFeedback(
+        `Error processing files: ${error.message}`,
+        'error'
+      );
     }
   }
 
@@ -1767,7 +1780,10 @@ class BCFSleuthApp {
     try {
       const selectedFields = this.getSelectedFieldNames();
       if (selectedFields.length === 0) {
-        this.showError('Please select at least one field to export');
+        this.showUserFeedback(
+          'Please select at least one field to export',
+          'warning'
+        );
         return;
       }
 
@@ -1782,7 +1798,7 @@ class BCFSleuthApp {
       this.addToProcessingHistory('csv', selectedFields.length);
     } catch (error) {
       console.error('Error exporting CSV:', error);
-      this.showError(`Error exporting CSV: ${error.message}`);
+      this.showUserFeedback(`Error exporting CSV: ${error.message}`, 'error');
     }
   }
 
@@ -1790,7 +1806,10 @@ class BCFSleuthApp {
     try {
       const selectedFields = this.getSelectedFieldNames();
       if (selectedFields.length === 0) {
-        this.showError('Please select at least one field to export');
+        this.showUserFeedback(
+          'Please select at least one field to export',
+          'warning'
+        );
         return;
       }
 
@@ -1805,7 +1824,7 @@ class BCFSleuthApp {
       this.addToProcessingHistory('excel', selectedFields.length);
     } catch (error) {
       console.error('Error exporting Excel:', error);
-      this.showError(`Error exporting Excel: ${error.message}`);
+      this.showUserFeedback(`Error exporting Excel: ${error.message}`, 'error');
     }
   }
 
@@ -1853,6 +1872,67 @@ class BCFSleuthApp {
     // Simple error display - could be enhanced with proper modal/toast
     alert(message);
   }
+
+  /**
+   * Standardized error and feedback messaging
+   * Provides consistent user feedback across the application
+   * @param {string} message - The message to display
+   * @param {string} type - Type of message: 'error', 'warning', 'success', 'info'
+   * @param {number} duration - How long to show the message (milliseconds), 0 = permanent
+   */
+  showUserFeedback(message, type = 'error', duration = 5000) {
+    console.log(`📢 User Feedback (${type}):`, message);
+
+    // For now, use the existing simple alert for errors (we'll enhance this in future phases)
+    if (type === 'error') {
+      alert(`Error: ${message}`);
+    } else if (type === 'warning') {
+      alert(`Warning: ${message}`);
+    } else if (type === 'success') {
+      // For success messages, we could show a brief toast notification
+      console.log('✅ Success:', message);
+      // Future enhancement: replace with toast notification
+    } else {
+      alert(message);
+    }
+  }
+
+  /**
+   * Debug logging that respects debug mode setting
+   * @param {string} message - Debug message
+   * @param {any} data - Optional data to log
+   */
+  debugLog(message, data = null) {
+    if (window.BCF_DEBUG_MODE) {
+      if (data !== null) {
+        console.log(message, data);
+      } else {
+        console.log(message);
+      }
+    }
+  }
+
+  /**
+   * Toggle debug mode on/off
+   * Can be called from browser console: window.bcfApp.toggleDebugMode()
+   */
+  toggleDebugMode() {
+    window.BCF_DEBUG_MODE = !window.BCF_DEBUG_MODE;
+    localStorage.setItem('bcf_debug', window.BCF_DEBUG_MODE.toString());
+    console.log(
+      '🔧 Debug mode',
+      window.BCF_DEBUG_MODE ? 'ENABLED' : 'DISABLED'
+    );
+
+    if (window.BCF_DEBUG_MODE) {
+      console.log(
+        '💡 Debug features active. Use window.bcfApp.debugLog() for conditional logging.'
+      );
+    }
+
+    return window.BCF_DEBUG_MODE;
+  }
+
   buildCustomFieldsCategory(customFieldRegistry) {
     const categoryDiv = document.createElement('div');
     categoryDiv.className = 'field-category';
@@ -2010,6 +2090,16 @@ class BCFSleuthApp {
     });
     document.getElementById(`${tabName}-tab`).classList.add('active');
 
+    // Show/hide export controls based on tab
+    const exportControls = document.getElementById('main-export-controls');
+    if (exportControls) {
+      if (tabName === 'simple' || tabName === 'advanced') {
+        exportControls.style.display = 'block';
+      } else {
+        exportControls.style.display = 'none';
+      }
+    }
+
     // Handle tab-specific initialization
     if (tabName === 'advanced' && this.advancedPreview) {
       this.advancedPreview.buildAdvancedTableHeaders();
@@ -2082,65 +2172,6 @@ class BCFSleuthApp {
     } else {
       console.warn('Analytics Dashboard not available');
     }
-  }
-
-  /**
-   * Enhanced tab switching with export controls visibility management
-   */
-  switchToTab(tabName) {
-    console.log(`Switching to tab: ${tabName}`); // Debug log
-
-    // Update tab buttons
-    document.querySelectorAll('.preview-tabs .tab-button').forEach((button) => {
-      button.classList.remove('active');
-    });
-
-    const activeButton = document.querySelector(
-      `.preview-tabs [data-tab="${tabName}"]`
-    );
-    if (activeButton) {
-      activeButton.classList.add('active');
-    }
-
-    // Update tab content
-    document.querySelectorAll('.tab-content').forEach((content) => {
-      content.classList.remove('active');
-    });
-
-    const activeContent = document.getElementById(`${tabName}-tab`);
-    if (activeContent) {
-      activeContent.classList.add('active');
-    }
-
-    // Show/hide export controls based on tab
-    const exportControls = document.getElementById('main-export-controls');
-    if (exportControls) {
-      if (tabName === 'simple' || tabName === 'advanced') {
-        exportControls.style.display = 'block';
-      } else {
-        exportControls.style.display = 'none';
-      }
-    }
-
-    // Handle tab-specific initialization
-    if (tabName === 'advanced' && this.advancedPreview) {
-      this.advancedPreview.buildAdvancedTableHeaders();
-      this.advancedPreview.renderAdvancedTable();
-    } else if (tabName === 'image-viewer') {
-      // Initialize image viewer when tab is first opened
-      this.initializeImageViewer().catch((error) => {
-        console.error('Error initializing Image Viewer:', error);
-      });
-    } else if (tabName === 'analytics') {
-      // Initialize analytics dashboard when tab is opened
-      this.initializeAnalyticsDashboard().catch((error) => {
-        console.error('Error initializing Analytics Dashboard:', error);
-      });
-    } else if (tabName === 'configuration' && this.configManager) {
-      this.configManager.refreshConfigurationDisplay();
-    }
-
-    console.log(`Successfully switched to ${tabName} tab`);
   }
 
   /**

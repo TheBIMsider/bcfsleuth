@@ -170,58 +170,37 @@ class ImageViewer {
         `🖼️ Extracting images for ${topicsNeedingExtraction.length} topics...`
       );
 
-      // Use the BCFParser's lazy extraction method with proper class access
+      // Use the BCFParser's image extraction methods that actually exist
       try {
-        if (
-          typeof BCFParser !== 'undefined' &&
-          BCFParser.extractImagesForTopics
-        ) {
-          console.log('🖼️ Using BCFParser.extractImagesForTopics method');
-          await BCFParser.extractImagesForTopics(topicsNeedingExtraction);
-        } else if (
-          window.BCFParser &&
-          window.BCFParser.extractImagesForTopics
-        ) {
-          console.log(
-            '🖼️ Using window.BCFParser.extractImagesForTopics method'
-          );
-          await window.BCFParser.extractImagesForTopics(
-            topicsNeedingExtraction
-          );
-        } else {
-          // The method exists but may be a static method - try direct access
-          console.log('🖼️ Attempting direct BCFParser method access...');
+        console.log('🖼️ Using available BCFParser image extraction methods...');
 
-          // Try to call the static method directly
-          if (typeof BCFParser !== 'undefined') {
-            // Call the individual extraction method that we know exists
-            for (const topic of topicsNeedingExtraction) {
-              if (
-                !topic._imagesExtracted &&
-                topic._zipReference &&
-                topic._topicGuid
-              ) {
-                try {
-                  await BCFParser.extractViewpointImages(
-                    topic._zipReference,
-                    topic._topicGuid,
-                    topic
-                  );
-                  topic._imagesExtracted = true;
-                } catch (error) {
-                  console.warn(
-                    `Error extracting images for topic ${topic.title}:`,
-                    error
-                  );
-                }
+        if (typeof BCFParser !== 'undefined') {
+          // Call the individual extraction method for each topic
+          for (const topic of topicsNeedingExtraction) {
+            if (
+              !topic._imagesExtracted &&
+              topic._zipReference &&
+              topic._topicGuid
+            ) {
+              try {
+                // Use the actual methods that exist in BCFParser
+                await this.extractTopicImages(
+                  topic._zipReference,
+                  topic._topicGuid,
+                  topic
+                );
+                topic._imagesExtracted = true;
+              } catch (error) {
+                console.warn(
+                  `Error extracting images for topic ${topic.title}:`,
+                  error
+                );
               }
             }
-            console.log(
-              '✅ Individual image extraction completed successfully'
-            );
-          } else {
-            throw new Error('BCFParser not available');
           }
+          console.log('✅ Individual image extraction completed successfully');
+        } else {
+          throw new Error('BCFParser not available');
         }
       } catch (error) {
         console.warn('Error in lazy image extraction, using fallback:', error);
@@ -230,6 +209,34 @@ class ImageViewer {
     } else {
       console.log('✅ All topics already have images extracted');
     }
+  }
+
+  /**
+   * Extract images for a specific topic using available BCFParser methods
+   * @param {JSZip} zip - The BCF ZIP file
+   * @param {string} topicGuid - The topic GUID
+   * @param {Object} topic - The topic object
+   */
+  async extractTopicImages(zip, topicGuid, topic) {
+    console.log(`🖼️ Extracting images for topic: ${topic.title}`);
+
+    // Discover image files in the topic folder
+    const topicImageFiles = BCFParser.discoverTopicImageFiles(zip, topicGuid);
+
+    // Match viewpoints to images
+    await BCFParser.matchViewpointsToImages(
+      zip,
+      topicGuid,
+      topic,
+      topicImageFiles
+    );
+
+    // Update topic with image count
+    topic.imageCount = topic.viewpoints.filter((vp) => vp.hasImage).length;
+
+    console.log(
+      `✅ Extracted ${topic.imageCount} images for topic: ${topic.title}`
+    );
   }
 
   /**
@@ -799,28 +806,6 @@ class ImageViewer {
     return div.innerHTML;
   }
 
-  /**
-   * Truncate text to specified length with ellipsis
-   * @param {string} text - Text to truncate
-   * @param {number} maxLength - Maximum length
-   * @returns {string} - Truncated text
-   */
-  truncateText(text, maxLength) {
-    if (!text) return '';
-    const str = text.toString().trim();
-    if (str.length <= maxLength) return str;
-
-    // Try to break at word boundary near the limit
-    const truncated = str.substring(0, maxLength);
-    const lastSpace = truncated.lastIndexOf(' ');
-
-    if (lastSpace > maxLength * 0.75) {
-      return truncated.substring(0, lastSpace) + '...';
-    } else {
-      return truncated + '...';
-    }
-  }
-
   getTotalPages() {
     return Math.ceil(this.filteredImages.length / this.pageSize);
   }
@@ -1357,8 +1342,8 @@ class ImageViewer {
    */
   generateImageFilename(image) {
     // Clean and format components
-    const projectName = this.sanitizeFilename(image.projectName || 'BCF');
-    const topicTitle = this.sanitizeFilename(image.title || 'Topic');
+    const projectName = PDFUtils.sanitizeFilename(image.projectName || 'BCF');
+    const topicTitle = PDFUtils.sanitizeFilename(image.title || 'Topic');
     const viewpointIndex = image.viewpointIndex || '1';
     const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
@@ -1370,7 +1355,7 @@ class ImageViewer {
 
     // Ensure filename isn't too long (Windows has 260 char limit for full path)
     if (filename.length > 100) {
-      const truncatedTitle = this.sanitizeFilename(
+      const truncatedTitle = PDFUtils.sanitizeFilename(
         image.title.substring(0, 30) || 'Topic'
       );
       filename = `${projectName}_${truncatedTitle}_View${viewpointIndex}_${date}.${extension}`;
@@ -1378,22 +1363,6 @@ class ImageViewer {
 
     console.log('📝 Generated filename:', filename);
     return filename;
-  }
-
-  /**
-   * Sanitize string for use in filename
-   * @param {string} str - Input string
-   * @returns {string} - Sanitized filename-safe string
-   */
-  sanitizeFilename(str) {
-    if (!str) return 'Unknown';
-
-    return str
-      .replace(/[<>:"/\\|?*]/g, '_') // Replace invalid filename characters
-      .replace(/\s+/g, '_') // Replace spaces with underscores
-      .replace(/_+/g, '_') // Replace multiple underscores with single
-      .replace(/^_|_$/g, '') // Remove leading/trailing underscores
-      .substring(0, 50); // Limit length
   }
 
   /**
@@ -1485,14 +1454,13 @@ class ImageViewer {
   }
 
   /**
-   * Download filtered images as ZIP archive
+   * Validate and confirm ZIP download request
+   * @returns {boolean} - True if download should proceed, false if cancelled
    */
-  async downloadImagesAsZip() {
-    console.log('📦 Starting ZIP download of filtered images...');
-
+  validateZipDownload() {
     if (this.filteredImages.length === 0) {
       alert('No images to download. Please check your filters.');
-      return;
+      return false;
     }
 
     // Check if JSZip is available
@@ -1500,7 +1468,7 @@ class ImageViewer {
       alert(
         'ZIP functionality requires JSZip library. Please ensure it is loaded.'
       );
-      return;
+      return false;
     }
 
     // Confirm ZIP download
@@ -1511,7 +1479,96 @@ class ImageViewer {
       `\n✅ Much faster than downloading individual files` +
       `\n\nProceed with ZIP creation?`;
 
-    if (!confirm(confirmMessage)) {
+    return confirm(confirmMessage);
+  }
+
+  /**
+   * Create ZIP archive and add all images to it
+   * @returns {Object} - JSZip object with images added
+   */
+  async createZipWithImages() {
+    // Create new ZIP archive
+    const zip = new JSZip();
+    const imagesFolder = zip.folder('BCF_Images');
+
+    // Add each image to ZIP
+    for (let i = 0; i < this.filteredImages.length; i++) {
+      const image = this.filteredImages[i];
+
+      // Update progress
+      this.updateDownloadProgress(
+        i + 1,
+        this.filteredImages.length,
+        'Adding images to ZIP...'
+      );
+
+      // Generate filename and add to ZIP
+      const filename = this.generateImageFilename(image);
+
+      // Convert base64 to binary for ZIP
+      const binaryData = atob(image.imageData);
+      imagesFolder.file(filename, binaryData, { binary: true });
+
+      // Small delay to keep UI responsive
+      if (i % 10 === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+    }
+
+    return zip;
+  }
+
+  /**
+   * Generate ZIP file and trigger download
+   * @param {Object} zip - JSZip object with images
+   */
+  async generateAndDownloadZip(zip) {
+    // Update progress
+    this.updateDownloadProgress(
+      this.filteredImages.length,
+      this.filteredImages.length,
+      'Generating ZIP file...'
+    );
+
+    // Generate ZIP file
+    const zipBlob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 },
+    });
+
+    // Generate ZIP filename
+    const projectName = this.getCommonProjectName();
+    const date = new Date().toISOString().split('T')[0];
+    const zipFilename = `${projectName}_BCF_Images_${date}.zip`;
+
+    // Trigger download
+    const url = URL.createObjectURL(zipBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = zipFilename;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+
+    // Hide progress and show success
+    this.hideDownloadProgress();
+    this.showDownloadFeedback(`✅ ZIP archive downloaded: ${zipFilename}`);
+
+    console.log('✅ ZIP download complete:', zipFilename);
+  }
+
+  /**
+   * Download filtered images as ZIP archive
+   */
+  async downloadImagesAsZip() {
+    console.log('📦 Starting ZIP download of filtered images...');
+
+    // Validate download request
+    if (!this.validateZipDownload()) {
       return;
     }
 
@@ -1523,70 +1580,11 @@ class ImageViewer {
         'Creating ZIP archive...'
       );
 
-      // Create new ZIP archive
-      const zip = new JSZip();
-      const imagesFolder = zip.folder('BCF_Images');
+      // Create ZIP with all images
+      const zip = await this.createZipWithImages();
 
-      // Add each image to ZIP
-      for (let i = 0; i < this.filteredImages.length; i++) {
-        const image = this.filteredImages[i];
-
-        // Update progress
-        this.updateDownloadProgress(
-          i + 1,
-          this.filteredImages.length,
-          'Adding images to ZIP...'
-        );
-
-        // Generate filename and add to ZIP
-        const filename = this.generateImageFilename(image);
-
-        // Convert base64 to binary for ZIP
-        const binaryData = atob(image.imageData);
-        imagesFolder.file(filename, binaryData, { binary: true });
-
-        // Small delay to keep UI responsive
-        if (i % 10 === 0) {
-          await new Promise((resolve) => setTimeout(resolve, 10));
-        }
-      }
-
-      // Update progress
-      this.updateDownloadProgress(
-        this.filteredImages.length,
-        this.filteredImages.length,
-        'Generating ZIP file...'
-      );
-
-      // Generate ZIP file
-      const zipBlob = await zip.generateAsync({
-        type: 'blob',
-        compression: 'DEFLATE',
-        compressionOptions: { level: 6 },
-      });
-
-      // Generate ZIP filename
-      const projectName = this.getCommonProjectName();
-      const date = new Date().toISOString().split('T')[0];
-      const zipFilename = `${projectName}_BCF_Images_${date}.zip`;
-
-      // Trigger download
-      const url = URL.createObjectURL(zipBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = zipFilename;
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      URL.revokeObjectURL(url);
-
-      // Hide progress and show success
-      this.hideDownloadProgress();
-      this.showDownloadFeedback(`✅ ZIP archive downloaded: ${zipFilename}`);
-
-      console.log('✅ ZIP download complete:', zipFilename);
+      // Generate and download ZIP
+      await this.generateAndDownloadZip(zip);
     } catch (error) {
       console.error('Error creating ZIP archive:', error);
       this.hideDownloadProgress();
@@ -1604,7 +1602,7 @@ class ImageViewer {
     ];
 
     if (projectNames.length === 1) {
-      return this.sanitizeFilename(projectNames[0]);
+      return PDFUtils.sanitizeFilename(projectNames[0]);
     } else {
       return 'Mixed_Projects';
     }
@@ -1763,7 +1761,11 @@ class ImageViewer {
       }
 
       // Generate filename and download
-      const filename = this.generatePDFFilename(layout);
+      const filename = PDFUtils.generatePDFFilename(
+        this.getCommonProjectName(),
+        layout,
+        new Date().toISOString().split('T')[0]
+      );
       pdf.save(filename);
 
       // Hide progress and show success
@@ -2070,71 +2072,6 @@ class ImageViewer {
       sections: [
         {
           properties: {},
-          children: await this.createWordSummaryContent(),
-        },
-      ],
-    });
-
-    return doc;
-  }
-
-  /**
-   * Generate detailed layout Word document (one image per section)
-   * @returns {Object} - Word document object
-   */
-  async generateDetailedWordReport() {
-    console.log('📖 Generating Word detailed layout document...');
-
-    const {
-      Document,
-      Packer,
-      Paragraph,
-      TextRun,
-      ImageRun,
-      AlignmentType,
-      HeadingLevel,
-    } = window.docx;
-
-    const doc = new Document({
-      title: `BCF Detailed Image Report - ${this.getCommonProjectName()}`,
-      description: `Generated by BCFSleuth - ${this.filteredImages.length} images`,
-      creator: 'BCFSleuth',
-      sections: [
-        {
-          children: await this.createWordDetailedContent(),
-        },
-      ],
-    });
-
-    return doc;
-  }
-
-  /**
-   * Generate summary layout Word document (executive summary format)
-   * @returns {Object} - Word document object
-   */
-  async generateSummaryWordReport() {
-    console.log('📊 Generating Word summary layout document...');
-
-    const {
-      Document,
-      Packer,
-      Paragraph,
-      TextRun,
-      Table,
-      TableRow,
-      TableCell,
-      ImageRun,
-      AlignmentType,
-      HeadingLevel,
-    } = window.docx;
-
-    const doc = new Document({
-      title: `BCF Executive Summary - ${this.getCommonProjectName()}`,
-      description: `Generated by BCFSleuth - ${this.filteredImages.length} images`,
-      creator: 'BCFSleuth',
-      sections: [
-        {
           children: await this.createWordSummaryContent(),
         },
       ],
@@ -2615,9 +2552,8 @@ class ImageViewer {
       })
     );
 
-    // Add first 10 images in pairs
-    const maxImages = Math.min(10, this.filteredImages.length);
-    for (let i = 0; i < maxImages; i += 2) {
+    // Add all images in pairs (remove the 10-image limit)
+    for (let i = 0; i < this.filteredImages.length; i += 2) {
       const leftImage = this.filteredImages[i];
       const rightImage = this.filteredImages[i + 1];
 
@@ -2644,28 +2580,10 @@ class ImageViewer {
       // Update progress
       this.updateDownloadProgress(
         i + 1,
-        maxImages,
+        this.filteredImages.length,
         'Creating summary sections...'
       );
     }
-
-    if (this.filteredImages.length > 10) {
-      elements.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: `... and ${
-                this.filteredImages.length - 10
-              } additional images`,
-              italics: true,
-              size: 18,
-            }),
-          ],
-          alignment: AlignmentType.CENTER,
-        })
-      );
-    }
-
     return elements;
   }
 
@@ -2752,7 +2670,7 @@ class ImageViewer {
    * @returns {string} - Word document filename
    */
   generateWordFilename(layout) {
-    const projectName = this.sanitizeFilename(this.getCommonProjectName());
+    const projectName = PDFUtils.sanitizeFilename(this.getCommonProjectName());
     const date = new Date().toISOString().split('T')[0];
     const layoutName = layout.charAt(0).toUpperCase() + layout.slice(1);
 
@@ -2813,40 +2731,6 @@ class ImageViewer {
   }
 
   /**
-   * Handle PDF layout selection
-   * @param {string} layout - Selected layout type
-   */
-  selectPDFLayout(layout) {
-    // Capture grouping options
-    const groupByTopic =
-      document.getElementById('pdf-group-by-topic')?.checked || false;
-    const separatePages =
-      document.getElementById('pdf-separate-pages')?.checked || false;
-
-    // DEBUG: Log what checkboxes were selected
-    console.log('✅ PDF Layout Selected:', {
-      layout: layout,
-      groupByTopic: groupByTopic,
-      separatePages: separatePages,
-    });
-
-    const dialog = document.getElementById('pdf-layout-dialog');
-    if (dialog) {
-      dialog.remove();
-    }
-
-    if (window.pdfLayoutResolve) {
-      // Pass layout and grouping options
-      window.pdfLayoutResolve({
-        layout: layout,
-        groupByTopic: groupByTopic,
-        separatePages: separatePages,
-      });
-      delete window.pdfLayoutResolve;
-    }
-  }
-
-  /**
    * Handle simplified PDF layout selection (no grouping options)
    * @param {string} layout - Selected layout type
    */
@@ -2880,7 +2764,7 @@ class ImageViewer {
     console.log(`📊 Processing ${imagesToUse.length} images for grid PDF`);
 
     // Add standardized cover page
-    this.addStandardizedCoverPage(pdf, 'Grid');
+    PDFUtils.addStandardizedCoverPage(pdf, 'Grid');
 
     // Page setup for grid layout
     const pageWidth = pdf.internal.pageSize.getWidth();
@@ -2956,20 +2840,27 @@ class ImageViewer {
   }
 
   /**
-   * Generate detailed layout PDF (1 image per page) - Simplified Version
-   * @returns {jsPDF} - PDF document
+   * Initialize PDF document with cover page
+   * @param {string} reportType - Type of report for cover page
+   * @returns {Object} - Initialized jsPDF object
    */
-  async generateDetailedPDFReport() {
-    // SIMPLIFIED: Use filtered images directly
-    const imagesToUse = this.filteredImages;
-    console.log('📖 Generating detailed layout PDF...');
-
+  initializePDFDocument(reportType) {
     const jsPDF = window.jspdf.jsPDF;
     const pdf = new jsPDF('portrait', 'mm', 'a4');
 
     // Add standardized cover page
-    this.addStandardizedCoverPage(pdf, 'Detailed');
+    PDFUtils.addStandardizedCoverPage(pdf, reportType);
 
+    console.log(`📄 Initialized ${reportType} PDF document with cover page`);
+    return pdf;
+  }
+
+  /**
+   * Add detailed pages to PDF with progress tracking
+   * @param {Object} pdf - jsPDF document object
+   * @param {Array} imagesToUse - Array of images to process
+   */
+  async addDetailedPagesWithProgress(pdf, imagesToUse) {
     for (let i = 0; i < imagesToUse.length; i++) {
       pdf.addPage();
 
@@ -2983,31 +2874,21 @@ class ImageViewer {
       const image = imagesToUse[i];
       await this.addDetailedImagePage(pdf, image, i + 1);
 
-      // Small delay every 10 images
+      // Small delay every 10 images to keep UI responsive
       if (i % 10 === 0) {
         await new Promise((resolve) => setTimeout(resolve, 10));
       }
     }
 
-    console.log('✅ Detailed PDF generation complete');
-    return pdf;
+    console.log('✅ All detailed pages added to PDF');
   }
 
   /**
-   * Generate summary layout PDF (executive summary + 2 images per page) - Simplified Version
-   * @returns {jsPDF} - PDF document
+   * Add summary pages to PDF with progress tracking (2 images per page)
+   * @param {Object} pdf - jsPDF document object
+   * @param {Array} imagesToUse - Array of images to process
    */
-  async generateSummaryPDFReport() {
-    // SIMPLIFIED: Use filtered images directly
-    const imagesToUse = this.filteredImages;
-    console.log('📊 Generating summary layout PDF...');
-
-    const jsPDF = window.jspdf.jsPDF;
-    const pdf = new jsPDF('portrait', 'mm', 'a4');
-
-    // Add standardized cover page
-    this.addStandardizedCoverPage(pdf, 'Executive');
-
+  async addSummaryPagesWithProgress(pdf, imagesToUse) {
     const margin = 15;
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -3034,42 +2915,260 @@ class ImageViewer {
         margin
       );
 
-      // First image
-      const image1 = imagesToUse[i];
-      const maxImageWidth = usableWidth * 0.9;
-      const maxImageHeight = (pageHeight - 80) / 2 - 30;
-
-      await this.addImageToPDF(
+      // Add images to page
+      await this.addSummaryImagesToPage(
         pdf,
-        image1,
+        imagesToUse,
+        i,
         margin,
-        margin + 10,
-        maxImageWidth,
-        maxImageHeight,
-        false
+        imageWidth,
+        imageHeight
       );
-
-      // Second image (if exists)
-      if (i + 1 < imagesToUse.length) {
-        const image2 = imagesToUse[i + 1];
-        const secondImageY = margin + 10 + maxImageHeight + 40;
-
-        await this.addImageToPDF(
-          pdf,
-          image2,
-          margin,
-          secondImageY,
-          maxImageWidth,
-          maxImageHeight,
-          false
-        );
-      }
 
       // Small delay every 10 images
       if (i % 10 === 0) {
         await new Promise((resolve) => setTimeout(resolve, 10));
       }
     }
+
+    console.log('✅ All summary pages added to PDF');
+  }
+
+  /**
+   * Add two images to a summary PDF page
+   * @param {Object} pdf - jsPDF document object
+   * @param {Array} imagesToUse - Array of images
+   * @param {number} startIndex - Starting index for this page
+   * @param {number} margin - Page margin
+   * @param {number} maxImageWidth - Maximum image width
+   * @param {number} maxImageHeight - Maximum image height per image
+   */
+  async addSummaryImagesToPage(
+    pdf,
+    imagesToUse,
+    startIndex,
+    margin,
+    maxImageWidth,
+    maxImageHeight
+  ) {
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    // First image
+    const image1 = imagesToUse[startIndex];
+    await this.addImageToPDF(
+      pdf,
+      image1,
+      margin,
+      margin + 10,
+      maxImageWidth,
+      maxImageHeight,
+      false
+    );
+
+    // Second image (if exists)
+    if (startIndex + 1 < imagesToUse.length) {
+      const image2 = imagesToUse[startIndex + 1];
+      const secondImageY = margin + 10 + maxImageHeight + 40;
+
+      await this.addImageToPDF(
+        pdf,
+        image2,
+        margin,
+        secondImageY,
+        maxImageWidth,
+        maxImageHeight,
+        false
+      );
+    }
+  }
+
+  /**
+   * Add header section to detailed PDF page
+   * @param {Object} pdf - jsPDF document object
+   * @param {Object} image - Image data object
+   * @param {number} pageNumber - Current page number
+   * @param {number} margin - Page margin
+   * @param {number} maxLineWidth - Maximum line width for text
+   * @returns {number} - Current Y position after header
+   */
+  addDetailedPageHeader(pdf, image, pageNumber, margin, maxLineWidth) {
+    // Page header with text wrapping for long titles
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+
+    const titleText = `Image ${pageNumber}: ${image.title}`;
+    const wrappedTitle = PDFUtils.wrapTextForPDF(pdf, titleText, maxLineWidth);
+    let currentY = margin;
+
+    wrappedTitle.forEach((line, index) => {
+      pdf.text(line, margin, currentY + index * 12);
+    });
+
+    currentY += wrappedTitle.length * 12 + 15;
+    return currentY;
+  }
+
+  /**
+   * Add metadata section to detailed PDF page
+   * @param {Object} pdf - jsPDF document object
+   * @param {Object} image - Image data object
+   * @param {number} startY - Starting Y position
+   * @param {number} margin - Page margin
+   * @param {number} maxLineWidth - Maximum line width for text
+   */
+  addDetailedPageMetadata(pdf, image, startY, margin, maxLineWidth) {
+    let currentY = startY;
+    const lineHeight = 6;
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    // Metadata section header
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Topic Details', margin, currentY);
+    currentY += 15;
+
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+
+    // Metadata with proper wrapping and page break handling
+    const metadataItems = [
+      { label: 'Status:', value: image.status || 'Unknown' },
+      { label: 'Priority:', value: image.priority || 'Normal' },
+      { label: 'Author:', value: image.author || 'Unknown' },
+      {
+        label: 'Created:',
+        value: this.formatDate(image.creationDate) || 'Unknown',
+      },
+      { label: 'Project:', value: image.projectName || 'Unknown' },
+      { label: 'Source File:', value: image.sourceFile || 'Unknown' },
+      { label: 'BCF Version:', value: image.bcfVersion || 'Unknown' },
+      { label: 'Topic GUID:', value: image.topicGuid || 'Unknown' },
+      {
+        label: 'Description:',
+        value: image.description || 'No description available',
+      },
+    ];
+
+    metadataItems.forEach((item) => {
+      // Check if we need a new page
+      if (currentY > pageHeight - 40) {
+        pdf.addPage();
+        currentY = margin + 20;
+
+        // Add continuation header
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(
+          `Image ${pageNumber} Details (continued)`,
+          margin,
+          margin + 10
+        );
+        currentY = margin + 30;
+
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+      }
+
+      // Add metadata item
+      this.addMetadataItem(
+        pdf,
+        item,
+        currentY,
+        margin,
+        maxLineWidth,
+        lineHeight
+      );
+      currentY += lineHeight + 3;
+    });
+  }
+
+  /**
+   * Add individual metadata item to PDF
+   * @param {Object} pdf - jsPDF document object
+   * @param {Object} item - Metadata item with label and value
+   * @param {number} currentY - Current Y position
+   * @param {number} margin - Page margin
+   * @param {number} maxLineWidth - Maximum line width
+   * @param {number} lineHeight - Line height for text
+   */
+  addMetadataItem(pdf, item, currentY, margin, maxLineWidth, lineHeight) {
+    if (item.label === 'Description:') {
+      // Special handling for description (longest field)
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(item.label, margin, currentY);
+
+      pdf.setFont('helvetica', 'normal');
+      const wrappedDescription = PDFUtils.wrapTextForPDF(
+        pdf,
+        item.value,
+        maxLineWidth - 10
+      );
+
+      wrappedDescription.forEach((line, lineIndex) => {
+        pdf.text(line, margin + 10, currentY + (lineIndex + 1) * lineHeight);
+      });
+    } else {
+      // Regular metadata items
+      const labelWidth = pdf.getTextWidth(item.label);
+      const valueStartX = margin + labelWidth + 5;
+      const availableWidth = maxLineWidth - labelWidth - 5;
+
+      // Add label
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(item.label, margin, currentY);
+
+      // Add value
+      pdf.setFont('helvetica', 'normal');
+      const wrappedValue = PDFUtils.wrapTextForPDF(
+        pdf,
+        item.value,
+        availableWidth
+      );
+
+      wrappedValue.forEach((line, lineIndex) => {
+        const yPos =
+          lineIndex === 0 ? currentY : currentY + lineIndex * lineHeight;
+        const xPos = lineIndex === 0 ? valueStartX : valueStartX;
+        pdf.text(line, xPos, yPos);
+      });
+    }
+  }
+
+  /**
+   * Generate detailed layout PDF (1 image per page) - Simplified Version
+   * @returns {jsPDF} - PDF document
+   */
+  async generateDetailedPDFReport() {
+    console.log('📖 Generating detailed layout PDF...');
+
+    // Use filtered images directly
+    const imagesToUse = this.filteredImages;
+
+    // Initialize PDF document with cover page
+    const pdf = this.initializePDFDocument('Detailed');
+
+    // Add detailed pages with progress tracking
+    await this.addDetailedPagesWithProgress(pdf, imagesToUse);
+
+    console.log('✅ Detailed PDF generation complete');
+    return pdf;
+  }
+
+  /**
+   * Generate summary layout PDF (executive summary + 2 images per page) - Simplified Version
+   * @returns {jsPDF} - PDF document
+   */
+  async generateSummaryPDFReport() {
+    console.log('📊 Generating summary layout PDF...');
+
+    // Use filtered images directly
+    const imagesToUse = this.filteredImages;
+
+    // Initialize PDF document with cover page
+    const pdf = this.initializePDFDocument('Executive');
+
+    // Add summary pages with progress tracking
+    await this.addSummaryPagesWithProgress(pdf, imagesToUse);
 
     console.log('✅ Summary PDF generation complete');
     return pdf;
@@ -3124,29 +3223,19 @@ class ImageViewer {
     const margin = 20;
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const lineHeight = 6;
     const maxLineWidth = pageWidth - 2 * margin;
 
-    // Page header with text wrapping for long titles
-    pdf.setFontSize(16);
-    pdf.setFont('helvetica', 'bold');
+    // Add page header
+    let currentY = this.addDetailedPageHeader(
+      pdf,
+      image,
+      pageNumber,
+      margin,
+      maxLineWidth
+    );
 
-    const titleText = `Image ${pageNumber}: ${image.title}`;
-    const wrappedTitle = this.wrapTextForPDF(pdf, titleText, maxLineWidth);
-    let currentY = margin;
-
-    wrappedTitle.forEach((line, index) => {
-      pdf.text(line, margin, currentY + index * 12);
-    });
-
-    currentY += wrappedTitle.length * 12 + 15;
-
-    // Image with proper sizing
-    const maxImageHeight = 120;
-    const actualImageHeight = Math.min(
-      maxImageHeight,
-      pageHeight - currentY - 180
-    ); // Reserve more space for metadata
+    // Add image with proper sizing
+    const maxImageHeight = Math.min(120, pageHeight - currentY - 180);
 
     await this.addImageToPDF(
       pdf,
@@ -3154,174 +3243,21 @@ class ImageViewer {
       margin,
       currentY,
       maxLineWidth,
-      actualImageHeight,
+      maxImageHeight,
       false
     );
 
-    currentY += actualImageHeight + 20;
+    currentY += maxImageHeight + 20;
 
-    // Metadata section with proper text wrapping
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Topic Details', margin, currentY);
-    currentY += 15;
-
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-
-    // Metadata with proper wrapping and page break handling
-    const metadataItems = [
-      { label: 'Status:', value: image.status || 'Unknown' },
-      { label: 'Priority:', value: image.priority || 'Normal' },
-      { label: 'Author:', value: image.author || 'Unknown' },
-      {
-        label: 'Created:',
-        value: this.formatDate(image.creationDate) || 'Unknown',
-      },
-      { label: 'Project:', value: image.projectName || 'Unknown' },
-      { label: 'Source File:', value: image.sourceFile || 'Unknown' },
-      { label: 'BCF Version:', value: image.bcfVersion || 'Unknown' },
-      { label: 'Topic GUID:', value: image.topicGuid || 'Unknown' },
-      {
-        label: 'Description:',
-        value: image.description || 'No description available',
-      },
-    ];
-
-    metadataItems.forEach((item, itemIndex) => {
-      // Check if we need a new page
-      if (currentY > pageHeight - 40) {
-        pdf.addPage();
-        currentY = margin + 20;
-
-        // Add continuation header
-        pdf.setFontSize(12);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(
-          `Image ${pageNumber} Details (continued)`,
-          margin,
-          margin + 10
-        );
-        currentY = margin + 30;
-
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'normal');
-      }
-
-      // Special handling for description (longest field)
-      if (item.label === 'Description:') {
-        // Add label
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(item.label, margin, currentY);
-        currentY += lineHeight + 3;
-
-        // Wrap description text
-        pdf.setFont('helvetica', 'normal');
-        const wrappedDescription = this.wrapTextForPDF(
-          pdf,
-          item.value,
-          maxLineWidth - 10
-        );
-
-        wrappedDescription.forEach((line, lineIndex) => {
-          // Check for page break
-          if (currentY > pageHeight - 20) {
-            pdf.addPage();
-            currentY = margin + 20;
-          }
-
-          pdf.text(line, margin + 10, currentY); // Indent description
-          currentY += lineHeight;
-        });
-
-        currentY += 5; // Extra space after description
-      } else {
-        // Regular metadata items
-        const labelWidth = pdf.getTextWidth(item.label);
-        const valueStartX = margin + labelWidth + 5;
-        const availableWidth = maxLineWidth - labelWidth - 5;
-
-        // Add label
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(item.label, margin, currentY);
-
-        // Wrap and add value
-        pdf.setFont('helvetica', 'normal');
-        const wrappedValue = this.wrapTextForPDF(
-          pdf,
-          item.value,
-          availableWidth
-        );
-
-        wrappedValue.forEach((line, lineIndex) => {
-          if (lineIndex === 0) {
-            // First line goes next to label
-            pdf.text(line, valueStartX, currentY);
-          } else {
-            // Check for page break
-            if (currentY + lineHeight > pageHeight - 20) {
-              pdf.addPage();
-              currentY = margin + 20;
-            } else {
-              currentY += lineHeight;
-            }
-            pdf.text(line, valueStartX, currentY);
-          }
-        });
-
-        currentY += lineHeight + 3; // Move to next item
-      }
-    });
-  }
-
-  /**
-   * Wrap text to fit within specified width for PDF
-   * @param {jsPDF} pdf - PDF document
-   * @param {string} text - Text to wrap
-   * @param {number} maxWidth - Maximum width in mm
-   * @returns {string[]} - Array of wrapped lines
-   */
-  wrapTextForPDF(pdf, text, maxWidth) {
-    if (!text || text.trim() === '') {
-      return [''];
-    }
-
-    const words = text.toString().trim().split(' ');
-    const lines = [];
-    let currentLine = '';
-
-    words.forEach((word) => {
-      const testLine = currentLine ? `${currentLine} ${word}` : word;
-
-      try {
-        const testWidth = pdf.getTextWidth(testLine);
-
-        if (testWidth <= maxWidth || currentLine === '') {
-          currentLine = testLine;
-        } else {
-          if (currentLine) {
-            lines.push(currentLine);
-          }
-          currentLine = word;
-        }
-      } catch (error) {
-        // Fallback if getTextWidth fails
-        if (testLine.length <= 80 || currentLine === '') {
-          currentLine = testLine;
-        } else {
-          if (currentLine) {
-            lines.push(currentLine);
-          }
-          currentLine = word;
-        }
-      }
-    });
-
-    if (currentLine) {
-      lines.push(currentLine);
-    }
-
-    return lines.length > 0 ? lines : [''];
+    // Add metadata section
+    this.addDetailedPageMetadata(
+      pdf,
+      image,
+      currentY,
+      margin,
+      maxLineWidth,
+      pageNumber
+    );
   }
 
   /**
@@ -3468,7 +3404,7 @@ class ImageViewer {
       pdf.setFontSize(compact ? 8 : 10);
       pdf.setFont('helvetica', 'bold');
 
-      const titleText = this.truncateText(image.title, compact ? 30 : 50);
+      const titleText = PDFUtils.truncateText(image.title, compact ? 30 : 50);
       pdf.text(titleText, x, y + maxHeight - (compact ? 20 : 30));
 
       if (!compact) {
@@ -3519,135 +3455,6 @@ class ImageViewer {
     });
 
     return stats;
-  }
-
-  /**
-   * Generate PDF filename
-   * @param {string} layout - Layout type
-   * @returns {string} - PDF filename
-   */
-  generatePDFFilename(layout) {
-    const projectName = this.sanitizeFilename(this.getCommonProjectName());
-    const date = new Date().toISOString().split('T')[0];
-    const layoutName = layout.charAt(0).toUpperCase() + layout.slice(1);
-
-    return `${projectName}_BCF_${layoutName}_Report_${date}.pdf`;
-  }
-
-  /**
-   * Create standardized cover page for all PDF reports
-   * Uses the Executive Summary layout as template for consistency
-   * @param {jsPDF} pdf - PDF document instance
-   * @param {string} reportType - Type of report (Grid, Detailed, Executive Summary)
-   */
-  addStandardizedCoverPage(pdf, reportType) {
-    console.log(`📄 Creating standardized cover page for ${reportType} report`);
-
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 20;
-
-    // Main title - consistent across all reports
-    pdf.setFontSize(24);
-    pdf.setFont('helvetica', 'bold');
-
-    // Determine report title based on type
-    let reportTitle = '';
-    switch (reportType.toLowerCase()) {
-      case 'grid':
-        reportTitle = 'BCF Image Grid Report';
-        break;
-      case 'detailed':
-        reportTitle = 'BCF Detailed Image Report';
-        break;
-      case 'summary':
-      case 'executive':
-        reportTitle = 'BCF Executive Summary';
-        break;
-      default:
-        reportTitle = 'BCF Image Report';
-    }
-
-    pdf.text(reportTitle, pageWidth / 2, 60, { align: 'center' });
-
-    // Project name - consistent formatting
-    pdf.setFontSize(16);
-    pdf.setFont('helvetica', 'normal');
-    const projectName = this.getCommonProjectName();
-    pdf.text(`Project: ${projectName}`, pageWidth / 2, 85, { align: 'center' });
-
-    // Generation date - consistent positioning
-    pdf.setFontSize(12);
-    const today = new Date().toLocaleDateString();
-    pdf.text(`Generated: ${today}`, pageWidth / 2, 105, { align: 'center' });
-
-    // Image count - consistent across all reports
-    pdf.text(
-      `Total Images: ${this.filteredImages.length}`,
-      pageWidth / 2,
-      125,
-      { align: 'center' }
-    );
-
-    // Project Statistics section - enhanced for all report types
-    try {
-      const stats = this.calculateImageStatistics();
-      if (Object.keys(stats.statusCount).length > 0) {
-        let currentY = 160;
-
-        // Section header
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Project Statistics', pageWidth / 2, currentY, {
-          align: 'center',
-        });
-        currentY += 25;
-
-        // Statistics content
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(11);
-
-        // Project and status info
-        const statLines = [
-          `Total Images: ${this.filteredImages.length}`,
-          `Projects: ${stats.projects.join(', ')}`,
-          `Status Breakdown: ${Object.entries(stats.statusCount)
-            .map(([status, count]) => `${status} (${count})`)
-            .join(', ')}`,
-          `Priority Breakdown: ${Object.entries(stats.priorityCount)
-            .map(([priority, count]) => `${priority} (${count})`)
-            .join(', ')}`,
-          `Top Authors: ${Object.entries(stats.authorCount)
-            .slice(0, 3)
-            .map(([author, count]) => `${author} (${count})`)
-            .join(', ')}`,
-        ];
-
-        // Add each statistic line with proper spacing
-        statLines.forEach((line) => {
-          pdf.text(line, pageWidth / 2, currentY, { align: 'center' });
-          currentY += 15;
-        });
-      }
-    } catch (error) {
-      console.log('📊 Statistics not available for cover page:', error.message);
-
-      // Fallback: just show basic info if stats calculation fails
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`${reportType} Layout Report`, pageWidth / 2, 160, {
-        align: 'center',
-      });
-    }
-
-    // Footer - consistent across all reports
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'italic');
-    pdf.text('Generated by BCFSleuth', pageWidth / 2, pageHeight - 30, {
-      align: 'center',
-    });
-
-    console.log(`✅ Standardized cover page created for ${reportType} report`);
   }
 
   /**

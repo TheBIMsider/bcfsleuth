@@ -1,3 +1,5 @@
+// Import shared coordinate utilities
+// Note: Ensure coordinate-utils.js is loaded before this file
 // Excel Exporter - Handles Excel (.xlsx) generation from BCF data
 class ExcelExporter {
   static export(bcfDataArray, selectedFields = null) {
@@ -416,47 +418,47 @@ class ExcelExporter {
 
       // Complete BCF camera field mappings (use primary viewpoint like comments)
       cameraType: this.getPrimaryViewpointProperty(topic, 'cameraType'),
-      CameraViewPointX: this.getPrimaryViewpointBCFCoordinate(
+      CameraViewPointX: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
         topic,
         'CameraViewPoint',
         'X'
       ),
-      CameraViewPointY: this.getPrimaryViewpointBCFCoordinate(
+      CameraViewPointY: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
         topic,
         'CameraViewPoint',
         'Y'
       ),
-      CameraViewPointZ: this.getPrimaryViewpointBCFCoordinate(
+      CameraViewPointZ: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
         topic,
         'CameraViewPoint',
         'Z'
       ),
-      CameraDirectionX: this.getPrimaryViewpointBCFCoordinate(
+      CameraDirectionX: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
         topic,
         'CameraDirection',
         'X'
       ),
-      CameraDirectionY: this.getPrimaryViewpointBCFCoordinate(
+      CameraDirectionY: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
         topic,
         'CameraDirection',
         'Y'
       ),
-      CameraDirectionZ: this.getPrimaryViewpointBCFCoordinate(
+      CameraDirectionZ: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
         topic,
         'CameraDirection',
         'Z'
       ),
-      CameraUpVectorX: this.getPrimaryViewpointBCFCoordinate(
+      CameraUpVectorX: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
         topic,
         'CameraUpVector',
         'X'
       ),
-      CameraUpVectorY: this.getPrimaryViewpointBCFCoordinate(
+      CameraUpVectorY: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
         topic,
         'CameraUpVector',
         'Y'
       ),
-      CameraUpVectorZ: this.getPrimaryViewpointBCFCoordinate(
+      CameraUpVectorZ: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
         topic,
         'CameraUpVector',
         'Z'
@@ -468,32 +470,32 @@ class ExcelExporter {
       ),
 
       // Legacy coordinate field mappings (using new primary viewpoint logic)
-      cameraPosX: this.getPrimaryViewpointCoordinate(
+      cameraPosX: CoordinateUtils.getPrimaryViewpointCoordinate(
         topic,
         'cameraPosition',
         'x'
       ),
-      cameraPosY: this.getPrimaryViewpointCoordinate(
+      cameraPosY: CoordinateUtils.getPrimaryViewpointCoordinate(
         topic,
         'cameraPosition',
         'y'
       ),
-      cameraPosZ: this.getPrimaryViewpointCoordinate(
+      cameraPosZ: CoordinateUtils.getPrimaryViewpointCoordinate(
         topic,
         'cameraPosition',
         'z'
       ),
-      cameraTargetX: this.getPrimaryViewpointCoordinate(
+      cameraTargetX: CoordinateUtils.getPrimaryViewpointCoordinate(
         topic,
         'cameraTarget',
         'x'
       ),
-      cameraTargetY: this.getPrimaryViewpointCoordinate(
+      cameraTargetY: CoordinateUtils.getPrimaryViewpointCoordinate(
         topic,
         'cameraTarget',
         'y'
       ),
-      cameraTargetZ: this.getPrimaryViewpointCoordinate(
+      cameraTargetZ: CoordinateUtils.getPrimaryViewpointCoordinate(
         topic,
         'cameraTarget',
         'z'
@@ -549,25 +551,51 @@ class ExcelExporter {
 
       // Complete BCF camera field mappings - all 18 coordinate fields
       cameraType: viewpoint.cameraType || '',
-      CameraViewPointX: this.formatCoordinate(viewpoint.CameraViewPoint?.X),
-      CameraViewPointY: this.formatCoordinate(viewpoint.CameraViewPoint?.Y),
-      CameraViewPointZ: this.formatCoordinate(viewpoint.CameraViewPoint?.Z),
-      CameraDirectionX: this.formatCoordinate(viewpoint.CameraDirection?.X),
-      CameraDirectionY: this.formatCoordinate(viewpoint.CameraDirection?.Y),
-      CameraDirectionZ: this.formatCoordinate(viewpoint.CameraDirection?.Z),
-      CameraUpVectorX: this.formatCoordinate(viewpoint.CameraUpVector?.X),
-      CameraUpVectorY: this.formatCoordinate(viewpoint.CameraUpVector?.Y),
-      CameraUpVectorZ: this.formatCoordinate(viewpoint.CameraUpVector?.Z),
-      FieldOfView: this.formatCoordinate(viewpoint.FieldOfView),
-      ViewToWorldScale: this.formatCoordinate(viewpoint.ViewToWorldScale),
+      CameraViewPointX: CoordinateUtils.formatCoordinate(
+        viewpoint.CameraViewPoint?.X
+      ),
+      CameraViewPointY: CoordinateUtils.formatCoordinate(
+        viewpoint.CameraViewPoint?.Y
+      ),
+      CameraViewPointZ: CoordinateUtils.formatCoordinate(
+        viewpoint.CameraViewPoint?.Z
+      ),
+      CameraDirectionX: CoordinateUtils.formatCoordinate(
+        viewpoint.CameraDirection?.X
+      ),
+      CameraDirectionY: CoordinateUtils.formatCoordinate(
+        viewpoint.CameraDirection?.Y
+      ),
+      CameraDirectionZ: CoordinateUtils.formatCoordinate(
+        viewpoint.CameraDirection?.Z
+      ),
+      CameraUpVectorX: CoordinateUtils.formatCoordinate(
+        viewpoint.CameraUpVector?.X
+      ),
+      CameraUpVectorY: CoordinateUtils.formatCoordinate(
+        viewpoint.CameraUpVector?.Y
+      ),
+      CameraUpVectorZ: CoordinateUtils.formatCoordinate(
+        viewpoint.CameraUpVector?.Z
+      ),
+      FieldOfView: CoordinateUtils.formatCoordinate(viewpoint.FieldOfView),
+      ViewToWorldScale: CoordinateUtils.formatCoordinate(
+        viewpoint.ViewToWorldScale
+      ),
 
       // Legacy coordinate field mappings (for backward compatibility)
-      cameraPosX: this.formatCoordinate(viewpoint.cameraPosition?.x),
-      cameraPosY: this.formatCoordinate(viewpoint.cameraPosition?.y),
-      cameraPosZ: this.formatCoordinate(viewpoint.cameraPosition?.z),
-      cameraTargetX: this.formatCoordinate(viewpoint.cameraTarget?.x),
-      cameraTargetY: this.formatCoordinate(viewpoint.cameraTarget?.y),
-      cameraTargetZ: this.formatCoordinate(viewpoint.cameraTarget?.z),
+      cameraPosX: CoordinateUtils.formatCoordinate(viewpoint.cameraPosition?.x),
+      cameraPosY: CoordinateUtils.formatCoordinate(viewpoint.cameraPosition?.y),
+      cameraPosZ: CoordinateUtils.formatCoordinate(viewpoint.cameraPosition?.z),
+      cameraTargetX: CoordinateUtils.formatCoordinate(
+        viewpoint.cameraTarget?.x
+      ),
+      cameraTargetY: CoordinateUtils.formatCoordinate(
+        viewpoint.cameraTarget?.y
+      ),
+      cameraTargetZ: CoordinateUtils.formatCoordinate(
+        viewpoint.cameraTarget?.z
+      ),
     };
 
     const row = [`${topicNumber}.V${viewpointNumber}`]; // V for viewpoint
@@ -950,71 +978,10 @@ class ExcelExporter {
   }
 
   /**
-   * Format coordinate values for Excel export
-   * Handles null/undefined values and rounds to 3 decimal places
-   */
-  static formatCoordinate(value) {
-    if (value === null || value === undefined || value === '') {
-      return '';
-    }
-
-    const numValue = parseFloat(value);
-    if (isNaN(numValue)) {
-      return '';
-    }
-
-    // Round to 3 decimal places for reasonable precision
-    return numValue.toFixed(3);
-  }
-
-  /**
-   * Get primary viewpoint using same logic as comments
-   * Priority: 1) viewpoint.bcfv, 2) first viewpoint with coordinates, 3) any viewpoint
-   */
-  static getPrimaryViewpoint(topic) {
-    if (!topic.viewpoints || topic.viewpoints.length === 0) {
-      return null;
-    }
-
-    // Method 1: Look for the main viewpoint.bcfv file (highest priority)
-    let primaryViewpoint = topic.viewpoints.find((vp) => {
-      return (
-        vp.viewpointFile === 'viewpoint.bcfv' ||
-        vp.guid === 'viewpoint-generic' ||
-        (vp.viewpointFile &&
-          vp.viewpointFile.toLowerCase().includes('viewpoint.bcfv'))
-      );
-    });
-
-    // Method 2: If no main viewpoint.bcfv, use first viewpoint with camera data
-    if (!primaryViewpoint) {
-      primaryViewpoint = topic.viewpoints.find((vp) => {
-        return vp.cameraType || vp.CameraViewPoint || vp.cameraPosition;
-      });
-    }
-
-    // Method 3: Last resort - use any viewpoint
-    if (!primaryViewpoint && topic.viewpoints.length > 0) {
-      primaryViewpoint = topic.viewpoints[0];
-    }
-
-    console.log('📊 Excel topic row BCF data:', {
-      topicGuid: topic.guid,
-      primaryViewpointGuid: primaryViewpoint?.guid,
-      primaryViewpointFile: primaryViewpoint?.viewpointFile,
-      cameraType: primaryViewpoint?.cameraType,
-      CameraViewPointX: primaryViewpoint?.CameraViewPoint?.X,
-      viewpointCount: topic.viewpoints ? topic.viewpoints.length : 0,
-    });
-
-    return primaryViewpoint;
-  }
-
-  /**
    * Get property value from primary viewpoint (replaces getFirstViewpointProperty)
    */
   static getPrimaryViewpointProperty(topic, propertyName) {
-    const primaryViewpoint = this.getPrimaryViewpoint(topic);
+    const primaryViewpoint = CoordinateUtils.getPrimaryViewpoint(topic);
     if (!primaryViewpoint) {
       return '';
     }
@@ -1024,44 +991,6 @@ class ExcelExporter {
       primaryViewpoint[propertyName] !== undefined
     ) {
       return primaryViewpoint[propertyName];
-    }
-
-    return '';
-  }
-
-  /**
-   * Get BCF coordinate value from primary viewpoint (replaces getFirstViewpointBCFCoordinate)
-   */
-  static getPrimaryViewpointBCFCoordinate(topic, coordinateType, axis) {
-    const primaryViewpoint = this.getPrimaryViewpoint(topic);
-    if (!primaryViewpoint) {
-      return '';
-    }
-
-    if (
-      primaryViewpoint[coordinateType] &&
-      primaryViewpoint[coordinateType][axis] !== null
-    ) {
-      return this.formatCoordinate(primaryViewpoint[coordinateType][axis]);
-    }
-
-    return '';
-  }
-
-  /**
-   * Get legacy coordinate value from primary viewpoint (replaces getFirstViewpointCoordinate)
-   */
-  static getPrimaryViewpointCoordinate(topic, coordinateType, axis) {
-    const primaryViewpoint = this.getPrimaryViewpoint(topic);
-    if (!primaryViewpoint) {
-      return '';
-    }
-
-    if (
-      primaryViewpoint[coordinateType] &&
-      primaryViewpoint[coordinateType][axis] !== null
-    ) {
-      return this.formatCoordinate(primaryViewpoint[coordinateType][axis]);
     }
 
     return '';

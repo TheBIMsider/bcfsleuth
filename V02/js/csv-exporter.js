@@ -463,25 +463,25 @@ class CSVExporter {
 
       // Complete BCF camera field mappings
       cameraType: row.cameraType || '',
-      CameraViewPointX: this.formatCoordinate(row.CameraViewPointX),
-      CameraViewPointY: this.formatCoordinate(row.CameraViewPointY),
-      CameraViewPointZ: this.formatCoordinate(row.CameraViewPointZ),
-      CameraDirectionX: this.formatCoordinate(row.CameraDirectionX),
-      CameraDirectionY: this.formatCoordinate(row.CameraDirectionY),
-      CameraDirectionZ: this.formatCoordinate(row.CameraDirectionZ),
-      CameraUpVectorX: this.formatCoordinate(row.CameraUpVectorX),
-      CameraUpVectorY: this.formatCoordinate(row.CameraUpVectorY),
-      CameraUpVectorZ: this.formatCoordinate(row.CameraUpVectorZ),
-      FieldOfView: this.formatCoordinate(row.FieldOfView),
-      ViewToWorldScale: this.formatCoordinate(row.ViewToWorldScale),
+      CameraViewPointX: CoordinateUtils.formatCoordinate(row.CameraViewPointX),
+      CameraViewPointY: CoordinateUtils.formatCoordinate(row.CameraViewPointY),
+      CameraViewPointZ: CoordinateUtils.formatCoordinate(row.CameraViewPointZ),
+      CameraDirectionX: CoordinateUtils.formatCoordinate(row.CameraDirectionX),
+      CameraDirectionY: CoordinateUtils.formatCoordinate(row.CameraDirectionY),
+      CameraDirectionZ: CoordinateUtils.formatCoordinate(row.CameraDirectionZ),
+      CameraUpVectorX: CoordinateUtils.formatCoordinate(row.CameraUpVectorX),
+      CameraUpVectorY: CoordinateUtils.formatCoordinate(row.CameraUpVectorY),
+      CameraUpVectorZ: CoordinateUtils.formatCoordinate(row.CameraUpVectorZ),
+      FieldOfView: CoordinateUtils.formatCoordinate(row.FieldOfView),
+      ViewToWorldScale: CoordinateUtils.formatCoordinate(row.ViewToWorldScale),
 
       // Legacy coordinate field mappings
-      cameraPosX: this.formatCoordinate(row.cameraPosX),
-      cameraPosY: this.formatCoordinate(row.cameraPosY),
-      cameraPosZ: this.formatCoordinate(row.cameraPosZ),
-      cameraTargetX: this.formatCoordinate(row.cameraTargetX),
-      cameraTargetY: this.formatCoordinate(row.cameraTargetY),
-      cameraTargetZ: this.formatCoordinate(row.cameraTargetZ),
+      cameraPosX: CoordinateUtils.formatCoordinate(row.cameraPosX),
+      cameraPosY: CoordinateUtils.formatCoordinate(row.cameraPosY),
+      cameraPosZ: CoordinateUtils.formatCoordinate(row.cameraPosZ),
+      cameraTargetX: CoordinateUtils.formatCoordinate(row.cameraTargetX),
+      cameraTargetY: CoordinateUtils.formatCoordinate(row.cameraTargetY),
+      cameraTargetZ: CoordinateUtils.formatCoordinate(row.cameraTargetZ),
     };
 
     // Start with row type and topic number
@@ -770,23 +770,5 @@ class CSVExporter {
         return parts.join(' | ');
       })
       .join('; ');
-  }
-
-  /**
-   * Format coordinate values for CSV export
-   * Handles null/undefined values and rounds to 3 decimal places
-   */
-  static formatCoordinate(value) {
-    if (value === null || value === undefined || value === '') {
-      return '';
-    }
-
-    const numValue = parseFloat(value);
-    if (isNaN(numValue)) {
-      return '';
-    }
-
-    // Round to 3 decimal places for reasonable precision
-    return numValue.toFixed(3);
   }
 }

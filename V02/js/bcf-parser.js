@@ -406,157 +406,23 @@ class BCFParser {
       // Get the Topic element to read attributes
       const topicElement = doc.querySelector('Topic');
 
-      const topic = {
-        guid: topicGuid,
-        title: this.getElementTextWithAliases(doc, [
-          'Title',
-          'Subject',
-          'Name',
-        ]),
-        topicStatus: this.getTopicStatusWithAliases(topicElement, doc),
-        topicType: this.getTopicTypeWithAliases(topicElement, doc),
-        priority: this.getElementTextWithAliases(doc, [
-          'Priority',
-          'Importance',
-          'Severity',
-        ]),
-        description: this.getElementTextWithAliases(doc, [
-          'Description',
-          'Details',
-          'Notes',
-        ]),
-        creationDate: this.getElementTextWithAliases(doc, [
-          'CreationDate',
-          'Created',
-          'DateCreated',
-        ]),
-        creationAuthor: this.getElementTextWithAliases(doc, [
-          'CreationAuthor',
-          'Author',
-          'CreatedBy',
-          'Creator',
-        ]),
-        modifiedDate: this.getElementTextWithAliases(doc, [
-          'ModifiedDate',
-          'Modified',
-          'LastModified',
-          'DateModified',
-        ]),
-        modifiedAuthor: this.getElementTextWithAliases(doc, [
-          'ModifiedAuthor',
-          'ModifiedBy',
-          'LastModifiedBy',
-        ]),
-        dueDate: this.getElementTextWithAliases(doc, [
-          'DueDate',
-          'Due',
-          'Deadline',
-          'TargetDate',
-        ]),
-        assignedTo: this.getElementTextWithAliases(doc, [
-          'AssignedTo',
-          'Assigned',
-          'Owner',
-          'Responsible',
-        ]),
-        stage: this.getElementTextWithAliases(doc, [
-          'Stage',
-          'Phase',
-          'Step',
-          'Milestone',
-        ]),
-        labels: [],
-        comments: [],
-        viewpoints: [],
-
-        // BCF 3.0 specific fields (will be empty for BCF 2.x)
-        serverAssignedId: '',
-        referenceLinks: [],
-        headerFiles: [],
-
-        // Store BCF format for processing decisions
-        _bcfFormat: bcfFormat,
-
-        // Existing fields for advanced analysis
-        _rawXml: markupXml,
-        _topicElement: topicElement,
-        _customFields: {},
-      };
-
-      // Extract BCF 3.0 specific fields if format is 3.0
-      if (bcfFormat === '3.0') {
-        console.log(
-          '🔍 Checking BCF 3.0 specific fields for topic:',
-          topic.title
-        );
-        this.extractBCF30Fields(topicElement, doc, topic);
-      }
-
-      // Enhanced label extraction with comprehensive BCF format support
-      // This handles various BCF authoring tools and format differences
-      const labelElements = doc.querySelectorAll(
-        'Labels Label, Tags Tag, Categories Category, TopicLabels TopicLabel'
+      // Initialize topic with all basic data
+      const topic = this.initializeTopicData(
+        topicElement,
+        doc,
+        topicGuid,
+        markupXml,
+        bcfFormat
       );
 
-      // First, extract from standard label elements
-      labelElements.forEach((label) => {
-        const labelText = label.textContent?.trim();
-        if (labelText && labelText.length > 0) {
-          topic.labels.push(labelText);
-        }
-      });
+      // Extract topic labels using dedicated method
+      this.extractTopicLabels(doc, topic);
 
-      // Enhanced: Also check for Labels as direct children with different structures
-      // Some BCF tools store labels differently
-      const labelsContainer = doc.querySelector('Labels, TopicLabels');
-      if (labelsContainer) {
-        // Check for direct text content (some tools use this format)
-        const directLabels = labelsContainer.textContent?.trim();
-        if (directLabels && !topic.labels.length) {
-          // Split by common delimiters and clean up
-          const labelArray = directLabels
-            .split(/[,;|]/)
-            .map((label) => label.trim())
-            .filter((label) => label.length > 0);
-
-          if (labelArray.length > 0) {
-            topic.labels.push(...labelArray);
-          }
-        }
-
-        // Also check for attribute-based labels (some BCF variants)
-        const labelValue =
-          labelsContainer.getAttribute('value') ||
-          labelsContainer.getAttribute('Label');
-        if (labelValue && !topic.labels.length) {
-          topic.labels.push(labelValue.trim());
-        }
-      }
-
-      // Debug logging for label extraction
-      if (topic.labels.length > 0) {
-        console.log(
-          `📋 Found ${topic.labels.length} labels for topic "${topic.title}":`,
-          topic.labels
-        );
-      } else {
-        // Check if Labels element exists but is empty
-        const emptyLabelsContainer = doc.querySelector('Labels, TopicLabels');
-        if (emptyLabelsContainer) {
-          console.log(
-            `📋 Labels container found but empty for topic "${topic.title}"`
-          );
-        }
-      }
-
-      // Discover and extract custom fields from Topic element
-      this.extractCustomFields(topicElement, topic._customFields, 'topic');
-
-      // Scan entire document for any unrecognized elements
-      this.scanForUnknownElements(doc, topic._customFields);
+      // Extract custom fields using dedicated method
+      this.processTopicCustomFields(topicElement, doc, topic);
 
       // Parse comments (they might be in markup.bcf instead of separate comments.bcf)
-      await this.parseCommentsEnhanced(zip, topicGuid, topic, doc, bcfFormat);
+      await this.parseComments(zip, topicGuid, topic, doc);
 
       // Debug: log actual comment count after parsing
       console.log(
@@ -569,34 +435,8 @@ class BCFParser {
         doc.documentElement.outerHTML.substring(0, 1000)
       );
 
-      // Parse viewpoints
-      this.parseViewpoints(doc, topic);
-
-      // Extract viewpoint coordinates from ZIP files
-      await this.extractViewpointCoordinatesFromZip(zip, topicGuid, topic);
-
-      // Debug: Log coordinate extraction results
-      const coordinatesFound = topic.viewpoints.filter(
-        (vp) =>
-          (vp.cameraPosition && vp.cameraPosition.x !== null) ||
-          (vp.cameraTarget && vp.cameraTarget.x !== null)
-      );
-
-      console.log(
-        `🎯 Topic "${topic.title}" viewpoint coordinate extraction complete:`,
-        {
-          viewpointCount: topic.viewpoints.length,
-          coordinatesFound: coordinatesFound.length,
-          allViewpoints: topic.viewpoints.map((vp) => ({
-            guid: vp.guid,
-            hasCoordinates:
-              (vp.cameraPosition && vp.cameraPosition.x !== null) ||
-              (vp.cameraTarget && vp.cameraTarget.x !== null),
-            cameraPos: vp.cameraPosition,
-            cameraTarget: vp.cameraTarget,
-          })),
-        }
-      );
+      // Process viewpoints and coordinates using dedicated method
+      await this.processTopicViewpoints(zip, topicGuid, doc, topic);
 
       // Store ZIP reference for lazy image loading (don't extract images yet)
       topic._zipReference = zip;
@@ -608,6 +448,384 @@ class BCFParser {
       console.error(`Error parsing topic ${topicGuid}:`, error);
       return null;
     }
+  }
+
+  /**
+   * Extract topic labels with comprehensive BCF format support
+   * Handles various BCF authoring tools and format differences
+   * @param {Document} doc - The parsed markup XML document
+   * @param {Object} topic - The topic object to populate with labels
+   */
+  static extractTopicLabels(doc, topic) {
+    // Initialize labels array
+    topic.labels = [];
+
+    // Method 1: Extract from standard label elements
+    const labelElements = doc.querySelectorAll(
+      'Labels Label, Tags Tag, Categories Category, TopicLabels TopicLabel'
+    );
+
+    labelElements.forEach((label) => {
+      const labelText = label.textContent?.trim();
+      if (labelText && labelText.length > 0) {
+        topic.labels.push(labelText);
+      }
+    });
+
+    // Method 2: Check for Labels as direct children with different structures
+    // Some BCF tools store labels differently
+    const labelsContainer = doc.querySelector('Labels, TopicLabels');
+    if (labelsContainer) {
+      // Check for direct text content (some tools use this format)
+      const directLabels = labelsContainer.textContent?.trim();
+      if (directLabels && !topic.labels.length) {
+        // Split by common delimiters and clean up
+        const labelArray = directLabels
+          .split(/[,;|]/)
+          .map((label) => label.trim())
+          .filter((label) => label.length > 0);
+
+        if (labelArray.length > 0) {
+          topic.labels.push(...labelArray);
+        }
+      }
+
+      // Method 3: Check for attribute-based labels (some BCF variants)
+      const labelValue =
+        labelsContainer.getAttribute('value') ||
+        labelsContainer.getAttribute('Label');
+      if (labelValue && !topic.labels.length) {
+        topic.labels.push(labelValue.trim());
+      }
+    }
+
+    // Debug logging for label extraction
+    if (topic.labels.length > 0) {
+      console.log(
+        `🏷️ Found ${topic.labels.length} labels for topic "${topic.title}":`,
+        topic.labels
+      );
+    } else {
+      // Check if Labels element exists but is empty
+      const emptyLabelsContainer = doc.querySelector('Labels, TopicLabels');
+      if (emptyLabelsContainer) {
+        console.log(
+          `🏷️ Labels container found but empty for topic "${topic.title}"`
+        );
+      }
+    }
+  }
+
+  /**
+   * Process all custom fields for a topic
+   * Extracts custom fields from topic element and scans for unknown elements
+   * @param {Element} topicElement - The Topic XML element
+   * @param {Document} doc - The complete markup XML document
+   * @param {Object} topic - The topic object to populate with custom fields
+   */
+  static processTopicCustomFields(topicElement, doc, topic) {
+    // Initialize custom fields storage
+    topic._customFields = {};
+
+    // Extract custom fields from Topic element attributes and children
+    this.extractCustomFields(topicElement, topic._customFields, 'topic');
+
+    // Scan entire document for any unrecognized elements
+    this.scanForUnknownElements(doc, topic._customFields);
+
+    // Log custom fields found for debugging
+    const customFieldCount = Object.keys(topic._customFields).length;
+    if (customFieldCount > 0) {
+      console.log(
+        `🔧 Found ${customFieldCount} custom fields for topic "${topic.title}"`
+      );
+    }
+  }
+
+  /**
+   * Process all viewpoint data for a topic including coordinates
+   * Handles viewpoint parsing and coordinate extraction with comprehensive logging
+   * @param {JSZip} zip - The BCF ZIP file for coordinate extraction
+   * @param {string} topicGuid - The topic GUID for file path construction
+   * @param {Document} doc - The markup XML document for viewpoint parsing
+   * @param {Object} topic - The topic object to populate with viewpoint data
+   */
+  static async processTopicViewpoints(zip, topicGuid, doc, topic) {
+    // Parse basic viewpoint structure from markup
+    this.parseViewpoints(doc, topic);
+
+    // Extract detailed coordinate data from .bcfv files
+    await this.extractViewpointCoordinatesFromZip(zip, topicGuid, topic);
+
+    // Generate comprehensive coordinate extraction summary
+    const coordinatesFound = topic.viewpoints.filter(
+      (vp) =>
+        (vp.cameraPosition && vp.cameraPosition.x !== null) ||
+        (vp.cameraTarget && vp.cameraTarget.x !== null)
+    );
+
+    console.log(
+      `🎯 Topic "${topic.title}" viewpoint coordinate extraction complete:`,
+      {
+        viewpointCount: topic.viewpoints.length,
+        coordinatesFound: coordinatesFound.length,
+        allViewpoints: topic.viewpoints.map((vp) => ({
+          guid: vp.guid,
+          hasCoordinates:
+            (vp.cameraPosition && vp.cameraPosition.x !== null) ||
+            (vp.cameraTarget && vp.cameraTarget.x !== null),
+          cameraPos: vp.cameraPosition,
+          cameraTarget: vp.cameraTarget,
+        })),
+      }
+    );
+  }
+
+  /**
+   * Initialize topic object with all basic data and metadata
+   * Extracts all standard BCF fields and handles format-specific features
+   * @param {Element} topicElement - The Topic XML element
+   * @param {Document} doc - The complete markup XML document
+   * @param {string} topicGuid - The topic GUID
+   * @param {string} markupXml - The raw markup XML for storage
+   * @param {string} bcfFormat - The BCF format version ('2.0', '2.1', '3.0')
+   * @returns {Object} - Initialized topic object with all basic data
+   */
+  static initializeTopicData(
+    topicElement,
+    doc,
+    topicGuid,
+    markupXml,
+    bcfFormat
+  ) {
+    const topic = {
+      guid: topicGuid,
+      title: this.getElementTextWithAliases(doc, ['Title', 'Subject', 'Name']),
+      topicStatus: this.getTopicStatusWithAliases(topicElement, doc),
+      topicType: this.getTopicTypeWithAliases(topicElement, doc),
+      priority: this.getElementTextWithAliases(doc, [
+        'Priority',
+        'Importance',
+        'Severity',
+      ]),
+      description: this.getElementTextWithAliases(doc, [
+        'Description',
+        'Details',
+        'Notes',
+      ]),
+      creationDate: this.getElementTextWithAliases(doc, [
+        'CreationDate',
+        'Created',
+        'DateCreated',
+      ]),
+      creationAuthor: this.getElementTextWithAliases(doc, [
+        'CreationAuthor',
+        'Author',
+        'CreatedBy',
+        'Creator',
+      ]),
+      modifiedDate: this.getElementTextWithAliases(doc, [
+        'ModifiedDate',
+        'Modified',
+        'LastModified',
+        'DateModified',
+      ]),
+      modifiedAuthor: this.getElementTextWithAliases(doc, [
+        'ModifiedAuthor',
+        'ModifiedBy',
+        'LastModifiedBy',
+      ]),
+      dueDate: this.getElementTextWithAliases(doc, [
+        'DueDate',
+        'Due',
+        'Deadline',
+        'TargetDate',
+      ]),
+      assignedTo: this.getElementTextWithAliases(doc, [
+        'AssignedTo',
+        'Assigned',
+        'Owner',
+        'Responsible',
+      ]),
+      stage: this.getElementTextWithAliases(doc, [
+        'Stage',
+        'Phase',
+        'Step',
+        'Milestone',
+      ]),
+      labels: [],
+      comments: [],
+      viewpoints: [],
+
+      // BCF 3.0 specific fields (will be empty for BCF 2.x)
+      serverAssignedId: '',
+      referenceLinks: [],
+      headerFiles: [],
+
+      // Store BCF format for processing decisions
+      _bcfFormat: bcfFormat,
+
+      // Existing fields for advanced analysis
+      _rawXml: markupXml,
+      _topicElement: topicElement,
+      _customFields: {},
+    };
+
+    // Extract BCF 3.0 specific fields if format is 3.0
+    if (bcfFormat === '3.0') {
+      console.log(
+        '🔍 Checking BCF 3.0 specific fields for topic:',
+        topic.title
+      );
+      this.extractBCF30Fields(topicElement, doc, topic);
+    }
+
+    return topic;
+  }
+
+  /**
+   * Discover all image files in a topic folder
+   * Scans the BCF ZIP file for image files within the specified topic folder
+   * @param {JSZip} zip - The BCF ZIP file
+   * @param {string} topicGuid - The topic GUID to search within
+   * @returns {Array} - Array of image file objects with filename, path, and file reference
+   */
+  static discoverTopicImageFiles(zip, topicGuid) {
+    const topicImageFiles = [];
+
+    zip.forEach((relativePath, file) => {
+      const pathParts = relativePath.split('/');
+      if (pathParts.length === 2 && pathParts[0] === topicGuid) {
+        const filename = pathParts[1];
+        if (this.isImageFile(filename)) {
+          topicImageFiles.push({
+            filename: filename,
+            path: relativePath,
+            file: file,
+          });
+        }
+      }
+    });
+
+    console.log(
+      `📂 Found ${topicImageFiles.length} image files in topic folder:`,
+      topicImageFiles.map((f) => f.filename)
+    );
+
+    return topicImageFiles;
+  }
+
+  /**
+   * Match viewpoints to their corresponding image files using multiple strategies
+   * Tries direct snapshot matching, GUID-based matching, and pattern matching
+   * @param {JSZip} zip - The BCF ZIP file
+   * @param {string} topicGuid - The topic GUID for path construction
+   * @param {Object} topic - The topic object containing viewpoints
+   * @param {Array} topicImageFiles - Array of discovered image files
+   */
+  static async matchViewpointsToImages(zip, topicGuid, topic, topicImageFiles) {
+    for (const viewpoint of topic.viewpoints) {
+      try {
+        let imageFile = null;
+        let matchedFilename = null;
+
+        // Method 1: Direct snapshot name match
+        const snapshotName = viewpoint.snapshot;
+        if (snapshotName) {
+          const directPath = `${topicGuid}/${snapshotName}`;
+          imageFile = zip.file(directPath);
+          if (imageFile) {
+            matchedFilename = snapshotName;
+            console.log(`✅ Direct match: ${snapshotName}`);
+          }
+        }
+
+        // Method 2: Try to find image by viewpoint GUID
+        if (!imageFile && viewpoint.guid) {
+          const guidBasedFiles = topicImageFiles.filter(
+            (f) =>
+              f.filename.toLowerCase().includes(viewpoint.guid.toLowerCase()) ||
+              f.filename
+                .toLowerCase()
+                .includes(viewpoint.guid.toLowerCase().replace(/-/g, ''))
+          );
+
+          if (guidBasedFiles.length > 0) {
+            imageFile = guidBasedFiles[0].file;
+            matchedFilename = guidBasedFiles[0].filename;
+            console.log(
+              `✅ GUID-based match: ${matchedFilename} for viewpoint ${viewpoint.guid}`
+            );
+          }
+        }
+
+        // Method 3: Try filename pattern matching (Snapshot_*, snapshot_*, etc.)
+        if (!imageFile && snapshotName) {
+          const baseSnapshotName = snapshotName.replace(/\.[^/.]+$/, ''); // Remove extension
+          const patternMatches = topicImageFiles.filter((f) => {
+            const fileBase = f.filename.replace(/\.[^/.]+$/, '');
+            return (
+              fileBase.toLowerCase().includes(baseSnapshotName.toLowerCase()) ||
+              baseSnapshotName.toLowerCase().includes(fileBase.toLowerCase())
+            );
+          });
+
+          if (patternMatches.length > 0) {
+            imageFile = patternMatches[0].file;
+            matchedFilename = patternMatches[0].filename;
+            console.log(
+              `✅ Pattern match: ${matchedFilename} for snapshot ${snapshotName}`
+            );
+          }
+        }
+
+        // Extract and store image data if match found
+        if (imageFile && matchedFilename) {
+          await this.extractAndStoreImageData(
+            viewpoint,
+            imageFile,
+            matchedFilename
+          );
+        } else {
+          console.log(
+            `🔷 No image found for viewpoint ${
+              viewpoint.guid || 'unknown'
+            } (snapshot: ${
+              snapshotName || 'none'
+            }) - this is normal for viewpoints without snapshots`
+          );
+        }
+      } catch (error) {
+        console.warn(
+          `Error extracting image for viewpoint ${viewpoint.guid}:`,
+          error
+        );
+      }
+    }
+  }
+
+  /**
+   * Extract image data and store it in the viewpoint object
+   * @param {Object} viewpoint - The viewpoint object to update
+   * @param {Object} imageFile - The JSZip file object containing the image
+   * @param {string} matchedFilename - The filename that was matched
+   */
+  static async extractAndStoreImageData(viewpoint, imageFile, matchedFilename) {
+    // Extract image data as base64
+    const imageData = await imageFile.async('base64');
+
+    // Determine image type from filename
+    const imageType = this.getImageTypeFromFilename(matchedFilename);
+
+    // Store image data in viewpoint
+    viewpoint.imageData = imageData;
+    viewpoint.imageType = imageType;
+    viewpoint.hasImage = true;
+    viewpoint.actualFilename = matchedFilename; // Store the actual filename used
+
+    console.log(
+      `✅ Extracted image: ${matchedFilename} (${imageType}) for viewpoint ${viewpoint.guid}`
+    );
   }
 
   static async parseComments(zip, topicGuid, topic, markupDoc) {
@@ -838,12 +1056,38 @@ class BCFParser {
    * @param {string} topicGuid - The topic GUID
    * @param {Object} topic - The topic object containing viewpoints
    */
-
   static async extractViewpointCoordinatesFromZip(zip, topicGuid, topic) {
     console.log(`🎯 Starting coordinate extraction for topic: ${topic.title}`);
 
-    // First, discover ALL .bcfv files in this topic folder
+    // Discover all .bcfv files in this topic folder
+    const allBcfvFiles = this.discoverViewpointFiles(zip, topicGuid);
+
+    console.log(
+      `🔍 Found ${allBcfvFiles.length} .bcfv files in topic ${topicGuid}:`,
+      allBcfvFiles
+    );
+
+    if (allBcfvFiles.length === 0) {
+      console.log(`🔍 No .bcfv files found in topic ${topicGuid}`);
+      return;
+    }
+
+    // Process each .bcfv file and create/update viewpoints
+    await this.processViewpointFiles(zip, topic, allBcfvFiles);
+
+    // Generate final coordinate extraction summary
+    this.logCoordinateExtractionSummary(topic);
+  }
+
+  /**
+   * Discover all .bcfv viewpoint files in a topic folder
+   * @param {JSZip} zip - The BCF ZIP file
+   * @param {string} topicGuid - The topic GUID
+   * @returns {Array} - Array of viewpoint file objects
+   */
+  static discoverViewpointFiles(zip, topicGuid) {
     const allBcfvFiles = [];
+
     zip.forEach((relativePath, file) => {
       if (
         relativePath.startsWith(topicGuid + '/') &&
@@ -858,20 +1102,19 @@ class BCFParser {
       }
     });
 
-    console.log(
-      `🔍 Found ${allBcfvFiles.length} .bcfv files in topic ${topicGuid}:`,
-      allBcfvFiles
-    );
+    return allBcfvFiles;
+  }
 
-    if (allBcfvFiles.length === 0) {
-      console.log(`📍 No .bcfv files found in topic ${topicGuid}`);
-      return;
-    }
-
-    // Process each .bcfv file and create/update viewpoints
+  /**
+   * Process all viewpoint files and extract coordinate data
+   * @param {JSZip} zip - The BCF ZIP file
+   * @param {Object} topic - The topic object
+   * @param {Array} allBcfvFiles - Array of discovered .bcfv files
+   */
+  static async processViewpointFiles(zip, topic, allBcfvFiles) {
     for (const bcfvFile of allBcfvFiles) {
       try {
-        console.log(`🔄 Processing viewpoint file: ${bcfvFile.path}`);
+        console.log(`📄 Processing viewpoint file: ${bcfvFile.path}`);
 
         // Find or create viewpoint object
         let viewpoint = topic.viewpoints.find(
@@ -937,8 +1180,13 @@ class BCFParser {
         );
       }
     }
+  }
 
-    // Final extraction summary with detailed coordinate data
+  /**
+   * Log comprehensive coordinate extraction summary
+   * @param {Object} topic - The topic object with processed viewpoints
+   */
+  static logCoordinateExtractionSummary(topic) {
     const viewpointsWithCoordinates = topic.viewpoints.filter((vp) => {
       return (
         vp.cameraType ||
@@ -1006,14 +1254,11 @@ class BCFParser {
   }
 
   /**
-   * Parse camera data from viewpoint XML document
-   * Extracts complete camera information with BCF naming conventions
-   * Handles both PerspectiveCamera and OrthogonalCamera elements
-   * Works across BCF 2.0, 2.1, and 3.0 formats
+   * Find the camera element in viewpoint XML and determine camera type
    * @param {Document} viewpointDoc - The parsed viewpoint XML document
-   * @param {Object} viewpoint - The viewpoint object to populate
+   * @returns {Object} - Camera element and type, or null if not found
    */
-  static parseViewpointCameraData(viewpointDoc, viewpoint) {
+  static findCameraElement(viewpointDoc) {
     // Try PerspectiveCamera first
     let cameraElement = viewpointDoc.querySelector('PerspectiveCamera');
     let cameraType = 'Perspective';
@@ -1025,93 +1270,83 @@ class BCFParser {
     }
 
     if (!cameraElement) {
-      console.log(`📷 No camera element found in viewpoint ${viewpoint.guid}`);
-      return;
+      return null;
     }
 
-    console.log(
-      `📷 Found ${cameraType} camera for viewpoint ${viewpoint.guid}`
-    );
+    return {
+      element: cameraElement,
+      type: cameraType,
+    };
+  }
 
-    // Initialize all camera properties with BCF naming
-    viewpoint.cameraType = cameraType;
-    viewpoint.CameraViewPoint = { X: null, Y: null, Z: null };
-    viewpoint.CameraDirection = { X: null, Y: null, Z: null };
-    viewpoint.CameraUpVector = { X: null, Y: null, Z: null };
-    viewpoint.FieldOfView = null; // Perspective cameras only
-    viewpoint.ViewToWorldScale = null; // Orthogonal cameras only
+  /**
+   * Extract coordinate data from camera element
+   * @param {Element} cameraElement - The camera XML element
+   * @param {string} coordinateType - Type of coordinates ('CameraViewPoint', 'CameraDirection', 'CameraUpVector')
+   * @returns {Object} - Coordinate object with X, Y, Z properties
+   */
+  static extractCameraCoordinates(cameraElement, coordinateType) {
+    const coordinates = { X: null, Y: null, Z: null };
 
-    // Extract CameraViewPoint
-    const cameraViewPoint = cameraElement.querySelector('CameraViewPoint');
-    if (cameraViewPoint) {
-      const xElement = cameraViewPoint.querySelector('X');
-      const yElement = cameraViewPoint.querySelector('Y');
-      const zElement = cameraViewPoint.querySelector('Z');
-
-      if (xElement && yElement && zElement) {
-        viewpoint.CameraViewPoint = {
-          X: parseFloat(xElement.textContent),
-          Y: parseFloat(yElement.textContent),
-          Z: parseFloat(zElement.textContent),
-        };
-        console.log(`✅ Extracted CameraViewPoint:`, viewpoint.CameraViewPoint);
-      }
+    const coordinateElement = cameraElement.querySelector(coordinateType);
+    if (!coordinateElement) {
+      return coordinates;
     }
 
-    // Extract CameraDirection
-    const cameraDirection = cameraElement.querySelector('CameraDirection');
-    if (cameraDirection) {
-      const xElement = cameraDirection.querySelector('X');
-      const yElement = cameraDirection.querySelector('Y');
-      const zElement = cameraDirection.querySelector('Z');
+    const xElement = coordinateElement.querySelector('X');
+    const yElement = coordinateElement.querySelector('Y');
+    const zElement = coordinateElement.querySelector('Z');
 
-      if (xElement && yElement && zElement) {
-        viewpoint.CameraDirection = {
-          X: parseFloat(xElement.textContent),
-          Y: parseFloat(yElement.textContent),
-          Z: parseFloat(zElement.textContent),
-        };
-        console.log(`✅ Extracted CameraDirection:`, viewpoint.CameraDirection);
-      }
+    if (xElement && yElement && zElement) {
+      coordinates.X = parseFloat(xElement.textContent);
+      coordinates.Y = parseFloat(yElement.textContent);
+      coordinates.Z = parseFloat(zElement.textContent);
+
+      console.log(`✅ Extracted ${coordinateType}:`, coordinates);
     }
 
-    // Extract CameraUpVector
-    const cameraUpVector = cameraElement.querySelector('CameraUpVector');
-    if (cameraUpVector) {
-      const xElement = cameraUpVector.querySelector('X');
-      const yElement = cameraUpVector.querySelector('Y');
-      const zElement = cameraUpVector.querySelector('Z');
+    return coordinates;
+  }
 
-      if (xElement && yElement && zElement) {
-        viewpoint.CameraUpVector = {
-          X: parseFloat(xElement.textContent),
-          Y: parseFloat(yElement.textContent),
-          Z: parseFloat(zElement.textContent),
-        };
-        console.log(`✅ Extracted CameraUpVector:`, viewpoint.CameraUpVector);
-      }
-    }
+  /**
+   * Extract camera-specific properties (FieldOfView or ViewToWorldScale)
+   * @param {Element} cameraElement - The camera XML element
+   * @param {string} cameraType - The camera type ('Perspective' or 'Orthogonal')
+   * @returns {Object} - Object with FieldOfView and/or ViewToWorldScale properties
+   */
+  static extractCameraProperties(cameraElement, cameraType) {
+    const properties = {
+      FieldOfView: null,
+      ViewToWorldScale: null,
+    };
 
-    // Extract camera-type specific properties
     if (cameraType === 'Perspective') {
       // Extract FieldOfView for perspective cameras
       const fieldOfView = cameraElement.querySelector('FieldOfView');
       if (fieldOfView) {
-        viewpoint.FieldOfView = parseFloat(fieldOfView.textContent);
-        console.log(`✅ Extracted FieldOfView:`, viewpoint.FieldOfView);
+        properties.FieldOfView = parseFloat(fieldOfView.textContent);
+        console.log(`✅ Extracted FieldOfView:`, properties.FieldOfView);
       }
     } else if (cameraType === 'Orthogonal') {
       // Extract ViewToWorldScale for orthogonal cameras
       const viewToWorldScale = cameraElement.querySelector('ViewToWorldScale');
       if (viewToWorldScale) {
-        viewpoint.ViewToWorldScale = parseFloat(viewToWorldScale.textContent);
+        properties.ViewToWorldScale = parseFloat(viewToWorldScale.textContent);
         console.log(
           `✅ Extracted ViewToWorldScale:`,
-          viewpoint.ViewToWorldScale
+          properties.ViewToWorldScale
         );
       }
     }
 
+    return properties;
+  }
+
+  /**
+   * Create backward compatibility coordinate formats
+   * @param {Object} viewpoint - The viewpoint object to update
+   */
+  static createBackwardCompatibilityCoordinates(viewpoint) {
     // Keep the old format for backward compatibility
     viewpoint.cameraPosition = {
       x: viewpoint.CameraViewPoint.X,
@@ -1128,7 +1363,56 @@ class BCFParser {
         z: viewpoint.CameraViewPoint.Z + viewpoint.CameraDirection.Z * distance,
       };
     }
+  }
 
+  /**
+   * Parse camera data from viewpoint XML document
+   * Extracts complete camera information with BCF naming conventions
+   * Handles both PerspectiveCamera and OrthogonalCamera elements
+   * Works across BCF 2.0, 2.1, and 3.0 formats
+   * @param {Document} viewpointDoc - The parsed viewpoint XML document
+   * @param {Object} viewpoint - The viewpoint object to populate
+   */
+  static parseViewpointCameraData(viewpointDoc, viewpoint) {
+    // Find camera element and determine type
+    const cameraInfo = this.findCameraElement(viewpointDoc);
+
+    if (!cameraInfo) {
+      console.log(`🔷 No camera element found in viewpoint ${viewpoint.guid}`);
+      return;
+    }
+
+    const { element: cameraElement, type: cameraType } = cameraInfo;
+    console.log(
+      `🔷 Found ${cameraType} camera for viewpoint ${viewpoint.guid}`
+    );
+
+    // Initialize viewpoint camera properties
+    viewpoint.cameraType = cameraType;
+
+    // Extract all coordinate data using helper methods
+    viewpoint.CameraViewPoint = this.extractCameraCoordinates(
+      cameraElement,
+      'CameraViewPoint'
+    );
+    viewpoint.CameraDirection = this.extractCameraCoordinates(
+      cameraElement,
+      'CameraDirection'
+    );
+    viewpoint.CameraUpVector = this.extractCameraCoordinates(
+      cameraElement,
+      'CameraUpVector'
+    );
+
+    // Extract camera-specific properties
+    const properties = this.extractCameraProperties(cameraElement, cameraType);
+    viewpoint.FieldOfView = properties.FieldOfView;
+    viewpoint.ViewToWorldScale = properties.ViewToWorldScale;
+
+    // Create backward compatibility coordinates
+    this.createBackwardCompatibilityCoordinates(viewpoint);
+
+    // Log comprehensive extraction summary
     console.log(
       `🎯 Complete camera data extracted for viewpoint ${viewpoint.guid}:`,
       {
@@ -1782,63 +2066,6 @@ class BCFParser {
   }
 
   /**
-   * Enhanced comment parsing with BCF 3.0 support
-   * This replaces the old parseComments method
-   */
-  static async parseCommentsEnhanced(
-    zip,
-    topicGuid,
-    topic,
-    markupDoc,
-    bcfFormat
-  ) {
-    // Track comment GUIDs to prevent duplicates (your existing logic)
-    const existingCommentGuids = new Set();
-
-    if (bcfFormat === '3.0') {
-      // BCF 3.0: Comments are in separate files, not inline
-      console.log('BCF 3.0: Looking for separate comments file');
-      await this.parseBCF30Comments(
-        zip,
-        topicGuid,
-        topic,
-        existingCommentGuids
-      );
-    } else {
-      // BCF 2.x: Comments might be inline in markup OR separate files
-      console.log('BCF 2.x: Checking for inline comments first');
-
-      // Check inline comments first (your existing logic)
-      if (markupDoc) {
-        const commentElements = markupDoc.querySelectorAll(
-          'Comment, Note, Remark'
-        );
-        commentElements.forEach((commentEl) => {
-          const commentGuid =
-            commentEl.getAttribute('Guid') || commentEl.getAttribute('Id');
-          if (!existingCommentGuids.has(commentGuid)) {
-            const comment = this.parseCommentElement(commentEl);
-            topic.comments.push(comment);
-            existingCommentGuids.add(commentGuid);
-          }
-        });
-      }
-
-      // Then check separate comments file as fallback (your existing logic)
-      await this.parseBCF2xCommentsFile(
-        zip,
-        topicGuid,
-        topic,
-        existingCommentGuids
-      );
-    }
-
-    console.log(
-      `Topic ${topic.title} parsed with ${topic.comments.length} comments`
-    );
-  }
-
-  /**
    * Parse BCF 3.0 comments from separate files
    */
   static async parseBCF30Comments(zip, topicGuid, topic, existingCommentGuids) {
@@ -1941,252 +2168,6 @@ class BCFParser {
     this.extractCustomFields(commentEl, comment._customFields, 'comment');
 
     return comment;
-  }
-
-  /**
-   * Extract viewpoint images from BCF ZIP file
-   * BCF images are stored as PNG/JPG files in the topic folder
-   */
-  static async extractViewpointImages(zip, topicGuid, topic) {
-    if (!topic.viewpoints || topic.viewpoints.length === 0) {
-      console.log(`❌ No viewpoints found for topic: ${topic.title}`);
-      return;
-    }
-
-    console.log(
-      `🖼️ Extracting images for topic: ${topic.title} (${topic.viewpoints.length} viewpoints)`
-    );
-    console.log(`🔍 Topic GUID: ${topicGuid}`);
-    console.log(`📋 Viewpoints details:`, topic.viewpoints);
-
-    // Get all image files in this topic folder for flexible matching
-    const topicImageFiles = [];
-    zip.forEach((relativePath, file) => {
-      const pathParts = relativePath.split('/');
-      if (pathParts.length === 2 && pathParts[0] === topicGuid) {
-        const filename = pathParts[1];
-        if (this.isImageFile(filename)) {
-          topicImageFiles.push({
-            filename: filename,
-            path: relativePath,
-            file: file,
-          });
-        }
-      }
-    });
-
-    console.log(
-      `📂 Found ${topicImageFiles.length} image files in topic folder:`,
-      topicImageFiles.map((f) => f.filename)
-    );
-
-    // Strategy 1: Try to match viewpoints to their snapshot images
-    for (const viewpoint of topic.viewpoints) {
-      try {
-        let imageFile = null;
-        let matchedFilename = null;
-
-        // Method 1: Direct snapshot name match
-        const snapshotName = viewpoint.snapshot;
-        if (snapshotName) {
-          const directPath = `${topicGuid}/${snapshotName}`;
-          imageFile = zip.file(directPath);
-          if (imageFile) {
-            matchedFilename = snapshotName;
-            console.log(`✅ Direct match: ${snapshotName}`);
-          }
-        }
-
-        // Method 2: Try to find image by viewpoint GUID
-        if (!imageFile && viewpoint.guid) {
-          const guidBasedFiles = topicImageFiles.filter(
-            (f) =>
-              f.filename.toLowerCase().includes(viewpoint.guid.toLowerCase()) ||
-              f.filename
-                .toLowerCase()
-                .includes(viewpoint.guid.toLowerCase().replace(/-/g, ''))
-          );
-
-          if (guidBasedFiles.length > 0) {
-            imageFile = guidBasedFiles[0].file;
-            matchedFilename = guidBasedFiles[0].filename;
-            console.log(
-              `✅ GUID-based match: ${matchedFilename} for viewpoint ${viewpoint.guid}`
-            );
-          }
-        }
-
-        // Method 3: Try filename pattern matching (Snapshot_*, snapshot_*, etc.)
-        if (!imageFile && snapshotName) {
-          const baseSnapshotName = snapshotName.replace(/\.[^/.]+$/, ''); // Remove extension
-          const patternMatches = topicImageFiles.filter((f) => {
-            const fileBase = f.filename.replace(/\.[^/.]+$/, '');
-            return (
-              fileBase.toLowerCase().includes(baseSnapshotName.toLowerCase()) ||
-              baseSnapshotName.toLowerCase().includes(fileBase.toLowerCase())
-            );
-          });
-
-          if (patternMatches.length > 0) {
-            imageFile = patternMatches[0].file;
-            matchedFilename = patternMatches[0].filename;
-            console.log(
-              `✅ Pattern match: ${matchedFilename} for snapshot ${snapshotName}`
-            );
-          }
-        }
-
-        if (imageFile && matchedFilename) {
-          // Extract image data as base64
-          const imageData = await imageFile.async('base64');
-
-          // Determine image type from filename
-          const imageType = this.getImageTypeFromFilename(matchedFilename);
-
-          // Store image data in viewpoint
-          viewpoint.imageData = imageData;
-          viewpoint.imageType = imageType;
-          viewpoint.hasImage = true;
-          viewpoint.actualFilename = matchedFilename; // Store the actual filename used
-
-          console.log(
-            `✅ Extracted image: ${matchedFilename} (${imageType}) for viewpoint ${viewpoint.guid}`
-          );
-        } else {
-          console.log(
-            `📷 No image found for viewpoint ${
-              viewpoint.guid || 'unknown'
-            } (snapshot: ${
-              snapshotName || 'none'
-            }) - this is normal for viewpoints without snapshots`
-          );
-        }
-      } catch (error) {
-        console.warn(
-          `Error extracting image for viewpoint ${viewpoint.guid}:`,
-          error
-        );
-      }
-    }
-
-    // Strategy 2: If no viewpoints matched, assign remaining images to viewpoints
-    const unassignedImages = topicImageFiles.filter((imgFile) => {
-      return !topic.viewpoints.some(
-        (vp) => vp.actualFilename === imgFile.filename
-      );
-    });
-
-    const unassignedViewpoints = topic.viewpoints.filter((vp) => !vp.hasImage);
-
-    if (unassignedImages.length > 0 && unassignedViewpoints.length > 0) {
-      console.log(
-        `🔄 Assigning ${unassignedImages.length} unmatched images to ${unassignedViewpoints.length} viewpoints...`
-      );
-
-      for (
-        let i = 0;
-        i < Math.min(unassignedImages.length, unassignedViewpoints.length);
-        i++
-      ) {
-        const viewpoint = unassignedViewpoints[i];
-        const imageInfo = unassignedImages[i];
-
-        try {
-          const imageData = await imageInfo.file.async('base64');
-          const imageType = this.getImageTypeFromFilename(imageInfo.filename);
-
-          viewpoint.imageData = imageData;
-          viewpoint.imageType = imageType;
-          viewpoint.hasImage = true;
-          viewpoint.actualFilename = imageInfo.filename;
-
-          console.log(
-            `✅ Assigned unmatched image: ${imageInfo.filename} to viewpoint ${viewpoint.guid}`
-          );
-        } catch (error) {
-          console.warn(`Error assigning image ${imageInfo.filename}:`, error);
-        }
-      }
-    }
-
-    // Strategy 3: If still no images and there are PNG files, create pseudo-viewpoints
-    if (
-      topicImageFiles.length > 0 &&
-      topic.viewpoints.filter((vp) => vp.hasImage).length === 0
-    ) {
-      console.log(
-        `🆕 Creating pseudo-viewpoints for ${topicImageFiles.length} orphaned images...`
-      );
-
-      topicImageFiles.forEach((imageInfo, index) => {
-        try {
-          // Create a pseudo-viewpoint for orphaned images
-          const pseudoViewpoint = {
-            guid: `pseudo-${topicGuid}-${index}`,
-            viewpoint: null,
-            snapshot: imageInfo.filename,
-            index: `pseudo-${index}`,
-            imageData: null,
-            imageType: null,
-            hasImage: false,
-            actualFilename: imageInfo.filename,
-            isPseudo: true, // Flag to indicate this is a generated viewpoint
-          };
-
-          topic.viewpoints.push(pseudoViewpoint);
-          console.log(
-            `🆕 Created pseudo-viewpoint for orphaned image: ${imageInfo.filename}`
-          );
-        } catch (error) {
-          console.warn(
-            `Error creating pseudo-viewpoint for ${imageInfo.filename}:`,
-            error
-          );
-        }
-      });
-
-      // Now extract images for the pseudo-viewpoints
-      const pseudoViewpoints = topic.viewpoints.filter((vp) => vp.isPseudo);
-      for (const viewpoint of pseudoViewpoints) {
-        try {
-          const imageInfo = topicImageFiles.find(
-            (img) => img.filename === viewpoint.actualFilename
-          );
-          if (imageInfo) {
-            const imageData = await imageInfo.file.async('base64');
-            const imageType = this.getImageTypeFromFilename(imageInfo.filename);
-
-            viewpoint.imageData = imageData;
-            viewpoint.imageType = imageType;
-            viewpoint.hasImage = true;
-
-            console.log(
-              `✅ Extracted orphaned image: ${imageInfo.filename} as pseudo-viewpoint`
-            );
-          }
-        } catch (error) {
-          console.warn(
-            `Error extracting orphaned image ${viewpoint.actualFilename}:`,
-            error
-          );
-        }
-      }
-    }
-
-    // Update topic with image count
-    topic.imageCount = topic.viewpoints.filter((vp) => vp.hasImage).length;
-    console.log(
-      `📊 Topic "${topic.title}" final result: ${topic.imageCount} images extracted`
-    );
-
-    if (topic.imageCount > 0) {
-      console.log(
-        `🖼️ Images in topic:`,
-        topic.viewpoints
-          .filter((vp) => vp.hasImage)
-          .map((vp) => vp.actualFilename || vp.snapshot)
-      );
-    }
   }
 
   /**
