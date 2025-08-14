@@ -1668,14 +1668,19 @@
       </div>
     </div>
 
-    <!-- Application Scripts -->
+    <!-- Shared Utilities (MUST load first) -->
+    <script src="js/utils/coordinate-utils.js"></script>
+    <script src="js/utils/pdf-utils.js"></script>
+    <script src="js/utils/color-manager.js"></script>
+
+    <!-- Main application scripts (AFTER utilities) -->
     <script src="js/bcf-parser.js"></script>
     <script src="js/csv-exporter.js"></script>
     <script src="js/excel-exporter.js"></script>
     <script src="js/advanced-preview.js"></script>
-    <script src="js/configuration.js"></script>
     <script src="js/image-viewer.js"></script>
     <script src="js/analytics-dashboard.js"></script>
+    <script src="js/configuration.js"></script>
     <script src="js/app.js"></script>
 
     <!-- Help System JavaScript -->
