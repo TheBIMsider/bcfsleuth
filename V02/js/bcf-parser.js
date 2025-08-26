@@ -381,6 +381,22 @@ class BCFParser {
       try {
         const topic = await this.parseTopic(zip, topicGuid, bcfData.bcfFormat);
         if (topic) {
+          // Log what we extracted
+          if (bcfData.bcfFormat === '2.0' || bcfData.bcfFormat === '2.1') {
+            console.log(
+              `✅ BCF 2.x topic parsed - Index: ${
+                topic.topicIndex || 'None'
+              }, Title: ${topic.title}`
+            );
+          }
+
+          // For BCF 3.0, serverAssignedId is extracted during topic initialization
+          if (bcfData.bcfFormat === '3.0' && topic.serverAssignedId) {
+            console.log(
+              `✅ BCF 3.0 serverAssignedId found: ${topic.serverAssignedId} for topic: ${topic.title}`
+            );
+          }
+
           topics.push(topic);
         }
       } catch (error) {
@@ -652,6 +668,11 @@ class BCFParser {
         'Phase',
         'Step',
         'Milestone',
+      ]),
+      topicIndex: this.getElementTextWithAliases(doc, [
+        'Index',
+        'TopicIndex',
+        'Number',
       ]),
       labels: [],
       comments: [],

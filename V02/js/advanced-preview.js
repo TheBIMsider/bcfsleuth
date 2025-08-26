@@ -137,6 +137,8 @@ class AdvancedPreview {
           topicGuid: topic.guid,
           title: topic.title || 'Untitled',
           description: topic.description || '',
+          topicIndex: topic.topicIndex || '',
+          serverAssignedId: topic.serverAssignedId || '',
           status: topic.topicStatus || '',
           topicType: topic.topicType || '',
           priority: topic.priority || '',
@@ -457,6 +459,8 @@ class AdvancedPreview {
       commentAuthor: 'Comment Author',
       commentText: 'Comment Text',
       commentStatus: 'Comment Status',
+      topicIndex: 'Topic Index',
+      serverAssignedId: 'Server Assigned ID',
 
       // ✅ BCF Camera Coordinate Fields - Added for v2 coordinate support
       cameraType: 'Camera Type',
@@ -509,6 +513,8 @@ class AdvancedPreview {
       commentAuthor: 'commentAuthor',
       commentText: 'commentText', // FIXED: Was 'content', now 'commentText'
       commentStatus: 'commentStatus',
+      topicIndex: 'topicIndex',
+      serverAssignedId: 'serverAssignedId',
 
       // ✅ BCF Camera Coordinate Field Mappings - Direct mapping for coordinate fields
       cameraType: 'cameraType',
@@ -851,6 +857,11 @@ class AdvancedPreview {
 
   formatCellValue(row, columnField, originalField) {
     let value = row[columnField] || '';
+    // Ensure value is converted to string for string operations
+    const originalValue = value;
+    if (typeof value !== 'string' && value !== null && value !== undefined) {
+      value = String(value);
+    }
 
     // Special formatting for specific fields
     switch (originalField) {
@@ -1353,15 +1364,19 @@ class AdvancedPreview {
 
       default:
         // Handle long text fields and detect truncation
-        const originalValue = value;
-        if (originalValue && originalValue.length > 30) {
+        const stringValue = String(value || '');
+        if (stringValue && stringValue.length > 30) {
           cssClass = cssClass ? `${cssClass} expandable` : 'expandable';
-          fullText = originalValue;
-          value = this.truncateText(originalValue, 30);
+          fullText = stringValue;
+          value = this.truncateText(stringValue, 30);
           needsTooltip = true;
         }
         // Also check if truncateText added ellipsis (indicates truncation)
-        else if (originalValue && value && value.includes('...')) {
+        else if (
+          stringValue &&
+          typeof value === 'string' &&
+          value.includes('...')
+        ) {
           cssClass = cssClass ? `${cssClass} expandable` : 'expandable';
           fullText = originalValue;
           needsTooltip = true;

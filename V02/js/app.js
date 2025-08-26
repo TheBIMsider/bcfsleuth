@@ -505,6 +505,12 @@ class BCFSleuthApp {
 
       console.log(`📋 Analyzing ${bcfFormat} file: ${bcfData.filename}`);
 
+      // Always add topicIndex for BCF 2.x files
+      if (bcfFormat === '2.0' || bcfFormat === '2.1') {
+        discoveredFields.topic.add('topicIndex');
+        console.log(`📋 Added topicIndex field for ${bcfFormat} file`);
+      }
+
       // Check if this file has BCF 3.0 content
       if (bcfFormat === '3.0') {
         hasBCF30Content = true;
@@ -540,6 +546,14 @@ class BCFSleuthApp {
         if (topic.modifiedAuthor) discoveredFields.topic.add('modifiedAuthor');
         if (topic.dueDate) discoveredFields.topic.add('dueDate');
         if (topic.guid) discoveredFields.metadata.add('topicGuid');
+        // BCF 3.0: ServerAssignedId detection (inside topic loop)
+        if (bcfFormat === '3.0' && topic.serverAssignedId) {
+          discoveredFields.bcf30.add('serverAssignedId');
+          console.log(
+            '✅ Found ServerAssignedId field:',
+            topic.serverAssignedId
+          );
+        }
 
         // BCF 3.0 specific field detection (only when BCF 3.0 content is present)
         if (bcfFormat === '3.0' && hasBCF30Content) {
@@ -818,6 +832,7 @@ class BCFSleuthApp {
           { id: 'type', label: 'Type' },
           { id: 'priority', label: 'Priority' },
           { id: 'stage', label: 'Stage' },
+          { id: 'topicIndex', label: 'Topic Index (BCF 2.x)' },
           { id: 'labels', label: 'Labels' }, // This ensures labels always appear when topic data exists
           { id: 'assignedTo', label: 'Assigned To' },
         ]
@@ -1294,6 +1309,7 @@ class BCFSleuthApp {
       'field-bcfVersion': 'bcfVersion',
       'field-topicGuid': 'topicGuid',
       'field-commentsCount': 'commentsCount',
+      'field-topicIndex': 'topicIndex',
       'field-viewpointsCount': 'viewpointsCount',
       'field-commentNumber': 'commentNumber',
       'field-commentDate': 'commentDate',
