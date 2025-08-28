@@ -961,8 +961,20 @@
             <div class="field-categories">
               <!-- Topic Information -->
               <div class="field-category">
-                <h6>Topic Information</h6>
-                <div class="field-grid">
+                <h6 class="category-header">
+                  <button
+                    class="category-expand-button"
+                    onclick="toggleExportCategory('topic-info')"
+                    title="Expand/Collapse Topic Information"
+                  >
+                    <span class="expand-icon">▶</span>
+                  </button>
+                  Topic Information
+                </h6>
+                <div
+                  class="field-grid category-content"
+                  data-category="topic-info"
+                >
                   <div class="field-item">
                     <input type="checkbox" id="field-title" checked />
                     <label for="field-title">Title</label>
@@ -1000,8 +1012,20 @@
 
               <!-- Dates & Authors -->
               <div class="field-category">
-                <h6>Dates & Authors</h6>
-                <div class="field-grid">
+                <h6 class="category-header">
+                  <button
+                    class="category-expand-button"
+                    onclick="toggleExportCategory('dates-authors')"
+                    title="Expand/Collapse Dates & Authors"
+                  >
+                    <span class="expand-icon">▶</span>
+                  </button>
+                  Dates & Authors
+                </h6>
+                <div
+                  class="field-grid category-content"
+                  data-category="dates-authors"
+                >
                   <div class="field-item">
                     <input type="checkbox" id="field-creation-date" checked />
                     <label for="field-creation-date">Creation Date</label>
@@ -1027,8 +1051,20 @@
 
               <!-- File & Project Info -->
               <div class="field-category">
-                <h6>File & Project Info</h6>
-                <div class="field-grid">
+                <h6 class="category-header">
+                  <button
+                    class="category-expand-button"
+                    onclick="toggleExportCategory('file-project')"
+                    title="Expand/Collapse File & Project Info"
+                  >
+                    <span class="expand-icon">▶</span>
+                  </button>
+                  File & Project Info
+                </h6>
+                <div
+                  class="field-grid category-content"
+                  data-category="file-project"
+                >
                   <div class="field-item">
                     <input type="checkbox" id="field-source-file" checked />
                     <label for="field-source-file">Source File</label>
@@ -1050,8 +1086,20 @@
 
               <!-- Comments & Counts -->
               <div class="field-category">
-                <h6>Comments & Counts</h6>
-                <div class="field-grid">
+                <h6 class="category-header">
+                  <button
+                    class="category-expand-button"
+                    onclick="toggleExportCategory('comments-counts')"
+                    title="Expand/Collapse Comments & Counts"
+                  >
+                    <span class="expand-icon">▶</span>
+                  </button>
+                  Comments & Counts
+                </h6>
+                <div
+                  class="field-grid category-content"
+                  data-category="comments-counts"
+                >
                   <div class="field-item">
                     <input type="checkbox" id="field-comments-count" checked />
                     <label for="field-comments-count">Comments Count</label>
