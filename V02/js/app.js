@@ -156,6 +156,8 @@ class BCFSleuthApp {
     }
 
     console.log('✅ Event listeners setup complete');
+
+    setTimeout(initializeExpandButtonStates, 100);
   }
 
   initializeFieldSelection() {
@@ -1065,12 +1067,13 @@ class BCFSleuthApp {
     const sectionLabel = document.createElement('label');
     sectionLabel.setAttribute('for', sectionCheckbox.id);
     sectionLabel.style.cssText = `
-      font-weight: 600;
-      color: #374151;
-      cursor: pointer;
-      margin: 0;
-      user-select: none;
-    `;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  margin: 0;
+  user-select: none;
+  flex: 1;
+`;
     sectionLabel.textContent = categoryName;
 
     // Field count indicator
@@ -1080,20 +1083,44 @@ class BCFSleuthApp {
     const countSpan = document.createElement('span');
     countSpan.className = 'section-field-count';
     countSpan.style.cssText = `
-      font-size: 0.875rem;
-      color: #6b7280;
-      font-weight: normal;
-      margin-left: 0.25rem;
-    `;
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: normal;
+  margin-left: 0.25rem;
+`;
     countSpan.textContent = `(${fieldCount} fields)`;
     sectionLabel.appendChild(countSpan);
 
+    // Add expansion button
+    const expandButton = document.createElement('button');
+    expandButton.className = 'section-expand-button';
+    expandButton.type = 'button';
+    expandButton.setAttribute('aria-label', 'Toggle section visibility');
+
+    // Start expanded by default for better UX
+    const initiallyExpanded = true;
+
+    expandButton.textContent = initiallyExpanded ? '▼' : '▶';
+    expandButton.title = initiallyExpanded
+      ? 'Collapse section'
+      : 'Expand section';
+
     headerDiv.appendChild(sectionCheckbox);
     headerDiv.appendChild(sectionLabel);
+    headerDiv.appendChild(expandButton);
     categoryDiv.appendChild(headerDiv);
 
     const gridDiv = document.createElement('div');
     gridDiv.className = 'field-grid';
+
+    // Set initial state - expand by default for better UX
+    const shouldExpandInitially = true; // Start expanded so users can see options
+    if (shouldExpandInitially) {
+      gridDiv.classList.add('expanded');
+      // Make sure expandButton shows correct state (this should match the button creation above)
+    } else {
+      gridDiv.classList.add('collapsed');
+    }
 
     fieldDefinitions.forEach((fieldDef) => {
       if (availableFields.includes(fieldDef.id)) {
@@ -1153,6 +1180,40 @@ class BCFSleuthApp {
         checkbox.checked = isChecked;
       });
 
+      // Add event listener for expansion button
+      expandButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        console.log(`🔧 Toggle button clicked for section "${categoryName}"`);
+        console.log('Current classes:', gridDiv.className);
+
+        const isCurrentlyExpanded = gridDiv.classList.contains('expanded');
+        console.log('Currently expanded?', isCurrentlyExpanded);
+
+        if (isCurrentlyExpanded) {
+          // Collapse the section
+          gridDiv.classList.remove('expanded');
+          gridDiv.classList.add('collapsed');
+          expandButton.textContent = '▶';
+          expandButton.title = 'Expand section';
+          console.log(
+            `📋 Section "${categoryName}" collapsed - New classes:`,
+            gridDiv.className
+          );
+        } else {
+          // Expand the section
+          gridDiv.classList.remove('collapsed');
+          gridDiv.classList.add('expanded');
+          expandButton.textContent = '▼';
+          expandButton.title = 'Collapse section';
+          console.log(
+            `📋 Section "${categoryName}" expanded - New classes:`,
+            gridDiv.className
+          );
+        }
+      });
+
       // Update the main field selection
       this.updateFieldSelection();
 
@@ -1160,13 +1221,33 @@ class BCFSleuthApp {
       this.updateSectionCheckboxState(sectionCheckbox, categoryCheckboxes);
     });
 
-    // Add event listeners to individual checkboxes to update section state
+    // Add event listeners to individual checkboxes to update section state and expansion
     const individualCheckboxes = gridDiv.querySelectorAll(
       'input[type="checkbox"]'
     );
     individualCheckboxes.forEach((checkbox) => {
       checkbox.addEventListener('change', () => {
         this.updateSectionCheckboxState(sectionCheckbox, individualCheckboxes);
+
+        // Auto-expand section when a checkbox is checked, collapse when all unchecked
+        const hasCheckedBoxes = Array.from(individualCheckboxes).some(
+          (cb) => cb.checked
+        );
+        const isExpanded = gridDiv.classList.contains('expanded');
+
+        if (hasCheckedBoxes && !isExpanded) {
+          // Expand if we have checked items but section is collapsed
+          gridDiv.classList.remove('collapsed');
+          gridDiv.classList.add('expanded');
+          expandButton.textContent = '▼';
+          expandButton.title = 'Collapse section';
+        } else if (!hasCheckedBoxes && isExpanded) {
+          // Collapse if no items checked and section is expanded
+          gridDiv.classList.remove('expanded');
+          gridDiv.classList.add('collapsed');
+          expandButton.textContent = '▶';
+          expandButton.title = 'Expand section';
+        }
       });
     });
 
@@ -1554,6 +1635,14 @@ class BCFSleuthApp {
 
     // Attach export button listeners now that the UI is built
     this.attachExportListeners();
+
+    // Re-initialize export category manager now that results are displayed
+    // if (window.exportCategoryManager) {
+    //   console.log(
+    //    '🔧 Re-initializing export categories after BCF processing...'
+    //  );
+    //   window.exportCategoryManager.reinitialize();
+    //  }
 
     // FINAL VALIDATION: Test coordinate field availability
     this.validateCoordinateFieldImplementation();
@@ -2202,6 +2291,293 @@ class BCFSleuthApp {
   }
 }
 
+// Export Category Collapse/Expand Functionality
+class ExportCategoryManager {
+  constructor() {
+    this.expandedCategories = new Set();
+
+    // Initialize after a small delay to ensure DOM is ready
+    setTimeout(() => {
+      this.loadState(); // Load saved state first
+      this.initializeCategories(); // Then initialize with saved state
+    }, 50);
+  }
+
+  initializeCategories() {
+    // Initialize all categories and check their initial state
+    const categories = [
+      'topic-info',
+      'dates-authors',
+      'file-project',
+      'comments-counts',
+    ];
+
+    console.log('🔧 ExportCategoryManager initializing...', {
+      timestamp: new Date().toISOString(),
+      categoriesFound: categories.map((id) => ({
+        id,
+        element: !!document.querySelector(`[data-category="${id}"]`),
+        button: !!document
+          .querySelector(`[data-category="${id}"]`)
+          ?.closest('.field-category')
+          ?.querySelector('.category-expand-button'),
+      })),
+    });
+
+    categories.forEach((categoryId) => {
+      const hasCheckedFields = this.hasCheckedFields(categoryId);
+
+      if (hasCheckedFields) {
+        this.expandedCategories.add(categoryId);
+        this.showCategory(categoryId);
+      } else {
+        this.hideCategory(categoryId);
+      }
+
+      // Always update the icon to match the current state
+      this.updateExpandIcon(categoryId, hasCheckedFields);
+    });
+
+    // Add event listeners for field changes
+    this.setupFieldChangeListeners();
+
+    console.log('🔧 ExportCategoryManager initialized successfully');
+
+    // FORCE SHOW BUTTONS FOR DEBUGGING
+    setTimeout(() => {
+      this.forceShowButtonsForDebug();
+    }, 100);
+  }
+
+  // Method to re-initialize if needed
+  reinitialize() {
+    console.log('🔧 Re-initializing ExportCategoryManager...');
+    this.loadState();
+    this.initializeCategories();
+  }
+
+  forceShowButtonsForDebug() {
+    console.log('🔧 FORCE SHOWING BUTTONS FOR DEBUG...');
+
+    // Find all buttons and make them super visible
+    const allButtons = document.querySelectorAll('.category-expand-button');
+    console.log(`🔧 Found ${allButtons.length} expand buttons`);
+
+    allButtons.forEach((button, index) => {
+      console.log(`🔧 Processing button ${index}:`, button);
+
+      // Make button extremely visible
+      button.style.cssText = `
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: relative !important;
+        z-index: 99999 !important;
+        width: 30px !important;
+        height: 30px !important;
+        background-color: blue !important;
+        border: 2px solid orange !important;
+        color: white !important;
+        font-size: 16px !important;
+        margin-right: 8px !important;
+        padding: 0 !important;
+        cursor: pointer !important;
+        border-radius: 4px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+      `;
+
+      // Make icon visible
+      const icon = button.querySelector('.expand-icon');
+      if (icon) {
+        icon.style.cssText = `
+          color: white !important;
+          font-size: 14px !important;
+          font-weight: bold !important;
+        `;
+      }
+
+      // Make parent header visible
+      const header = button.closest('.category-header');
+      if (header) {
+        header.style.cssText = `
+          display: flex !important;
+          align-items: center !important;
+          background-color: rgba(255, 255, 0, 0.3) !important;
+          padding: 8px !important;
+          border: 1px solid red !important;
+        `;
+      }
+
+      // Check position
+      const rect = button.getBoundingClientRect();
+      console.log(`🔧 Button ${index} final position:`, {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+        visible: rect.width > 0 && rect.height > 0,
+        inViewport:
+          rect.top >= 0 &&
+          rect.left >= 0 &&
+          rect.top <= window.innerHeight &&
+          rect.left <= window.innerWidth,
+        windowSize: `${window.innerWidth} x ${window.innerHeight}`,
+        computedDisplay: window.getComputedStyle(button).display,
+        computedVisibility: window.getComputedStyle(button).visibility,
+      });
+    });
+
+    console.log('🔧 Button force-show complete!');
+
+    // Try to scroll to the first button
+    if (allButtons.length > 0) {
+      const firstButton = allButtons[0];
+      console.log('🔧 Attempting to scroll to first button...');
+      firstButton.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'center',
+      });
+
+      // Also try to highlight the entire export section
+      const exportSection = document.querySelector('.export-controls');
+      if (exportSection) {
+        exportSection.style.border = '5px solid lime !important';
+        exportSection.style.backgroundColor =
+          'rgba(255, 255, 0, 0.2) !important';
+        console.log('🔧 Export section highlighted with lime border');
+      }
+    }
+  }
+
+  hasCheckedFields(categoryId) {
+    const categoryElement = document.querySelector(
+      `[data-category="${categoryId}"]`
+    );
+    if (!categoryElement) return false;
+
+    const checkboxes = categoryElement.querySelectorAll(
+      'input[type="checkbox"]'
+    );
+    return Array.from(checkboxes).some((checkbox) => checkbox.checked);
+  }
+
+  setupFieldChangeListeners() {
+    // Listen for changes to checkboxes to auto-expand/collapse categories
+    document
+      .querySelectorAll('.field-categories input[type="checkbox"]')
+      .forEach((checkbox) => {
+        checkbox.addEventListener('change', () => {
+          const categoryContent = checkbox.closest('.category-content');
+          if (categoryContent) {
+            const categoryId = categoryContent.dataset.category;
+            const hasChecked = this.hasCheckedFields(categoryId);
+
+            if (hasChecked && !this.expandedCategories.has(categoryId)) {
+              this.expandCategory(categoryId);
+            } else if (!hasChecked && this.expandedCategories.has(categoryId)) {
+              // Don't auto-collapse if user manually expanded
+              // Let them control it manually
+            }
+          }
+        });
+      });
+  }
+
+  toggleCategory(categoryId) {
+    if (this.expandedCategories.has(categoryId)) {
+      this.collapseCategory(categoryId);
+    } else {
+      this.expandCategory(categoryId);
+    }
+    this.saveState();
+  }
+
+  expandCategory(categoryId) {
+    this.expandedCategories.add(categoryId);
+    this.showCategory(categoryId);
+    this.updateExpandIcon(categoryId, true);
+  }
+
+  collapseCategory(categoryId) {
+    this.expandedCategories.delete(categoryId);
+    this.hideCategory(categoryId);
+    this.updateExpandIcon(categoryId, false);
+  }
+
+  showCategory(categoryId) {
+    const categoryElement = document.querySelector(
+      `[data-category="${categoryId}"]`
+    );
+    const fieldCategory = categoryElement?.closest('.field-category');
+
+    if (fieldCategory) {
+      fieldCategory.classList.remove('collapsed');
+      fieldCategory.classList.add('expanded');
+      console.log(`🔧 Showing category ${categoryId} - added 'expanded' class`);
+    }
+  }
+
+  hideCategory(categoryId) {
+    const categoryElement = document.querySelector(
+      `[data-category="${categoryId}"]`
+    );
+    const fieldCategory = categoryElement?.closest('.field-category');
+
+    if (fieldCategory) {
+      fieldCategory.classList.remove('expanded');
+      fieldCategory.classList.add('collapsed');
+      console.log(`🔧 Hiding category ${categoryId} - added 'collapsed' class`);
+    }
+  }
+
+  updateExpandIcon(categoryId, isExpanded) {
+    const categoryElement = document.querySelector(
+      `[data-category="${categoryId}"]`
+    );
+    const fieldCategory = categoryElement?.closest('.field-category');
+    const icon = fieldCategory?.querySelector('.expand-icon');
+
+    if (icon) {
+      icon.textContent = isExpanded ? '▼' : '▶';
+    }
+  }
+
+  saveState() {
+    try {
+      localStorage.setItem(
+        'bcf-export-categories',
+        JSON.stringify([...this.expandedCategories])
+      );
+    } catch (error) {
+      console.warn('Could not save export category state:', error);
+    }
+  }
+
+  loadState() {
+    try {
+      const saved = localStorage.getItem('bcf-export-categories');
+      if (saved) {
+        const expandedList = JSON.parse(saved);
+        expandedList.forEach((categoryId) => {
+          this.expandedCategories.add(categoryId);
+          this.showCategory(categoryId);
+          this.updateExpandIcon(categoryId, true);
+        });
+      }
+    } catch (error) {
+      console.warn('Could not load export category state:', error);
+    }
+  }
+}
+
+// Global function called by onclick handlers
+function toggleExportCategory(categoryId) {
+  if (window.exportCategoryManager) {
+    window.exportCategoryManager.toggleCategory(categoryId);
+  }
+}
+
 // Utility function for scrolling to export options
 function scrollToExportOptions() {
   const exportSection = document.querySelector('.export-controls');
@@ -2222,7 +2598,107 @@ function scrollToExportOptions() {
   }
 }
 
+/**
+ * Global function to toggle export category sections
+ * Called by onclick handlers in the HTML
+ */
+window.toggleExportCategory = function (categoryId) {
+  console.log(`🔧 toggleExportCategory called for: ${categoryId}`);
+
+  // Find the category by looking for the button with the matching onclick
+  const button = document.querySelector(
+    `[onclick*="toggleExportCategory('${categoryId}')"]`
+  );
+  if (!button) {
+    console.error(`❌ Button not found for category: ${categoryId}`);
+    return;
+  }
+
+  // Find the field grid within the same field-category
+  const categoryDiv = button.closest('.field-category');
+  const fieldGrid = categoryDiv.querySelector('.field-grid');
+  const expandIcon = button.querySelector('.expand-icon');
+
+  if (!fieldGrid || !expandIcon) {
+    console.error(`❌ Field grid or expand icon not found for: ${categoryId}`);
+    return;
+  }
+
+  console.log(`🔧 Current grid classes: ${fieldGrid.className}`);
+
+  // Check current state - if no class, assume expanded
+  const isCurrentlyExpanded = !fieldGrid.classList.contains('collapsed');
+
+  if (isCurrentlyExpanded) {
+    // Collapse the section
+    fieldGrid.classList.add('collapsed');
+    fieldGrid.classList.remove('expanded');
+    expandIcon.textContent = '▶';
+    button.title = `Expand ${categoryId.replace(/-/g, ' ')}`;
+    console.log(`📋 Category "${categoryId}" collapsed`);
+  } else {
+    // Expand the section
+    fieldGrid.classList.remove('collapsed');
+    fieldGrid.classList.add('expanded');
+    expandIcon.textContent = '▼';
+    button.title = `Collapse ${categoryId.replace(/-/g, ' ')}`;
+    console.log(`📋 Category "${categoryId}" expanded`);
+  }
+};
+
+/**
+ * Initialize expand button states based on checkbox selections
+ */
+function initializeExpandButtonStates() {
+  console.log('🔧 Initializing expand button states...');
+
+  const categories = [
+    'topic-info',
+    'dates-authors',
+    'file-project',
+    'comments-counts',
+  ];
+
+  categories.forEach((categoryId) => {
+    const button = document.querySelector(
+      `[onclick*="toggleExportCategory('${categoryId}')"]`
+    );
+    const categoryDiv = button?.closest('.field-category');
+    const fieldGrid = categoryDiv?.querySelector('.field-grid');
+    const expandIcon = button?.querySelector('.expand-icon');
+    const checkboxes = categoryDiv?.querySelectorAll(
+      '.field-item input[type="checkbox"]'
+    );
+
+    if (!button || !fieldGrid || !expandIcon || !checkboxes) return;
+
+    // Check if any checkboxes are selected
+    const hasSelectedFields = Array.from(checkboxes).some((cb) => cb.checked);
+
+    if (hasSelectedFields) {
+      // Expand if fields are selected
+      fieldGrid.classList.remove('collapsed');
+      fieldGrid.classList.add('expanded');
+      expandIcon.textContent = '▼';
+      button.title = `Collapse ${categoryId.replace(/-/g, ' ')}`;
+    } else {
+      // Collapse if no fields are selected
+      fieldGrid.classList.add('collapsed');
+      fieldGrid.classList.remove('expanded');
+      expandIcon.textContent = '▶';
+      button.title = `Expand ${categoryId.replace(/-/g, ' ')}`;
+    }
+  });
+
+  console.log('✅ Expand button states initialized');
+}
+
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  new BCFSleuthApp();
+  window.bcfApp = new BCFSleuthApp();
+
+  // Initialize export category manager
+  setTimeout(() => {
+    window.exportCategoryManager = new ExportCategoryManager();
+  }, 100); // Small delay to ensure all DOM elements are ready
 });

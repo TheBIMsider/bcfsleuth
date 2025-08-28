@@ -751,6 +751,14 @@ class AdvancedPreview {
       } else if (field === 'comments') {
         aVal = parseInt(aVal) || 0;
         bVal = parseInt(bVal) || 0;
+      } else if (field === 'type') {
+        // Handle numerical sorting for type field (e.g., "1", "2", "10", "1.1", "1.V1")
+        aVal = this.parseTypeValue(aVal);
+        bVal = this.parseTypeValue(bVal);
+      } else if (field === 'topicIndex') {
+        // Handle numerical sorting for topic index field
+        aVal = this.parseNumericValue(aVal);
+        bVal = this.parseNumericValue(bVal);
       } else if (field === 'priority') {
         const priorityOrder = {
           '': 0,
@@ -766,6 +774,12 @@ class AdvancedPreview {
         bVal = bVal.toString().toLowerCase();
       }
 
+      // Handle array comparison for type field
+      if (field === 'type' && Array.isArray(aVal) && Array.isArray(bVal)) {
+        const comparison = this.compareTypeArrays(aVal, bVal);
+        return this.sortDirection === 'asc' ? comparison : -comparison;
+      }
+
       if (aVal < bVal) return this.sortDirection === 'asc' ? -1 : 1;
       if (aVal > bVal) return this.sortDirection === 'asc' ? 1 : -1;
       return 0;
@@ -773,6 +787,77 @@ class AdvancedPreview {
 
     this.updateSortIndicators();
     this.renderAdvancedTable();
+  }
+
+  parseTypeValue(typeString) {
+    if (!typeString) return [0, 0, 0]; // Default for empty values
+    
+    const str = typeString.toString();
+    
+    // Parse patterns like "1", "10", "1.1", "1.V1", "12.3", "5.V2"
+    const match = str.match(/^(\d+)(?:\.(\d+|V\d+))?$/);
+    
+    if (!match) {
+      // If it doesn't match expected pattern, fall back to string comparison
+      return [999999, 0, str]; // Put non-matching patterns at the end
+    }
+    
+    const mainNumber = parseInt(match[1]) || 0;
+    let subNumber = 0;
+    let subType = 0; // 0 for numeric, 1 for viewpoint (V)
+    
+    if (match[2]) {
+      if (match[2].startsWith('V')) {
+        // Viewpoint like "V1", "V2"
+        subType = 1; // Viewpoints come after comments
+        subNumber = parseInt(match[2].substring(1)) || 0;
+      } else {
+        // Comment number like "1", "2"
+        subType = 0;
+        subNumber = parseInt(match[2]) || 0;
+      }
+    }
+    
+    // Return array for natural sorting: [mainNumber, subType, subNumber]
+    // This ensures: 1 < 1.1 < 1.2 < 1.V1 < 1.V2 < 2 < 2.1 < 10
+    return [mainNumber, subType, subNumber];
+  }
+
+  parseNumericValue(value) {
+    if (!value) return 0;
+    
+    // Try to parse as integer first
+    const intValue = parseInt(value);
+    if (!isNaN(intValue)) {
+      return intValue;
+    }
+    
+    // If not a simple integer, try to extract numeric part
+    const match = value.toString().match(/(\d+)/);
+    if (match) {
+      return parseInt(match[1]);
+    }
+    
+    // If no numeric part found, return a high number to sort at end
+    return 999999;
+  }
+
+  compareTypeArrays(a, b) {
+    // Compare arrays element by element
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+      const aVal = a[i] || 0;
+      const bVal = b[i] || 0;
+      
+      // Handle string comparison for the last element if it exists
+      if (i === 2 && typeof aVal === 'string' && typeof bVal === 'string') {
+        if (aVal < bVal) return -1;
+        if (aVal > bVal) return 1;
+      } else {
+        if (aVal < bVal) return -1;
+        if (aVal > bVal) return 1;
+      }
+    }
+    return 0; // Arrays are equal
   }
 
   updateSortIndicators() {
