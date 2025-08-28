@@ -2571,12 +2571,12 @@ class ExportCategoryManager {
   }
 }
 
-// Global function called by onclick handlers
-function toggleExportCategory(categoryId) {
-  if (window.exportCategoryManager) {
-    window.exportCategoryManager.toggleCategory(categoryId);
-  }
-}
+// DISABLED - old function
+// function toggleExportCategory(categoryId) {
+//   if (window.exportCategoryManager) {
+//     window.exportCategoryManager.toggleCategory(categoryId);
+//   }
+// }
 
 // Utility function for scrolling to export options
 function scrollToExportOptions() {
@@ -2614,32 +2614,33 @@ window.toggleExportCategory = function (categoryId) {
     return;
   }
 
-  // Find the field grid within the same field-category
+  // Find the category content within the same field-category (CORRECTED)
   const categoryDiv = button.closest('.field-category');
-  const fieldGrid = categoryDiv.querySelector('.field-grid');
+  const categoryContent = categoryDiv.querySelector('.category-content'); // CHANGED from .field-grid
   const expandIcon = button.querySelector('.expand-icon');
 
-  if (!fieldGrid || !expandIcon) {
-    console.error(`❌ Field grid or expand icon not found for: ${categoryId}`);
+  if (!categoryContent || !expandIcon) {
+    console.error(
+      `❌ Category content or expand icon not found for: ${categoryId}`
+    );
     return;
   }
 
-  console.log(`🔧 Current grid classes: ${fieldGrid.className}`);
+  console.log(`🔧 Current content classes: ${categoryContent.className}`);
 
-  // Check current state - if no class, assume expanded
-  const isCurrentlyExpanded = !fieldGrid.classList.contains('collapsed');
+  // Check current state - if no collapsed class, assume expanded
+  const isCurrentlyExpanded =
+    !categoryContent.style.display || categoryContent.style.display !== 'none';
 
   if (isCurrentlyExpanded) {
     // Collapse the section
-    fieldGrid.classList.add('collapsed');
-    fieldGrid.classList.remove('expanded');
+    categoryContent.style.display = 'none';
     expandIcon.textContent = '▶';
     button.title = `Expand ${categoryId.replace(/-/g, ' ')}`;
     console.log(`📋 Category "${categoryId}" collapsed`);
   } else {
     // Expand the section
-    fieldGrid.classList.remove('collapsed');
-    fieldGrid.classList.add('expanded');
+    categoryContent.style.display = 'grid';
     expandIcon.textContent = '▼';
     button.title = `Collapse ${categoryId.replace(/-/g, ' ')}`;
     console.log(`📋 Category "${categoryId}" expanded`);
@@ -2664,27 +2665,25 @@ function initializeExpandButtonStates() {
       `[onclick*="toggleExportCategory('${categoryId}')"]`
     );
     const categoryDiv = button?.closest('.field-category');
-    const fieldGrid = categoryDiv?.querySelector('.field-grid');
+    const categoryContent = categoryDiv?.querySelector('.category-content'); // CHANGED from .field-grid
     const expandIcon = button?.querySelector('.expand-icon');
     const checkboxes = categoryDiv?.querySelectorAll(
       '.field-item input[type="checkbox"]'
     );
 
-    if (!button || !fieldGrid || !expandIcon || !checkboxes) return;
+    if (!button || !categoryContent || !expandIcon || !checkboxes) return;
 
     // Check if any checkboxes are selected
     const hasSelectedFields = Array.from(checkboxes).some((cb) => cb.checked);
 
     if (hasSelectedFields) {
       // Expand if fields are selected
-      fieldGrid.classList.remove('collapsed');
-      fieldGrid.classList.add('expanded');
+      categoryContent.style.display = 'grid';
       expandIcon.textContent = '▼';
       button.title = `Collapse ${categoryId.replace(/-/g, ' ')}`;
     } else {
       // Collapse if no fields are selected
-      fieldGrid.classList.add('collapsed');
-      fieldGrid.classList.remove('expanded');
+      categoryContent.style.display = 'none';
       expandIcon.textContent = '▶';
       button.title = `Expand ${categoryId.replace(/-/g, ' ')}`;
     }
@@ -2693,12 +2692,60 @@ function initializeExpandButtonStates() {
   console.log('✅ Expand button states initialized');
 }
 
+/**
+ * New expand/collapse function that won't conflict with existing systems
+ */
+window.toggleFieldCategory = function (categoryId) {
+  console.log(`🔧 toggleFieldCategory called for: ${categoryId}`);
+
+  // Find the button that was clicked
+  const button = document.querySelector(
+    `[onclick*="toggleFieldCategory('${categoryId}')"]`
+  );
+  if (!button) {
+    console.error(`❌ Button not found for category: ${categoryId}`);
+    return;
+  }
+
+  // Find the category content
+  const categoryDiv = button.closest('.field-category');
+  const categoryContent = categoryDiv.querySelector('.category-content');
+  const expandIcon = button.querySelector('.expand-icon');
+
+  if (!categoryContent || !expandIcon) {
+    console.error(
+      `❌ Category content or expand icon not found for: ${categoryId}`
+    );
+    console.log('categoryDiv:', categoryDiv);
+    console.log('categoryContent:', categoryContent);
+    console.log('expandIcon:', expandIcon);
+    return;
+  }
+
+  // Simple toggle using display property
+  const isHidden = categoryContent.style.display === 'none';
+
+  if (isHidden) {
+    // Show the section
+    categoryContent.style.display = 'grid';
+    expandIcon.textContent = '▼';
+    button.title = `Collapse ${categoryId.replace(/-/g, ' ')}`;
+    console.log(`📋 Category "${categoryId}" expanded`);
+  } else {
+    // Hide the section
+    categoryContent.style.display = 'none';
+    expandIcon.textContent = '▶';
+    button.title = `Expand ${categoryId.replace(/-/g, ' ')}`;
+    console.log(`📋 Category "${categoryId}" collapsed`);
+  }
+};
+
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   window.bcfApp = new BCFSleuthApp();
-
-  // Initialize export category manager
-  setTimeout(() => {
-    window.exportCategoryManager = new ExportCategoryManager();
-  }, 100); // Small delay to ensure all DOM elements are ready
 });
+
+// DISABLED - Using new expand button system instead
+// setTimeout(() => {
+//   window.exportCategoryManager = new ExportCategoryManager();
+// }, 100); // <- Added missing closing parenthesis and semicolon
