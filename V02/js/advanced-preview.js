@@ -740,34 +740,74 @@ class AdvancedPreview {
       this.sortDirection = 'asc';
     }
 
-    this.filteredData.sort((a, b) => {
-      let aVal = a[field] || '';
-      let bVal = b[field] || '';
+    // Define fields that should be sorted numerically
+    const numericFields = [
+      'type',
+      'topicIndex',
+      'serverAssignedId',
+      'index',
+      'priority',
+      'dueDate', // Will handle dates separately
+      'createdDate',
+      'modifiedDate',
+    ];
 
-      // Handle different data types
-      if (field === 'created' || field === 'due') {
-        aVal = new Date(aVal || '1970-01-01');
-        bVal = new Date(bVal || '1970-01-01');
-      } else if (field === 'comments') {
-        aVal = parseInt(aVal) || 0;
-        bVal = parseInt(bVal) || 0;
-      } else if (field === 'priority') {
-        const priorityOrder = {
-          '': 0,
-          Low: 1,
-          Medium: 2,
-          High: 3,
-          Critical: 4,
-        };
-        aVal = priorityOrder[aVal] || 0;
-        bVal = priorityOrder[bVal] || 0;
-      } else {
-        aVal = aVal.toString().toLowerCase();
-        bVal = bVal.toString().toLowerCase();
+    // Define date fields that need special handling
+    const dateFields = ['dueDate', 'createdDate', 'modifiedDate'];
+
+    // Sort the filtered data with proper type handling
+    this.filteredData.sort((a, b) => {
+      let aVal = a[this.sortField];
+      let bVal = b[this.sortField];
+
+      // Handle null/undefined values - always sort them to the end
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return this.sortDirection === 'asc' ? 1 : -1;
+      if (bVal == null) return this.sortDirection === 'asc' ? -1 : 1;
+
+      // Handle date fields
+      if (dateFields.includes(this.sortField)) {
+        const dateA = new Date(aVal);
+        const dateB = new Date(bVal);
+
+        // Check for invalid dates
+        if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+        if (isNaN(dateA.getTime()))
+          return this.sortDirection === 'asc' ? 1 : -1;
+        if (isNaN(dateB.getTime()))
+          return this.sortDirection === 'asc' ? -1 : 1;
+
+        const comparison = dateA.getTime() - dateB.getTime();
+        return this.sortDirection === 'asc' ? comparison : -comparison;
       }
 
-      if (aVal < bVal) return this.sortDirection === 'asc' ? -1 : 1;
-      if (aVal > bVal) return this.sortDirection === 'asc' ? 1 : -1;
+      // Handle numeric fields
+      if (numericFields.includes(this.sortField)) {
+        // Try to parse as numbers
+        const numA = parseFloat(aVal);
+        const numB = parseFloat(bVal);
+
+        // If both are valid numbers, compare numerically
+        if (!isNaN(numA) && !isNaN(numB)) {
+          const comparison = numA - numB;
+          return this.sortDirection === 'asc' ? comparison : -comparison;
+        }
+
+        // If one is a number and one isn't, number comes first
+        if (!isNaN(numA) && isNaN(numB))
+          return this.sortDirection === 'asc' ? -1 : 1;
+        if (isNaN(numA) && !isNaN(numB))
+          return this.sortDirection === 'asc' ? 1 : -1;
+
+        // If neither is a number, fall through to string comparison
+      }
+
+      // Default string comparison for text fields
+      const strA = String(aVal).toLowerCase().trim();
+      const strB = String(bVal).toLowerCase().trim();
+
+      if (strA < strB) return this.sortDirection === 'asc' ? -1 : 1;
+      if (strA > strB) return this.sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
 
