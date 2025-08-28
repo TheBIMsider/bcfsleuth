@@ -1389,11 +1389,155 @@ tr:last-child td {
   padding-left: var(--space-xs);
 }
 
+/* Export Category Headers with Expand/Collapse */
+.field-category .category-header {
+  display: flex !important;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: var(--space-xs);
+  padding: var(--space-xs);
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: none;
+  letter-spacing: normal;
+  min-height: 32px;
+  background-color: var(--gray-50);
+  border: 1px solid var(--gray-200);
+}
+
+.field-category .category-header:hover {
+  background-color: var(--gray-50);
+}
+
+.category-expand-button {
+  background-color: var(--gray-100);
+  border: 1px solid var(--gray-300);
+  cursor: pointer;
+  padding: 4px 6px;
+  margin-right: var(--space-xs);
+  border-radius: 3px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.category-expand-button:hover {
+  background-color: var(--primary);
+  border-color: var(--primary-hover);
+  color: white;
+  transform: scale(1.1);
+  box-shadow: var(--shadow-md);
+}
+
+.category-expand-button:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.category-expand-button .expand-icon {
+  font-size: 11px;
+  font-weight: bold;
+  transition: transform 0.3s ease;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.category-expand-button:hover .expand-icon {
+  color: white;
+}
+
+.field-category.expanded .expand-icon {
+  transform: rotate(90deg);
+}
+
+/* Category Content Animation */
+.category-content {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+}
+
+.field-category.collapsed .category-content {
+  max-height: 0 !important;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+/* IMPORTANT: Ensure category headers are NEVER collapsed */
+.field-category .category-header {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.field-category.expanded .category-content {
+  max-height: 500px;
+  opacity: 1;
+}
+
 .field-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--space-sm);
   margin-top: var(--space-md);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.field-grid.collapsed {
+  display: none !important;
+}
+
+.field-grid.expanded {
+  display: grid !important;
+}
+
+/* Default state - expanded */
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+/* Section expansion button */
+.section-expand-button {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 2px 4px;
+  margin-right: var(--space-xs);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  vertical-align: middle;
+  line-height: 1;
+  min-width: 16px;
+  text-align: center;
+  margin-left: auto;
+}
+
+.section-expand-button:hover {
+  background: var(--primary);
+  color: white;
+  transform: scale(1.1);
+}
+
+.section-expand-button:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
 }
 
 .field-item {
