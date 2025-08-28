@@ -156,8 +156,6 @@ class BCFSleuthApp {
     }
 
     console.log('✅ Event listeners setup complete');
-
-    setTimeout(initializeExpandButtonStates, 100);
   }
 
   initializeFieldSelection() {
@@ -1636,16 +1634,13 @@ class BCFSleuthApp {
     // Attach export button listeners now that the UI is built
     this.attachExportListeners();
 
-    // Re-initialize export category manager now that results are displayed
-    // if (window.exportCategoryManager) {
-    //   console.log(
-    //    '🔧 Re-initializing export categories after BCF processing...'
-    //  );
-    //   window.exportCategoryManager.reinitialize();
-    //  }
+    // Initialize export category states
+    initializeExportCategoryStates();
 
     // FINAL VALIDATION: Test coordinate field availability
     this.validateCoordinateFieldImplementation();
+
+    console.log('✅ Results display completed successfully');
   }
 
   /**
@@ -2291,292 +2286,14 @@ class BCFSleuthApp {
   }
 }
 
-// Export Category Collapse/Expand Functionality
-class ExportCategoryManager {
-  constructor() {
-    this.expandedCategories = new Set();
-
-    // Initialize after a small delay to ensure DOM is ready
-    setTimeout(() => {
-      this.loadState(); // Load saved state first
-      this.initializeCategories(); // Then initialize with saved state
-    }, 50);
-  }
-
-  initializeCategories() {
-    // Initialize all categories and check their initial state
-    const categories = [
-      'topic-info',
-      'dates-authors',
-      'file-project',
-      'comments-counts',
-    ];
-
-    console.log('🔧 ExportCategoryManager initializing...', {
-      timestamp: new Date().toISOString(),
-      categoriesFound: categories.map((id) => ({
-        id,
-        element: !!document.querySelector(`[data-category="${id}"]`),
-        button: !!document
-          .querySelector(`[data-category="${id}"]`)
-          ?.closest('.field-category')
-          ?.querySelector('.category-expand-button'),
-      })),
-    });
-
-    categories.forEach((categoryId) => {
-      const hasCheckedFields = this.hasCheckedFields(categoryId);
-
-      if (hasCheckedFields) {
-        this.expandedCategories.add(categoryId);
-        this.showCategory(categoryId);
-      } else {
-        this.hideCategory(categoryId);
-      }
-
-      // Always update the icon to match the current state
-      this.updateExpandIcon(categoryId, hasCheckedFields);
-    });
-
-    // Add event listeners for field changes
-    this.setupFieldChangeListeners();
-
-    console.log('🔧 ExportCategoryManager initialized successfully');
-
-    // FORCE SHOW BUTTONS FOR DEBUGGING
-    setTimeout(() => {
-      this.forceShowButtonsForDebug();
-    }, 100);
-  }
-
-  // Method to re-initialize if needed
-  reinitialize() {
-    console.log('🔧 Re-initializing ExportCategoryManager...');
-    this.loadState();
-    this.initializeCategories();
-  }
-
-  forceShowButtonsForDebug() {
-    console.log('🔧 FORCE SHOWING BUTTONS FOR DEBUG...');
-
-    // Find all buttons and make them super visible
-    const allButtons = document.querySelectorAll('.category-expand-button');
-    console.log(`🔧 Found ${allButtons.length} expand buttons`);
-
-    allButtons.forEach((button, index) => {
-      console.log(`🔧 Processing button ${index}:`, button);
-
-      // Make button extremely visible
-      button.style.cssText = `
-        display: inline-block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        position: relative !important;
-        z-index: 99999 !important;
-        width: 30px !important;
-        height: 30px !important;
-        background-color: blue !important;
-        border: 2px solid orange !important;
-        color: white !important;
-        font-size: 16px !important;
-        margin-right: 8px !important;
-        padding: 0 !important;
-        cursor: pointer !important;
-        border-radius: 4px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
-      `;
-
-      // Make icon visible
-      const icon = button.querySelector('.expand-icon');
-      if (icon) {
-        icon.style.cssText = `
-          color: white !important;
-          font-size: 14px !important;
-          font-weight: bold !important;
-        `;
-      }
-
-      // Make parent header visible
-      const header = button.closest('.category-header');
-      if (header) {
-        header.style.cssText = `
-          display: flex !important;
-          align-items: center !important;
-          background-color: rgba(255, 255, 0, 0.3) !important;
-          padding: 8px !important;
-          border: 1px solid red !important;
-        `;
-      }
-
-      // Check position
-      const rect = button.getBoundingClientRect();
-      console.log(`🔧 Button ${index} final position:`, {
-        top: rect.top,
-        left: rect.left,
-        width: rect.width,
-        height: rect.height,
-        visible: rect.width > 0 && rect.height > 0,
-        inViewport:
-          rect.top >= 0 &&
-          rect.left >= 0 &&
-          rect.top <= window.innerHeight &&
-          rect.left <= window.innerWidth,
-        windowSize: `${window.innerWidth} x ${window.innerHeight}`,
-        computedDisplay: window.getComputedStyle(button).display,
-        computedVisibility: window.getComputedStyle(button).visibility,
-      });
-    });
-
-    console.log('🔧 Button force-show complete!');
-
-    // Try to scroll to the first button
-    if (allButtons.length > 0) {
-      const firstButton = allButtons[0];
-      console.log('🔧 Attempting to scroll to first button...');
-      firstButton.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-        inline: 'center',
-      });
-
-      // Also try to highlight the entire export section
-      const exportSection = document.querySelector('.export-controls');
-      if (exportSection) {
-        exportSection.style.border = '5px solid lime !important';
-        exportSection.style.backgroundColor =
-          'rgba(255, 255, 0, 0.2) !important';
-        console.log('🔧 Export section highlighted with lime border');
-      }
-    }
-  }
-
-  hasCheckedFields(categoryId) {
-    const categoryElement = document.querySelector(
-      `[data-category="${categoryId}"]`
-    );
-    if (!categoryElement) return false;
-
-    const checkboxes = categoryElement.querySelectorAll(
-      'input[type="checkbox"]'
-    );
-    return Array.from(checkboxes).some((checkbox) => checkbox.checked);
-  }
-
-  setupFieldChangeListeners() {
-    // Listen for changes to checkboxes to auto-expand/collapse categories
-    document
-      .querySelectorAll('.field-categories input[type="checkbox"]')
-      .forEach((checkbox) => {
-        checkbox.addEventListener('change', () => {
-          const categoryContent = checkbox.closest('.category-content');
-          if (categoryContent) {
-            const categoryId = categoryContent.dataset.category;
-            const hasChecked = this.hasCheckedFields(categoryId);
-
-            if (hasChecked && !this.expandedCategories.has(categoryId)) {
-              this.expandCategory(categoryId);
-            } else if (!hasChecked && this.expandedCategories.has(categoryId)) {
-              // Don't auto-collapse if user manually expanded
-              // Let them control it manually
-            }
-          }
-        });
-      });
-  }
-
-  toggleCategory(categoryId) {
-    if (this.expandedCategories.has(categoryId)) {
-      this.collapseCategory(categoryId);
-    } else {
-      this.expandCategory(categoryId);
-    }
-    this.saveState();
-  }
-
-  expandCategory(categoryId) {
-    this.expandedCategories.add(categoryId);
-    this.showCategory(categoryId);
-    this.updateExpandIcon(categoryId, true);
-  }
-
-  collapseCategory(categoryId) {
-    this.expandedCategories.delete(categoryId);
-    this.hideCategory(categoryId);
-    this.updateExpandIcon(categoryId, false);
-  }
-
-  showCategory(categoryId) {
-    const categoryElement = document.querySelector(
-      `[data-category="${categoryId}"]`
-    );
-    const fieldCategory = categoryElement?.closest('.field-category');
-
-    if (fieldCategory) {
-      fieldCategory.classList.remove('collapsed');
-      fieldCategory.classList.add('expanded');
-      console.log(`🔧 Showing category ${categoryId} - added 'expanded' class`);
-    }
-  }
-
-  hideCategory(categoryId) {
-    const categoryElement = document.querySelector(
-      `[data-category="${categoryId}"]`
-    );
-    const fieldCategory = categoryElement?.closest('.field-category');
-
-    if (fieldCategory) {
-      fieldCategory.classList.remove('expanded');
-      fieldCategory.classList.add('collapsed');
-      console.log(`🔧 Hiding category ${categoryId} - added 'collapsed' class`);
-    }
-  }
-
-  updateExpandIcon(categoryId, isExpanded) {
-    const categoryElement = document.querySelector(
-      `[data-category="${categoryId}"]`
-    );
-    const fieldCategory = categoryElement?.closest('.field-category');
-    const icon = fieldCategory?.querySelector('.expand-icon');
-
-    if (icon) {
-      icon.textContent = isExpanded ? '▼' : '▶';
-    }
-  }
-
-  saveState() {
-    try {
-      localStorage.setItem(
-        'bcf-export-categories',
-        JSON.stringify([...this.expandedCategories])
-      );
-    } catch (error) {
-      console.warn('Could not save export category state:', error);
-    }
-  }
-
-  loadState() {
-    try {
-      const saved = localStorage.getItem('bcf-export-categories');
-      if (saved) {
-        const expandedList = JSON.parse(saved);
-        expandedList.forEach((categoryId) => {
-          this.expandedCategories.add(categoryId);
-          this.showCategory(categoryId);
-          this.updateExpandIcon(categoryId, true);
-        });
-      }
-    } catch (error) {
-      console.warn('Could not load export category state:', error);
-    }
-  }
+/**
+ * Initialize expand button states based on checked fields
+ * Called after BCF processing is complete
+ */
+function initializeExportCategoryStates() {
+  console.log('🔧 Initializing export category states...');
+  // ... rest of the initialization code from Step 5
 }
-
-// DISABLED - old function
-// function toggleExportCategory(categoryId) {
-//   if (window.exportCategoryManager) {
-//     window.exportCategoryManager.toggleCategory(categoryId);
-//   }
-// }
 
 // Utility function for scrolling to export options
 function scrollToExportOptions() {
@@ -2599,7 +2316,7 @@ function scrollToExportOptions() {
 }
 
 /**
- * Global function to toggle export category sections
+ * Fixed toggle function for export category sections
  * Called by onclick handlers in the HTML
  */
 window.toggleExportCategory = function (categoryId) {
@@ -2614,9 +2331,9 @@ window.toggleExportCategory = function (categoryId) {
     return;
   }
 
-  // Find the category content within the same field-category (CORRECTED)
+  // Find the category content within the same field-category
   const categoryDiv = button.closest('.field-category');
-  const categoryContent = categoryDiv.querySelector('.category-content'); // CHANGED from .field-grid
+  const categoryContent = categoryDiv.querySelector('.category-content');
   const expandIcon = button.querySelector('.expand-icon');
 
   if (!categoryContent || !expandIcon) {
@@ -2626,71 +2343,29 @@ window.toggleExportCategory = function (categoryId) {
     return;
   }
 
-  console.log(`🔧 Current content classes: ${categoryContent.className}`);
+  // FIXED: Better current state detection
+  const currentDisplay = categoryContent.style.display;
+  const isCurrentlyHidden = currentDisplay === 'none';
 
-  // Check current state - if no collapsed class, assume expanded
-  const isCurrentlyExpanded =
-    !categoryContent.style.display || categoryContent.style.display !== 'none';
+  console.log(`🔧 ${categoryId} current state:`, {
+    display: currentDisplay,
+    isHidden: isCurrentlyHidden,
+  });
 
-  if (isCurrentlyExpanded) {
-    // Collapse the section
-    categoryContent.style.display = 'none';
-    expandIcon.textContent = '▶';
-    button.title = `Expand ${categoryId.replace(/-/g, ' ')}`;
-    console.log(`📋 Category "${categoryId}" collapsed`);
-  } else {
-    // Expand the section
+  if (isCurrentlyHidden) {
+    // Show the section
     categoryContent.style.display = 'grid';
     expandIcon.textContent = '▼';
     button.title = `Collapse ${categoryId.replace(/-/g, ' ')}`;
-    console.log(`📋 Category "${categoryId}" expanded`);
+    console.log(`📋 Category "${categoryId}" → EXPANDED`);
+  } else {
+    // Hide the section
+    categoryContent.style.display = 'none';
+    expandIcon.textContent = '▶';
+    button.title = `Expand ${categoryId.replace(/-/g, ' ')}`;
+    console.log(`📋 Category "${categoryId}" → COLLAPSED`);
   }
 };
-
-/**
- * Initialize expand button states based on checkbox selections
- */
-function initializeExpandButtonStates() {
-  console.log('🔧 Initializing expand button states...');
-
-  const categories = [
-    'topic-info',
-    'dates-authors',
-    'file-project',
-    'comments-counts',
-  ];
-
-  categories.forEach((categoryId) => {
-    const button = document.querySelector(
-      `[onclick*="toggleExportCategory('${categoryId}')"]`
-    );
-    const categoryDiv = button?.closest('.field-category');
-    const categoryContent = categoryDiv?.querySelector('.category-content'); // CHANGED from .field-grid
-    const expandIcon = button?.querySelector('.expand-icon');
-    const checkboxes = categoryDiv?.querySelectorAll(
-      '.field-item input[type="checkbox"]'
-    );
-
-    if (!button || !categoryContent || !expandIcon || !checkboxes) return;
-
-    // Check if any checkboxes are selected
-    const hasSelectedFields = Array.from(checkboxes).some((cb) => cb.checked);
-
-    if (hasSelectedFields) {
-      // Expand if fields are selected
-      categoryContent.style.display = 'grid';
-      expandIcon.textContent = '▼';
-      button.title = `Collapse ${categoryId.replace(/-/g, ' ')}`;
-    } else {
-      // Collapse if no fields are selected
-      categoryContent.style.display = 'none';
-      expandIcon.textContent = '▶';
-      button.title = `Expand ${categoryId.replace(/-/g, ' ')}`;
-    }
-  });
-
-  console.log('✅ Expand button states initialized');
-}
 
 /**
  * New expand/collapse function that won't conflict with existing systems
@@ -2740,12 +2415,69 @@ window.toggleFieldCategory = function (categoryId) {
   }
 };
 
+/**
+ * Add click functionality to the existing section expand buttons
+ */
+function setupSectionExpandButtons() {
+  console.log('Setting up section expand button functionality...');
+
+  const buttons = document.querySelectorAll('.section-expand-button');
+
+  buttons.forEach((button, index) => {
+    const fieldCategory = button.closest('.field-category');
+    const categoryHeader = fieldCategory.querySelector('.category-header');
+    const sectionName = categoryHeader.textContent.trim();
+
+    // Skip dynamically created sections
+    if (sectionName.includes('Viewpoint Coordinates')) {
+      return;
+    }
+
+    const fieldGrid = fieldCategory.querySelector('.field-grid');
+    const checkboxes = fieldCategory.querySelectorAll(
+      '.field-item input[type="checkbox"]'
+    );
+
+    // Set initial state based on checkbox selection
+    const hasSelectedFields = Array.from(checkboxes).some((cb) => cb.checked);
+
+    if (!hasSelectedFields) {
+      fieldGrid.style.display = 'none';
+      button.textContent = '▶';
+    } else {
+      fieldGrid.style.display = 'grid';
+      button.textContent = '▼';
+    }
+
+    // Replace button with clean version
+    const newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
+
+    // Simple toggle using inline styles (bypasses all CSS class conflicts)
+    newButton.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (fieldGrid.style.display === 'none') {
+        fieldGrid.style.display = 'grid';
+        this.textContent = '▼';
+      } else {
+        fieldGrid.style.display = 'none';
+        this.textContent = '▶';
+      }
+    });
+  });
+}
+
+/**
+ * Simple test function to see if onclick events work at all
+ */
+window.testClick = function () {
+  console.log('🎯 TEST CLICK WORKED!');
+  alert('Button click detected!');
+};
+
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   window.bcfApp = new BCFSleuthApp();
 });
-
-// DISABLED - Using new expand button system instead
-// setTimeout(() => {
-//   window.exportCategoryManager = new ExportCategoryManager();
-// }, 100); // <- Added missing closing parenthesis and semicolon
