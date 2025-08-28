@@ -1065,13 +1065,12 @@ class BCFSleuthApp {
     const sectionLabel = document.createElement('label');
     sectionLabel.setAttribute('for', sectionCheckbox.id);
     sectionLabel.style.cssText = `
-  font-weight: 600;
-  color: #374151;
-  cursor: pointer;
-  margin: 0;
-  user-select: none;
-  flex: 1;
-`;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      margin: 0;
+      user-select: none;
+    `;
     sectionLabel.textContent = categoryName;
 
     // Field count indicator
@@ -1081,44 +1080,20 @@ class BCFSleuthApp {
     const countSpan = document.createElement('span');
     countSpan.className = 'section-field-count';
     countSpan.style.cssText = `
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: normal;
-  margin-left: 0.25rem;
-`;
+      font-size: 0.875rem;
+      color: #6b7280;
+      font-weight: normal;
+      margin-left: 0.25rem;
+    `;
     countSpan.textContent = `(${fieldCount} fields)`;
     sectionLabel.appendChild(countSpan);
 
-    // Add expansion button
-    const expandButton = document.createElement('button');
-    expandButton.className = 'section-expand-button';
-    expandButton.type = 'button';
-    expandButton.setAttribute('aria-label', 'Toggle section visibility');
-
-    // Start expanded by default for better UX
-    const initiallyExpanded = true;
-
-    expandButton.textContent = initiallyExpanded ? '▼' : '▶';
-    expandButton.title = initiallyExpanded
-      ? 'Collapse section'
-      : 'Expand section';
-
     headerDiv.appendChild(sectionCheckbox);
     headerDiv.appendChild(sectionLabel);
-    headerDiv.appendChild(expandButton);
     categoryDiv.appendChild(headerDiv);
 
     const gridDiv = document.createElement('div');
     gridDiv.className = 'field-grid';
-
-    // Set initial state - expand by default for better UX
-    const shouldExpandInitially = true; // Start expanded so users can see options
-    if (shouldExpandInitially) {
-      gridDiv.classList.add('expanded');
-      // Make sure expandButton shows correct state (this should match the button creation above)
-    } else {
-      gridDiv.classList.add('collapsed');
-    }
 
     fieldDefinitions.forEach((fieldDef) => {
       if (availableFields.includes(fieldDef.id)) {
@@ -1178,40 +1153,6 @@ class BCFSleuthApp {
         checkbox.checked = isChecked;
       });
 
-      // Add event listener for expansion button
-      expandButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        console.log(`🔧 Toggle button clicked for section "${categoryName}"`);
-        console.log('Current classes:', gridDiv.className);
-
-        const isCurrentlyExpanded = gridDiv.classList.contains('expanded');
-        console.log('Currently expanded?', isCurrentlyExpanded);
-
-        if (isCurrentlyExpanded) {
-          // Collapse the section
-          gridDiv.classList.remove('expanded');
-          gridDiv.classList.add('collapsed');
-          expandButton.textContent = '▶';
-          expandButton.title = 'Expand section';
-          console.log(
-            `📋 Section "${categoryName}" collapsed - New classes:`,
-            gridDiv.className
-          );
-        } else {
-          // Expand the section
-          gridDiv.classList.remove('collapsed');
-          gridDiv.classList.add('expanded');
-          expandButton.textContent = '▼';
-          expandButton.title = 'Collapse section';
-          console.log(
-            `📋 Section "${categoryName}" expanded - New classes:`,
-            gridDiv.className
-          );
-        }
-      });
-
       // Update the main field selection
       this.updateFieldSelection();
 
@@ -1219,33 +1160,13 @@ class BCFSleuthApp {
       this.updateSectionCheckboxState(sectionCheckbox, categoryCheckboxes);
     });
 
-    // Add event listeners to individual checkboxes to update section state and expansion
+    // Add event listeners to individual checkboxes to update section state
     const individualCheckboxes = gridDiv.querySelectorAll(
       'input[type="checkbox"]'
     );
     individualCheckboxes.forEach((checkbox) => {
       checkbox.addEventListener('change', () => {
         this.updateSectionCheckboxState(sectionCheckbox, individualCheckboxes);
-
-        // Auto-expand section when a checkbox is checked, collapse when all unchecked
-        const hasCheckedBoxes = Array.from(individualCheckboxes).some(
-          (cb) => cb.checked
-        );
-        const isExpanded = gridDiv.classList.contains('expanded');
-
-        if (hasCheckedBoxes && !isExpanded) {
-          // Expand if we have checked items but section is collapsed
-          gridDiv.classList.remove('collapsed');
-          gridDiv.classList.add('expanded');
-          expandButton.textContent = '▼';
-          expandButton.title = 'Collapse section';
-        } else if (!hasCheckedBoxes && isExpanded) {
-          // Collapse if no items checked and section is expanded
-          gridDiv.classList.remove('expanded');
-          gridDiv.classList.add('collapsed');
-          expandButton.textContent = '▶';
-          expandButton.title = 'Expand section';
-        }
       });
     });
 
@@ -1634,13 +1555,8 @@ class BCFSleuthApp {
     // Attach export button listeners now that the UI is built
     this.attachExportListeners();
 
-    // Initialize export category states
-    initializeExportCategoryStates();
-
     // FINAL VALIDATION: Test coordinate field availability
     this.validateCoordinateFieldImplementation();
-
-    console.log('✅ Results display completed successfully');
   }
 
   /**
@@ -2286,15 +2202,6 @@ class BCFSleuthApp {
   }
 }
 
-/**
- * Initialize expand button states based on checked fields
- * Called after BCF processing is complete
- */
-function initializeExportCategoryStates() {
-  console.log('🔧 Initializing export category states...');
-  // ... rest of the initialization code from Step 5
-}
-
 // Utility function for scrolling to export options
 function scrollToExportOptions() {
   const exportSection = document.querySelector('.export-controls');
@@ -2315,169 +2222,7 @@ function scrollToExportOptions() {
   }
 }
 
-/**
- * Fixed toggle function for export category sections
- * Called by onclick handlers in the HTML
- */
-window.toggleExportCategory = function (categoryId) {
-  console.log(`🔧 toggleExportCategory called for: ${categoryId}`);
-
-  // Find the category by looking for the button with the matching onclick
-  const button = document.querySelector(
-    `[onclick*="toggleExportCategory('${categoryId}')"]`
-  );
-  if (!button) {
-    console.error(`❌ Button not found for category: ${categoryId}`);
-    return;
-  }
-
-  // Find the category content within the same field-category
-  const categoryDiv = button.closest('.field-category');
-  const categoryContent = categoryDiv.querySelector('.category-content');
-  const expandIcon = button.querySelector('.expand-icon');
-
-  if (!categoryContent || !expandIcon) {
-    console.error(
-      `❌ Category content or expand icon not found for: ${categoryId}`
-    );
-    return;
-  }
-
-  // FIXED: Better current state detection
-  const currentDisplay = categoryContent.style.display;
-  const isCurrentlyHidden = currentDisplay === 'none';
-
-  console.log(`🔧 ${categoryId} current state:`, {
-    display: currentDisplay,
-    isHidden: isCurrentlyHidden,
-  });
-
-  if (isCurrentlyHidden) {
-    // Show the section
-    categoryContent.style.display = 'grid';
-    expandIcon.textContent = '▼';
-    button.title = `Collapse ${categoryId.replace(/-/g, ' ')}`;
-    console.log(`📋 Category "${categoryId}" → EXPANDED`);
-  } else {
-    // Hide the section
-    categoryContent.style.display = 'none';
-    expandIcon.textContent = '▶';
-    button.title = `Expand ${categoryId.replace(/-/g, ' ')}`;
-    console.log(`📋 Category "${categoryId}" → COLLAPSED`);
-  }
-};
-
-/**
- * New expand/collapse function that won't conflict with existing systems
- */
-window.toggleFieldCategory = function (categoryId) {
-  console.log(`🔧 toggleFieldCategory called for: ${categoryId}`);
-
-  // Find the button that was clicked
-  const button = document.querySelector(
-    `[onclick*="toggleFieldCategory('${categoryId}')"]`
-  );
-  if (!button) {
-    console.error(`❌ Button not found for category: ${categoryId}`);
-    return;
-  }
-
-  // Find the category content
-  const categoryDiv = button.closest('.field-category');
-  const categoryContent = categoryDiv.querySelector('.category-content');
-  const expandIcon = button.querySelector('.expand-icon');
-
-  if (!categoryContent || !expandIcon) {
-    console.error(
-      `❌ Category content or expand icon not found for: ${categoryId}`
-    );
-    console.log('categoryDiv:', categoryDiv);
-    console.log('categoryContent:', categoryContent);
-    console.log('expandIcon:', expandIcon);
-    return;
-  }
-
-  // Simple toggle using display property
-  const isHidden = categoryContent.style.display === 'none';
-
-  if (isHidden) {
-    // Show the section
-    categoryContent.style.display = 'grid';
-    expandIcon.textContent = '▼';
-    button.title = `Collapse ${categoryId.replace(/-/g, ' ')}`;
-    console.log(`📋 Category "${categoryId}" expanded`);
-  } else {
-    // Hide the section
-    categoryContent.style.display = 'none';
-    expandIcon.textContent = '▶';
-    button.title = `Expand ${categoryId.replace(/-/g, ' ')}`;
-    console.log(`📋 Category "${categoryId}" collapsed`);
-  }
-};
-
-/**
- * Add click functionality to the existing section expand buttons
- */
-function setupSectionExpandButtons() {
-  console.log('Setting up section expand button functionality...');
-
-  const buttons = document.querySelectorAll('.section-expand-button');
-
-  buttons.forEach((button, index) => {
-    const fieldCategory = button.closest('.field-category');
-    const categoryHeader = fieldCategory.querySelector('.category-header');
-    const sectionName = categoryHeader.textContent.trim();
-
-    // Skip dynamically created sections
-    if (sectionName.includes('Viewpoint Coordinates')) {
-      return;
-    }
-
-    const fieldGrid = fieldCategory.querySelector('.field-grid');
-    const checkboxes = fieldCategory.querySelectorAll(
-      '.field-item input[type="checkbox"]'
-    );
-
-    // Set initial state based on checkbox selection
-    const hasSelectedFields = Array.from(checkboxes).some((cb) => cb.checked);
-
-    if (!hasSelectedFields) {
-      fieldGrid.style.display = 'none';
-      button.textContent = '▶';
-    } else {
-      fieldGrid.style.display = 'grid';
-      button.textContent = '▼';
-    }
-
-    // Replace button with clean version
-    const newButton = button.cloneNode(true);
-    button.parentNode.replaceChild(newButton, button);
-
-    // Simple toggle using inline styles (bypasses all CSS class conflicts)
-    newButton.addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (fieldGrid.style.display === 'none') {
-        fieldGrid.style.display = 'grid';
-        this.textContent = '▼';
-      } else {
-        fieldGrid.style.display = 'none';
-        this.textContent = '▶';
-      }
-    });
-  });
-}
-
-/**
- * Simple test function to see if onclick events work at all
- */
-window.testClick = function () {
-  console.log('🎯 TEST CLICK WORKED!');
-  alert('Button click detected!');
-};
-
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  window.bcfApp = new BCFSleuthApp();
+  new BCFSleuthApp();
 });
