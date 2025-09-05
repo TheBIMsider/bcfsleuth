@@ -125,7 +125,7 @@ body {
 */
 
 header {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  background: #2466eb;
   color: white;
   padding: var(--space-2xl) 0;
   text-align: center;
