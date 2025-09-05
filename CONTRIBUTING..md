@@ -304,7 +304,7 @@ Contributors are recognized in:
 
 ## License
 
-By contributing to BCFSleuth, you agree that your contributions will be licensed under the same license as the project (MIT License).
+By contributing to BCFSleuth, you agree that your contributions will be licensed under the same license as the project (BSD 3-Clause License).
 
 ---
 
