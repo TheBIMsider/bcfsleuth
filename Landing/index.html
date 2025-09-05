@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BCFSleuth - Professional BCF Analysis Tool</title>
+    <meta
+      name="description"
+      content="Analyze BCF files with professional tools for AECO teams. Universal BCF support, visual analytics, and secure client-side processing."
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <div class="nav-brand">
+          <img
+            src="BCFSleuth_Logo_Color.png"
+            alt="BCFSleuth Logo"
+            class="nav-logo"
+          />
+          <div class="nav-brand-text">
+            <h1>BCFSleuth</h1>
+            <span class="tagline">Your BCF Detective</span>
+          </div>
+        </div>
+        <div class="nav-links">
+          <a href="#features" class="nav-link">Features</a>
+          <a href="#workflow" class="nav-link">Workflow</a>
+          <a href="#documentation" class="nav-link">Docs</a>
+          <a href="#community" class="nav-link">Community</a>
+          <a
+            href="https://thebimsider.github.io/bcfsleuth/Docs/"
+            class="cta-button"
+            target="_blank"
+            >BCFSleuth Docs</a
+          >
+        </div>
+        <button class="mobile-menu-toggle" aria-label="Toggle mobile menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-container">
+        <div class="hero-content">
+          <h1 class="hero-title">Open Source BCF Analysis Tool</h1>
+          <p class="hero-description">
+            Analyze, visualize, and export BCF data with enterprise-grade tools.
+            Universal BCF support (2.0, 2.1, 3.0), visual analytics, and
+            complete data privacy through client-side processing.
+          </p>
+          <div class="hero-buttons">
+            <a
+              href="https://thebimsider.github.io/bcfsleuth/V02/"
+              class="primary-button"
+              target="_blank"
+            >
+              Launch BCFSleuth
+            </a>
+            <a
+              href="https://github.com/TheBIMsider/BCFSleuth"
+              class="secondary-button"
+              >GitHub Repo</a
+            >
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="logo-card">
+            <img
+              src="BCFSleuth_Logo_Color.png"
+              alt="BCFSleuth Logo"
+              class="hero-logo-main"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+      <div class="container">
+        <h2 class="section-title">What BCFSleuth Offers</h2>
+        <p class="section-description">
+          Professional BCF analysis with comprehensive support for all BCF
+          versions and formats.
+        </p>
+
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+            </div>
+            <h3>Lightning Fast Performance</h3>
+            <p>
+              Sub-2-second BCF processing with &lt;200ms response times. Built
+              for enterprise workflows with thousands of topics.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M9 12l2 2 4-4" />
+                <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3" />
+                <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3" />
+              </svg>
+            </div>
+            <h3>Universal BCF Support</h3>
+            <p>
+              Complete compatibility with BCF 2.0, 2.1, and 3.0 formats.
+              Intelligent version detection with automatic field mapping.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+            </div>
+            <h3>Complete Data Privacy</h3>
+            <p>
+              100% client-side processing. Your BCF data never leaves your
+              device. GDPR compliant with no server-side storage.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="9" y1="3" x2="9" y2="21" />
+                <line x1="15" y1="3" x2="15" y2="21" />
+              </svg>
+            </div>
+            <h3>Professional Reports</h3>
+            <p>
+              Export to CSV, Excel, PDF, and Word formats. Complete coordinate
+              extraction with 18 BCF coordinate fields.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M3 3v18h18" />
+                <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
+              </svg>
+            </div>
+            <h3>Visual Analytics</h3>
+            <p>
+              Interactive charts with full-screen viewing. Custom analytics
+              builder for detailed project insights and reporting.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="18" height="10" rx="2" ry="2" />
+                <circle cx="7" cy="8" r="1" />
+                <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+              </svg>
+            </div>
+            <h3>Image Management</h3>
+            <p>
+              Complete image viewing with lightbox, zoom, and pan. Professional
+              image reports with PDF layouts for documentation.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Workflow Section -->
+    <section id="workflow" class="workflow">
+      <div class="container">
+        <h2 class="section-title">Simple, Powerful Workflow</h2>
+        <p class="section-description">
+          Analyze BCF files in four simple steps. Professional results in
+          minutes, not hours.
+        </p>
+
+        <div class="workflow-grid">
+          <div class="workflow-step">
+            <div class="step-number">1</div>
+            <h3>Upload BCF Files</h3>
+            <p>
+              Drag and drop BCF files or select from your device. Supports all
+              BCF versions with automatic detection.
+            </p>
+          </div>
+
+          <div class="workflow-step">
+            <div class="step-number">2</div>
+            <h3>Select Fields & Filter</h3>
+            <p>
+              Choose from comprehensive field categories. Filter and sort data
+              with advanced preview tables.
+            </p>
+          </div>
+
+          <div class="workflow-step">
+            <div class="step-number">3</div>
+            <h3>Analyze & Visualize</h3>
+            <p>
+              Generate interactive charts and analytics. Review images with
+              professional lightbox viewer.
+            </p>
+          </div>
+
+          <div class="workflow-step">
+            <div class="step-number">4</div>
+            <h3>Export & Share</h3>
+            <p>
+              Export to multiple formats including CSV, Excel, PDF, and Word.
+              Professional reports ready for clients.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="bcf-carousel">
+        <div class="carousel-header">
+          <span class="carousel-label">BCFSleuth in Action</span>
+          <div class="carousel-controls">
+            <button class="carousel-btn prev" aria-label="Previous image">
+              ‹
+            </button>
+            <div class="carousel-dots">
+              <button class="dot active" data-slide="0"></button>
+              <button class="dot" data-slide="1"></button>
+              <button class="dot" data-slide="2"></button>
+            </div>
+            <button class="carousel-btn next" aria-label="Next image">›</button>
+          </div>
+        </div>
+        <div class="carousel-container">
+          <div class="carousel-slides">
+            <div class="slide active">
+              <img
+                src="BCFSleuth_V01_Phase3c_Advanced Preview.png"
+                alt="BCF Advanced Preview - Data table with topics, comments, and filtering"
+              />
+              <div class="slide-caption">
+                <h4>Advanced Preview</h4>
+                <p>
+                  Comprehensive data tables with filtering, sorting, and
+                  detailed BCF topic information
+                </p>
+              </div>
+            </div>
+            <div class="slide">
+              <img
+                src="BCFSleuth_V02_Phase1_Image_Viewer.png"
+                alt="BCF Image Viewer - Visual gallery with bulk download options"
+              />
+              <div class="slide-caption">
+                <h4>Image Management</h4>
+                <p>
+                  Professional image viewer with bulk download, PDF reports, and
+                  lightbox functionality
+                </p>
+              </div>
+            </div>
+            <div class="slide">
+              <img
+                src="BCFSleuth_V02_Phase2_Analytics.png"
+                alt="BCF Analytics Dashboard - Charts and visual insights"
+              />
+              <div class="slide-caption">
+                <h4>Visual Analytics</h4>
+                <p>
+                  Interactive charts and dashboard with status distribution,
+                  priority analysis, and custom reports
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ready to Start Section -->
+    <section class="ready-to-start">
+      <div class="container">
+        <h2 class="section-title">Ready to Get Started?</h2>
+        <p class="section-description">
+          BCFSleuth is completely free and open source. Start analyzing your BCF
+          files in seconds.
+        </p>
+
+        <div class="start-options">
+          <div class="start-option">
+            <h3>Quick Start</h3>
+            <p>
+              Launch BCFSleuth directly in your browser. No installation
+              required.
+            </p>
+            <a
+              href="https://thebimsider.github.io/bcfsleuth/V02/"
+              class="option-button primary"
+              target="_blank"
+            >
+              Launch Now
+            </a>
+          </div>
+
+          <div class="start-option">
+            <h3>Download & Host</h3>
+            <p>
+              Download the complete source code and host on your own
+              infrastructure.
+            </p>
+            <a
+              href="https://github.com/TheBIMsider/BCFSleuth/archive/main.zip"
+              class="option-button secondary"
+              target="_blank"
+            >
+              Download ZIP
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Documentation Section -->
+    <section id="documentation" class="documentation">
+      <div class="container">
+        <h2 class="section-title">Documentation</h2>
+        <p class="section-description">
+          Complete guides and references to help you get the most out of
+          BCFSleuth.
+        </p>
+
+        <div class="docs-grid">
+          <div class="docs-card">
+            <div class="docs-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                />
+                <polyline points="14,2 14,8 20,8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10,9 9,9 8,9" />
+              </svg>
+            </div>
+            <h3>Overview</h3>
+            <p>Learn about BCFSleuth's capabilities and architecture</p>
+          </div>
+
+          <div class="docs-card">
+            <div class="docs-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+            </div>
+            <h3>Quickstart</h3>
+            <p>Get up and running with BCFSleuth in minutes</p>
+          </div>
+
+          <div class="docs-card">
+            <div class="docs-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <rect x="7" y="7" width="3" height="9" />
+                <rect x="14" y="7" width="3" height="5" />
+              </svg>
+            </div>
+            <h3>Features</h3>
+            <p>Explore all the tools and functionality available</p>
+          </div>
+
+          <div class="docs-card">
+            <div class="docs-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+              </svg>
+            </div>
+            <h3>How to Use</h3>
+            <p>Step-by-step guides for common workflows</p>
+          </div>
+
+          <div class="docs-card">
+            <div class="docs-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                />
+              </svg>
+            </div>
+            <h3>Support</h3>
+            <p>Get help and find answers to common questions</p>
+          </div>
+        </div>
+
+        <div class="docs-cta">
+          <a
+            href="https://thebimsider.github.io/bcfsleuth/Docs/"
+            class="docs-button"
+            target="_blank"
+          >
+            View Complete Documentation
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Community Section -->
+    <section id="community" class="community">
+      <div class="container">
+        <h2 class="section-title">Community & Support</h2>
+        <p class="section-description">
+          Get help, Learn about buildingSMART International's BCF , and
+          contribute to the growing BCFSleuth community.
+        </p>
+
+        <div class="community-grid">
+          <div class="community-option">
+            <div class="community-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                />
+              </svg>
+            </div>
+            <h3>Get Help</h3>
+            <p>
+              Report bugs, request features, or ask questions about using
+              BCFSleuth.
+            </p>
+            <a
+              href="https://github.com/TheBIMsider/BCFSleuth/issues"
+              class="community-link"
+              target="_blank"
+            >
+              Report Issues
+            </a>
+          </div>
+
+          <div class="community-option">
+            <div class="community-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </div>
+            <h3>What is BCF</h3>
+            <p>
+              BIM Collaboration Format (BCF) is a standard communication
+              protocol for efficient issue management and coordination on BIM
+              projects.
+            </p>
+            <a
+              href="https://www.buildingsmart.org/standards/bsi-standards/bim-collaboration-format/"
+              class="community-link"
+              target="_blank"
+            >
+              buildingSMART International (BCF)
+            </a>
+          </div>
+
+          <div class="community-option">
+            <div class="community-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
+                />
+              </svg>
+            </div>
+            <h3>Contribute</h3>
+            <p>
+              Help improve BCFSleuth by contributing code, documentation, or
+              examples.
+            </p>
+            <a
+              href="https://github.com/TheBIMsider/bcfsleuth/blob/main/CONTRIBUTING.md"
+              class="community-link"
+              target="_blank"
+            >
+              Contributing Guide
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-brand">
+            <h3>BCFSleuth</h3>
+            <p>
+              Professional BCF analysis for AECO teams. Open source and
+              community driven.
+            </p>
+          </div>
+          <div class="footer-links">
+            <div class="footer-column">
+              <h4>Product</h4>
+              <ul>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#workflow">Workflow</a></li>
+                <li>
+                  <a
+                    href="https://thebimsider.github.io/bcfsleuth/V02/"
+                    target="_blank"
+                    >Try BCFSleuth</a
+                  >
+                </li>
+              </ul>
+            </div>
+            <div class="footer-column">
+              <h4>Resources</h4>
+              <ul>
+                <li>
+                  <a
+                    href="https://thebimsider.github.io/bcfsleuth/Docs/"
+                    target="_blank"
+                    >Documentation</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="https://github.com/TheBIMsider/BCFSleuth/issues"
+                    target="_blank"
+                    >Support</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="https://github.com/TheBIMsider/bcfsleuth/blob/main/developer_guide.md"
+                    target="_blank"
+                    >Developer Guide</a
+                  >
+                </li>
+              </ul>
+            </div>
+            <div class="footer-column">
+              <h4>Open Source</h4>
+              <ul>
+                <li>
+                  <a
+                    href="https://github.com/TheBIMsider/BCFSleuth"
+                    target="_blank"
+                    >GitHub</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="https://github.com/TheBIMsider/BCFSleuth/blob/main/LICENSE"
+                    target="_blank"
+                    >License</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="https://github.com/TheBIMsider/bcfsleuth"
+                    target="_blank"
+                    >Releases</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>
+            &copy; 2025 BCFSleuth. Open source under BSD-3-Clause license. Part
+            of
+            <a href="https://github.com/TheBIMsider" target="_blank"
+              >TheBIMsider</a
+            >
+            project family.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="lightbox">
+      <div class="lightbox-content">
+        <span class="lightbox-close">&times;</span>
+        <img
+          id="lightbox-image"
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E"
+          alt=""
+        />
+        <div class="lightbox-caption">
+          <h4 id="lightbox-title"></h4>
+          <p id="lightbox-description"></p>
+        </div>
+        <div class="lightbox-nav">
+          <button class="lightbox-btn prev" id="lightbox-prev">‹</button>
+          <button class="lightbox-btn next" id="lightbox-next">›</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
