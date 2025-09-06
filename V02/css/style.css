@@ -1687,6 +1687,66 @@ tr:last-child td {
   .section-field-count {
     font-size: 0.75rem;
   }
+
+  /* Mobile fix for button overlap */
+  @media (max-width: 768px) {
+    .header-content {
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+      padding: 15px 10px;
+    }
+
+    .header-text {
+      position: static !important;
+      transform: none !important;
+      order: 1;
+      text-align: center;
+      margin: 0 !important;
+    }
+
+    .help-button {
+      order: 0;
+      margin-bottom: 10px;
+    }
+
+    .about-button {
+      order: 2;
+      margin-top: 10px;
+    }
+
+    .header-text h1 {
+      font-size: 2rem;
+      margin: 0;
+    }
+
+    .header-text .tagline {
+      font-size: 0.9rem;
+      margin: 5px 0 0 0;
+    }
+  }
+
+  /* Even smaller screens */
+  @media (max-width: 480px) {
+    .header-content {
+      padding: 10px 5px;
+      gap: 10px;
+    }
+
+    .help-button,
+    .about-button {
+      font-size: 12px;
+      padding: 6px 10px;
+    }
+
+    .header-text h1 {
+      font-size: 1.5rem;
+    }
+
+    .header-text .tagline {
+      font-size: 0.8rem;
+    }
+  }
 }
 
 /* 
