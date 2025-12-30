@@ -1,4 +1,4 @@
-# BCFSleuth V2.0
+# BCFSleuth <a href="https://github.com/thebimsider/bcfsleuth/releases/tag/v2.0.0"><img src="https://img.shields.io/badge/v2.0.0-release-brightgreen" alt="v2.0.0" /></a>
 
 <img width="512" height="512" alt="BCFSleuth_Logo_Color" src="https://github.com/user-attachments/assets/fdd735de-e809-4736-a01c-0c054071b8e9" />
 
