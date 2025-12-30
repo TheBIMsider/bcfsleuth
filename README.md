@@ -1,6 +1,6 @@
 # BCFSleuth 
 
-[![Release](https://img.shields.io/github/v/release/thebimsider/bcfsleuth?display_name=tag&sort=semver)](https://github.com/thebimsider/bcfsleuth/releases/latest)
+[![Release](https://img.shields.io/github/v/release/thebimsider/bcfsleuth)](https://github.com/thebimsider/bcfsleuth/releases/latest)
 [![License](https://img.shields.io/github/license/thebimsider/bcfsleuth)](https://github.com/thebimsider/bcfsleuth/blob/main/LICENSE)
 [![Open Source](https://img.shields.io/badge/Open%20Source-Yes-brightgreen)](LICENSE)
 ![Tech](https://img.shields.io/badge/Tech-HTML%20%7C%20CSS%20%7C%20JavaScript-informational)
