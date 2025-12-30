@@ -1,4 +1,9 @@
-# BCFSleuth <a href="https://github.com/thebimsider/bcfsleuth/releases/tag/v2.0.0"><img src="https://img.shields.io/badge/v2.0.0-release-brightgreen" alt="v2.0.0" /></a>
+# BCFSleuth 
+
+[![Release](https://img.shields.io/github/v/release/thebimsider/bcfsleuth?display_name=tag&sort=semver)](https://github.com/thebimsider/bcfsleuth/releases/latest)
+[![License](https://img.shields.io/github/license/thebimsider/bcfsleuth)](https://github.com/thebimsider/bcfsleuth/blob/main/LICENSE)
+![Tech](https://img.shields.io/badge/Tech-HTML%20%7C%20CSS%20%7C%20JavaScript-informational)
+[![GitHub Pages](https://img.shields.io/badge/Hosted_on-GitHub_Pages-brightgreen)](https://thebimsider.github.io/bcfsleuth/)
 
 <img width="512" height="512" alt="BCFSleuth_Logo_Color" src="https://github.com/user-attachments/assets/fdd735de-e809-4736-a01c-0c054071b8e9" />
 
