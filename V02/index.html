@@ -1450,10 +1450,6 @@
                 setTimeout(() => {
                   if (typeof window.docx !== 'undefined') {
                     console.log(`✅ DOCX loaded successfully from: ${src}`);
-                    console.log(
-                      'Available components:',
-                      Object.keys(window.docx)
-                    );
                     resolve(true);
                   } else {
                     reject(
@@ -1490,11 +1486,9 @@
 
       // Load the library when page is ready
       document.addEventListener('DOMContentLoaded', async () => {
-        console.log('🔄 Starting DOCX library loading...');
         const success = await loadDocxLibrary();
 
         if (success) {
-          console.log('🎉 DOCX library is ready!');
           window.docxReady = true;
         } else {
           console.error('💥 DOCX library failed to load from all sources');
@@ -1558,12 +1552,9 @@
 
       // Load Chart.js when page is ready
       document.addEventListener('DOMContentLoaded', async () => {
-        console.log('🔄 Starting Chart.js library loading...');
         const success = await loadChartJS();
 
-        if (success) {
-          console.log('🎉 Chart.js library is ready!');
-        } else {
+        if (!success) {
           console.error('💥 Chart.js library failed to load from all sources');
         }
       });
@@ -1711,7 +1702,6 @@
 
         // Only proceed if help elements exist
         if (!helpButton || !helpModal) {
-          console.log('Help system elements not found');
           return;
         }
 
@@ -1813,7 +1803,6 @@
           showSection: showHelpSection,
         };
 
-        console.log('✅ Help system initialized successfully');
       });
 
       /**
@@ -1899,9 +1888,6 @@
         // Initial check - set correct visibility based on current state
         updateLogoVisibility();
 
-        console.log(
-          '✅ Logo controller initialized - logo only shows on pure landing page'
-        );
       }
       // Initialize logo controller when DOM is ready
       document.addEventListener('DOMContentLoaded', initLogoController);
