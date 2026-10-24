@@ -24,7 +24,6 @@ class ConfigurationManager {
     this.loadFromStorage();
     this.setupEventListeners();
     this.applyStoredPreferences();
-    console.log('Configuration Manager initialized');
   }
 
   setupEventListeners() {
@@ -168,7 +167,6 @@ class ConfigurationManager {
     this.displayTemplates();
     this.clearTemplateForm();
 
-    console.log('Template created:', template);
     this.app.showUserFeedback(`Template "${name}" saved successfully!`, 'success');
   }
 
@@ -220,7 +218,6 @@ class ConfigurationManager {
     this.displayTemplates();
     this.exitEditMode();
 
-    console.log('Template updated:', template);
     this.app.showUserFeedback(`Template "${name}" updated successfully!`, 'success');
   }
 
@@ -305,7 +302,6 @@ class ConfigurationManager {
     this.app.showUserFeedback(
       `Template "${template.name}" applied successfully!\nFields: ${template.selectedFields.length} selected\nFilename: ${template.customFilename}`
     , 'success');
-    console.log('Template applied:', template);
   }
 
   deleteTemplate(templateId) {
@@ -320,7 +316,6 @@ class ConfigurationManager {
       this.templates = this.templates.filter((t) => t.id !== templateId);
       this.saveToStorage();
       this.displayTemplates();
-      console.log('Template deleted:', template.name);
     }
   }
 
@@ -407,7 +402,6 @@ class ConfigurationManager {
     this.applyStoredPreferences();
 
     this.app.showUserFeedback('Preferences saved successfully!', 'success');
-    console.log('Preferences saved:', this.preferences);
   }
 
   resetPreferences() {
@@ -433,7 +427,6 @@ class ConfigurationManager {
     }
 
     // Apply other preferences as needed
-    console.log('Preferences applied:', this.preferences);
   }
 
   loadPreferencesIntoUI() {
@@ -485,7 +478,6 @@ class ConfigurationManager {
 
     this.saveToStorage();
     this.displayHistory();
-    console.log('Added to history:', historyItem);
   }
 
   displayHistory() {
@@ -543,7 +535,6 @@ class ConfigurationManager {
       this.processingHistory = [];
       this.saveToStorage();
       this.displayHistory();
-      console.log('Processing history cleared');
     }
   }
 
@@ -618,7 +609,6 @@ class ConfigurationManager {
 
       URL.revokeObjectURL(url);
 
-      console.log(`Exported ${this.templates.length} templates to ${filename}`);
       this.app.showUserFeedback(
         `Successfully exported ${this.templates.length} templates!\nFile: ${filename}`
       , 'success');
@@ -788,7 +778,6 @@ class ConfigurationManager {
 
       case 'cancel':
       default:
-        console.log('Template import cancelled by user');
         break;
     }
   }
@@ -827,7 +816,6 @@ class ConfigurationManager {
       this.saveToStorage();
       this.displayTemplates();
       this.app.showUserFeedback(`Successfully imported ${successCount} template(s)!`, 'success');
-      console.log(`Imported ${successCount} templates`);
     } else {
       this.app.showUserFeedback(
         'No templates were imported. Please check the file format and try again.'
@@ -871,7 +859,6 @@ class ConfigurationManager {
           ...(configData.preferences || {}),
         };
         this.processingHistory = configData.processingHistory || [];
-        console.log('Configuration loaded from storage');
       }
     } catch (error) {
       console.warn('Could not load from localStorage:', error);
@@ -978,8 +965,6 @@ class ConfigurationManager {
     if (templateForm) {
       templateForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-
-    console.log('Editing template:', template.name);
   }
 
   applyTemplateFieldsToUI(template) {
