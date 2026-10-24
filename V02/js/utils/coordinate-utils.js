@@ -59,10 +59,6 @@ class CoordinateUtils {
       return null;
     }
 
-    console.log(
-      `🎯 Selecting primary viewpoint from ${topic.viewpoints.length} available viewpoints`
-    );
-
     // Priority 1: Look for main viewpoint.bcfv file (BCF standard)
     let primaryViewpoint = topic.viewpoints.find((vp) => {
       return (
@@ -74,7 +70,6 @@ class CoordinateUtils {
     });
 
     if (primaryViewpoint) {
-      console.log('✅ Primary viewpoint found: Standard viewpoint.bcfv file');
       return primaryViewpoint;
     }
 
@@ -96,17 +91,11 @@ class CoordinateUtils {
     });
 
     if (primaryViewpoint) {
-      console.log(
-        '✅ Primary viewpoint found: First viewpoint with camera data'
-      );
       return primaryViewpoint;
     }
 
     // Priority 3: Any available viewpoint (fallback)
     primaryViewpoint = topic.viewpoints[0];
-    console.log(
-      'ℹ️ Primary viewpoint: Using first available viewpoint as fallback'
-    );
 
     return primaryViewpoint;
   }
@@ -274,85 +263,6 @@ class CoordinateUtils {
         fieldValue !== null && fieldValue !== undefined && fieldValue !== ''
       );
     });
-  }
-
-  /**
-   * Get comprehensive coordinate summary for a topic
-   * Useful for debugging and validation
-   * @param {Object} topic - BCF topic object
-   * @returns {Object} - Complete coordinate data summary
-   */
-  static getCoordinateSummary(topic) {
-    const primaryViewpoint = this.getPrimaryViewpoint(topic);
-
-    if (!primaryViewpoint) {
-      return {
-        hasCoordinates: false,
-        viewpointCount: topic.viewpoints ? topic.viewpoints.length : 0,
-        primaryViewpoint: null,
-        coordinates: {},
-      };
-    }
-
-    return {
-      hasCoordinates: this.hasCoordinateData(topic),
-      viewpointCount: topic.viewpoints.length,
-      primaryViewpoint: {
-        guid: primaryViewpoint.guid,
-        file: primaryViewpoint.viewpointFile,
-        cameraType: primaryViewpoint.cameraType,
-      },
-      coordinates: {
-        cameraType: this.getPrimaryCameraType(topic),
-        CameraViewPointX: this.getPrimaryViewpointBCFCoordinate(
-          topic,
-          'CameraViewPoint',
-          'x'
-        ),
-        CameraViewPointY: this.getPrimaryViewpointBCFCoordinate(
-          topic,
-          'CameraViewPoint',
-          'y'
-        ),
-        CameraViewPointZ: this.getPrimaryViewpointBCFCoordinate(
-          topic,
-          'CameraViewPoint',
-          'z'
-        ),
-        CameraDirectionX: this.getPrimaryViewpointBCFCoordinate(
-          topic,
-          'CameraDirection',
-          'x'
-        ),
-        CameraDirectionY: this.getPrimaryViewpointBCFCoordinate(
-          topic,
-          'CameraDirection',
-          'y'
-        ),
-        CameraDirectionZ: this.getPrimaryViewpointBCFCoordinate(
-          topic,
-          'CameraDirection',
-          'z'
-        ),
-        CameraUpVectorX: this.getPrimaryViewpointBCFCoordinate(
-          topic,
-          'CameraUpVector',
-          'x'
-        ),
-        CameraUpVectorY: this.getPrimaryViewpointBCFCoordinate(
-          topic,
-          'CameraUpVector',
-          'y'
-        ),
-        CameraUpVectorZ: this.getPrimaryViewpointBCFCoordinate(
-          topic,
-          'CameraUpVector',
-          'z'
-        ),
-        FieldOfView: this.getPrimaryFieldOfView(topic),
-        ViewToWorldScale: this.getPrimaryViewToWorldScale(topic),
-      },
-    };
   }
 }
 
