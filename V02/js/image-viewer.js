@@ -136,7 +136,6 @@ class ImageViewer {
    * Perform lazy image extraction for all topics
    */
   async performLazyImageExtraction(parsedData) {
-
     const allTopics = [];
 
     // Collect all topics from all BCF files
