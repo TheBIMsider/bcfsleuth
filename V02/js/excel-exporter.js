@@ -193,15 +193,6 @@ class ExcelExporter {
           coordinateFields.includes(field)
         );
 
-        console.log('📊 Excel viewpoint processing:', {
-          topicTitle: topic.title,
-          hasCoordinateFields: hasCoordinateFields,
-          viewpointCount: topic.viewpoints ? topic.viewpoints.length : 0,
-          selectedCoordinateFields: selectedFields.filter((field) =>
-            coordinateFields.includes(field)
-          ),
-        });
-
         if (
           hasCoordinateFields &&
           topic.viewpoints &&
@@ -237,10 +228,6 @@ class ExcelExporter {
                   viewpoint.cameraTarget.z !== null))
             );
           });
-
-          console.log(
-            `📊 Excel found ${coordinateViewpoints.length} viewpoints with coordinate data`
-          );
 
           if (coordinateViewpoints.length > 0) {
             // Viewpoint coordinates header
@@ -946,11 +933,6 @@ class ExcelExporter {
     if (!documentReferences || documentReferences.length === 0) {
       return '';
     }
-
-    console.log(
-      '📄 Formatting document references for Excel:',
-      documentReferences.length
-    );
 
     // Format each document reference with detailed information for Excel
     return documentReferences
