@@ -136,7 +136,6 @@ class ImageViewer {
    * Perform lazy image extraction for all topics
    */
   async performLazyImageExtraction(parsedData) {
-    // Debug: Check if BCFParser methods are available
 
     const allTopics = [];
 
