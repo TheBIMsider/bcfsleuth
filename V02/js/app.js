@@ -415,68 +415,6 @@ class BCFSleuthApp {
     };
   }
 
-  updateFieldLabelsWithCustomIndicators(customData) {
-    // Define standard BCF values to identify custom ones
-    const standardValues = {
-      status: ['Open', 'In Progress', 'Closed', 'ReOpened'],
-      type: ['Issue', 'Request', 'Question', 'Remark'],
-      priority: ['Low', 'Normal', 'High', 'Critical'],
-    };
-
-    // Update Status field
-    const statusLabel = document.querySelector('label[for="field-status"]');
-    if (statusLabel && customData.status.count > 0) {
-      const customStatusCount = customData.status.values.filter(
-        (value) => !standardValues.status.includes(value)
-      ).length;
-
-      if (customStatusCount > 0) {
-        statusLabel.innerHTML = `Status <span class="custom-indicator">(${customStatusCount} custom)</span>`;
-      }
-    }
-
-    // Update Type field
-    const typeLabel = document.querySelector('label[for="field-type"]');
-    if (typeLabel && customData.type.count > 0) {
-      const customTypeCount = customData.type.values.filter(
-        (value) => !standardValues.type.includes(value)
-      ).length;
-
-      if (customTypeCount > 0) {
-        typeLabel.innerHTML = `Type <span class="custom-indicator">(${customTypeCount} custom)</span>`;
-      }
-    }
-
-    // Update Priority field
-    const priorityLabel = document.querySelector('label[for="field-priority"]');
-    if (priorityLabel && customData.priority.count > 0) {
-      const customPriorityCount = customData.priority.values.filter(
-        (value) => !standardValues.priority.includes(value)
-      ).length;
-
-      if (customPriorityCount > 0) {
-        priorityLabel.innerHTML = `Priority <span class="custom-indicator">(${customPriorityCount} custom)</span>`;
-      }
-    }
-
-    // Update Labels field (all labels are essentially custom)
-    const labelsLabel = document.querySelector('label[for="field-labels"]');
-    if (labelsLabel && customData.labels.count > 0) {
-      labelsLabel.innerHTML = `Labels <span class="custom-indicator">(${customData.labels.count} found)</span>`;
-    }
-
-    // Update Stage field (all stages are custom)
-    const stageLabel = document.querySelector('label[for="field-stage"]');
-    if (stageLabel && customData.stage.count > 0) {
-      stageLabel.innerHTML = `Stage <span class="custom-indicator">(${customData.stage.count} found)</span>`;
-    }
-
-    // Add extensions indicator if present
-    if (customData.hasExtensions) {
-      console.log('Extensions detected - custom field definitions available');
-    }
-  }
-
   /**
    * Enhanced field discovery with intelligent BCF 3.0 detection
    * Only shows BCF 3.0 fields when BCF 3.0 content is actually present
@@ -1884,33 +1822,59 @@ class BCFSleuthApp {
     document.getElementById(sectionId).classList.remove('hidden');
   }
 
-  showError(message) {
-    // Simple error display - could be enhanced with proper modal/toast
-    alert(message);
+  /**
+   * Standardized error and feedback messaging
+   * Shows a non-blocking toast with a dismiss button. Errors stay until
+   * dismissed; other types disappear on their own.
+   * @param {string} message - The message to display
+   * @param {string} type - Type of message: 'error', 'warning', 'success', 'info'
+   * @param {number|null} duration - Milliseconds to show the message, 0 = until dismissed.
+   *   Defaults by type: error 0, warning 8000, success 4000, info 5000
+   */
+  showUserFeedback(message, type = 'error', duration = null) {
+    const defaultDurations = { error: 0, warning: 8000, success: 4000, info: 5000 };
+    const kind = type in defaultDurations ? type : 'info';
+    const timeout = duration === null ? defaultDurations[kind] : duration;
+
+    this.debugLog(`User feedback (${kind}):`, message);
+
+    const toast = document.createElement('div');
+    toast.className = `feedback-toast feedback-${kind}`;
+    // Errors and warnings interrupt screen readers; other types wait politely
+    toast.setAttribute('role', kind === 'error' || kind === 'warning' ? 'alert' : 'status');
+
+    const text = document.createElement('span');
+    text.className = 'feedback-message';
+    text.textContent = message;
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'feedback-close';
+    close.setAttribute('aria-label', 'Dismiss message');
+    close.textContent = '×';
+    close.addEventListener('click', () => toast.remove());
+
+    toast.append(text, close);
+    this.getFeedbackContainer().appendChild(toast);
+
+    if (timeout > 0) {
+      setTimeout(() => toast.remove(), timeout);
+    }
   }
 
   /**
-   * Standardized error and feedback messaging
-   * Provides consistent user feedback across the application
-   * @param {string} message - The message to display
-   * @param {string} type - Type of message: 'error', 'warning', 'success', 'info'
-   * @param {number} duration - How long to show the message (milliseconds), 0 = permanent
+   * Get (or lazily create) the fixed container that holds feedback toasts
+   * @returns {HTMLElement} The toast container
    */
-  showUserFeedback(message, type = 'error', duration = 5000) {
-    console.log(`📢 User Feedback (${type}):`, message);
-
-    // For now, use the existing simple alert for errors (we'll enhance this in future phases)
-    if (type === 'error') {
-      alert(`Error: ${message}`);
-    } else if (type === 'warning') {
-      alert(`Warning: ${message}`);
-    } else if (type === 'success') {
-      // For success messages, we could show a brief toast notification
-      console.log('✅ Success:', message);
-      // Future enhancement: replace with toast notification
-    } else {
-      alert(message);
+  getFeedbackContainer() {
+    let container = document.getElementById('feedback-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'feedback-container';
+      container.className = 'feedback-container';
+      document.body.appendChild(container);
     }
+    return container;
   }
 
   /**
@@ -2188,17 +2152,6 @@ class BCFSleuthApp {
     } else {
       console.warn('Analytics Dashboard not available');
     }
-  }
-
-  /**
-   * Helper method to count total topics across all parsed BCF files
-   */
-  getTotalTopics() {
-    if (!this.parsedData || this.parsedData.length === 0) return 0;
-
-    return this.parsedData.reduce((total, bcfData) => {
-      return total + (bcfData.topics ? bcfData.topics.length : 0);
-    }, 0);
   }
 }
 

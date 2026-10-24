@@ -1273,7 +1273,7 @@ class ImageViewer {
       `Comments: ${image.commentsCount}`,
     ].join('\n');
 
-    alert(info);
+    this.app.showUserFeedback(info, 'info', 0);
   }
 
   // This method is now implemented above in the complete lightbox section
@@ -1289,7 +1289,7 @@ class ImageViewer {
     // Validate image index
     if (imageIndex < 0 || imageIndex >= this.filteredImages.length) {
       console.error('Invalid image index for download:', imageIndex);
-      alert('Error: Invalid image selected for download');
+      this.app.showUserFeedback('Error: Invalid image selected for download', 'error');
       return;
     }
 
@@ -1330,7 +1330,7 @@ class ImageViewer {
       this.showDownloadFeedback(`Downloaded: ${filename}`);
     } catch (error) {
       console.error('Error downloading image:', error);
-      alert('Error downloading image: ' + error.message);
+      this.app.showUserFeedback('Error downloading image: ' + error.message, 'error');
     }
   }
 
@@ -1389,7 +1389,7 @@ class ImageViewer {
     console.log('💾 Starting bulk download of all filtered images...');
 
     if (this.filteredImages.length === 0) {
-      alert('No images to download. Please check your filters.');
+      this.app.showUserFeedback('No images to download. Please check your filters.', 'warning');
       return;
     }
 
@@ -1459,15 +1459,15 @@ class ImageViewer {
    */
   validateZipDownload() {
     if (this.filteredImages.length === 0) {
-      alert('No images to download. Please check your filters.');
+      this.app.showUserFeedback('No images to download. Please check your filters.', 'warning');
       return false;
     }
 
     // Check if JSZip is available
     if (typeof JSZip === 'undefined') {
-      alert(
+      this.app.showUserFeedback(
         'ZIP functionality requires JSZip library. Please ensure it is loaded.'
-      );
+      , 'error');
       return false;
     }
 
@@ -1588,7 +1588,7 @@ class ImageViewer {
     } catch (error) {
       console.error('Error creating ZIP archive:', error);
       this.hideDownloadProgress();
-      alert('Error creating ZIP archive: ' + error.message);
+      this.app.showUserFeedback('Error creating ZIP archive: ' + error.message, 'error');
     }
   }
 
@@ -1714,7 +1714,7 @@ class ImageViewer {
     console.log('📄 Starting PDF report generation...');
 
     if (this.filteredImages.length === 0) {
-      alert('No images to include in PDF report. Please check your filters.');
+      this.app.showUserFeedback('No images to include in PDF report. Please check your filters.', 'warning');
       return;
     }
 
@@ -1724,9 +1724,9 @@ class ImageViewer {
       typeof window.jspdf.jsPDF !== 'function'
     ) {
       console.error('jsPDF library not found');
-      alert(
+      this.app.showUserFeedback(
         'PDF functionality requires jsPDF library. Please refresh the page and try again.'
-      );
+      , 'error');
       return;
     }
 
@@ -1776,7 +1776,7 @@ class ImageViewer {
     } catch (error) {
       console.error('Error generating PDF report:', error);
       this.hideDownloadProgress();
-      alert('Error generating PDF report: ' + error.message);
+      this.app.showUserFeedback('Error generating PDF report: ' + error.message, 'error');
     }
   }
 
@@ -1788,7 +1788,7 @@ class ImageViewer {
     console.log('📝 Starting Word document report generation...');
 
     if (this.filteredImages.length === 0) {
-      alert('No images to include in Word report. Please check your filters.');
+      this.app.showUserFeedback('No images to include in Word report. Please check your filters.', 'warning');
       return;
     }
 
@@ -1806,14 +1806,14 @@ class ImageViewer {
       }
 
       if (window.docxReady === false) {
-        alert(
+        this.app.showUserFeedback(
           'Word functionality is not available because the DOCX library failed to load.\n\n' +
             'This might be due to:\n' +
             '• Network connectivity issues\n' +
             '• Firewall/proxy blocking CDN access\n' +
             '• Browser extensions blocking scripts\n\n' +
             'Please check your internet connection and try refreshing the page.'
-        );
+        , 'error');
         return;
       }
 
@@ -1825,11 +1825,11 @@ class ImageViewer {
     }
 
     if (attempts >= maxAttempts) {
-      alert(
+      this.app.showUserFeedback(
         'Word functionality timed out waiting for the DOCX library to load.\n\n' +
           'Please refresh the page and try again. If the problem persists, ' +
           'check your internet connection and browser console for errors.'
-      );
+      , 'error');
       return;
     }
 
@@ -1842,11 +1842,11 @@ class ImageViewer {
     if (missingComponents.length > 0) {
       console.error('❌ Missing docx components:', missingComponents);
       console.log('Available components:', Object.keys(window.docx));
-      alert(
+      this.app.showUserFeedback(
         `Word functionality is incomplete. Missing components: ${missingComponents.join(
           ', '
         )}`
-      );
+      , 'error');
       return;
     }
 
@@ -1896,7 +1896,7 @@ class ImageViewer {
     } catch (error) {
       console.error('Error generating Word document:', error);
       this.hideDownloadProgress();
-      alert('Error generating Word document: ' + error.message);
+      this.app.showUserFeedback('Error generating Word document: ' + error.message, 'error');
     }
   }
 
@@ -3175,45 +3175,6 @@ class ImageViewer {
   }
 
   /**
-   * Add title page to PDF
-   * @param {jsPDF} pdf - PDF document
-   * @param {string} title - Report title
-   */
-  addPDFTitlePage(pdf, title) {
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-
-    // Title
-    pdf.setFontSize(24);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(title, pageWidth / 2, 60, { align: 'center' });
-
-    // Subtitle
-    pdf.setFontSize(16);
-    pdf.setFont('helvetica', 'normal');
-    const projectName = this.getCommonProjectName();
-    pdf.text(`Project: ${projectName}`, pageWidth / 2, 80, { align: 'center' });
-
-    // Date and stats
-    pdf.setFontSize(12);
-    const date = new Date().toLocaleDateString();
-    pdf.text(`Generated: ${date}`, pageWidth / 2, 100, { align: 'center' });
-    pdf.text(
-      `Total Images: ${this.filteredImages.length}`,
-      pageWidth / 2,
-      115,
-      { align: 'center' }
-    );
-
-    // Generated by
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'italic');
-    pdf.text('Generated by BCFSleuth', pageWidth / 2, pageHeight - 20, {
-      align: 'center',
-    });
-  }
-
-  /**
    * Add detailed image page with full metadata and proper text wrapping
    * @param {jsPDF} pdf - PDF document
    * @param {Object} image - Image data
@@ -3455,98 +3416,5 @@ class ImageViewer {
     });
 
     return stats;
-  }
-
-  /**
-   * Prepare images for PDF generation based on grouping options
-   * @param {Object} options - Grouping options {groupByTopic, separatePages}
-   * @returns {Object} - Prepared image data with grouping information
-   */
-  prepareImagesForPDF(options) {
-    console.log(
-      `🔧 Preparing ${this.filteredImages.length} images for PDF:`,
-      options
-    );
-
-    // Use this.filteredImages as the source
-    const images = this.filteredImages;
-    const { groupByTopic, separatePages } = options;
-
-    let processedImages = [...images];
-    let topicBreaks = []; // Track where each topic starts for page breaks
-
-    if (groupByTopic) {
-      // Group images by topic GUID, maintaining topic order
-      const topicGroups = new Map();
-      const topicOrder = [];
-
-      // First pass: identify unique topics in order
-      images.forEach((image) => {
-        const topicGuid = image.topicGuid;
-        if (!topicGroups.has(topicGuid)) {
-          topicGroups.set(topicGuid, {
-            topicTitle: image.title,
-            topicGuid: topicGuid,
-            images: [],
-          });
-          topicOrder.push(topicGuid);
-        }
-        topicGroups.get(topicGuid).images.push(image);
-      });
-
-      // Second pass: flatten back to array grouped by topic
-      processedImages = [];
-      topicOrder.forEach((topicGuid, topicIndex) => {
-        const group = topicGroups.get(topicGuid);
-
-        // Mark where this topic starts (for page breaks)
-        topicBreaks.push({
-          startIndex: processedImages.length,
-          topicTitle: group.topicTitle,
-          topicGuid: topicGuid,
-          imageCount: group.images.length,
-        });
-
-        processedImages.push(...group.images);
-      });
-
-      console.log(
-        `📋 Grouped ${images.length} images into ${topicOrder.length} topics:`,
-        topicBreaks.map((t) => `${t.topicTitle} (${t.imageCount} images)`)
-      );
-    } else {
-      console.log(`📋 Using original image order (no grouping)`);
-    }
-
-    // Log first few images after processing for debugging
-    if (processedImages.length > 0) {
-      console.log('📋 First 5 images after processing:');
-      processedImages.slice(0, 5).forEach((img, idx) => {
-        console.log(`  ${idx + 1}. ${img.title} (Topic: ${img.topicGuid})`);
-      });
-    }
-
-    return {
-      images: processedImages,
-      groupByTopic: groupByTopic,
-      separatePages: separatePages,
-      topicBreaks: topicBreaks, // Information about where topics start
-      originalCount: images.length,
-    };
-  }
-
-  /**
-   * Cancel PDF dialog
-   */
-  cancelPDFDialog() {
-    const dialog = document.getElementById('pdf-layout-dialog');
-    if (dialog) {
-      dialog.remove();
-    }
-
-    if (window.pdfLayoutResolve) {
-      window.pdfLayoutResolve(null);
-      delete window.pdfLayoutResolve;
-    }
   }
 }

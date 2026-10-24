@@ -1,4 +1,4 @@
-// BCFSleuth Advanced Preview - Phase 3c
+// BCFSleuth Advanced Preview - sortable, filterable topic table with comment and viewpoint expansion
 class AdvancedPreview {
   constructor(bcfApp) {
     this.app = bcfApp; // Reference to main BCFSleuthApp
@@ -895,55 +895,6 @@ class AdvancedPreview {
     return cells.join('');
   }
 
-  formatCellValue(row, columnField, originalField) {
-    let value = row[columnField] || '';
-    // Ensure value is converted to string for string operations
-    const originalValue = value;
-    if (typeof value !== 'string' && value !== null && value !== undefined) {
-      value = String(value);
-    }
-
-    // Special formatting for specific fields
-    switch (originalField) {
-      case 'status':
-        return value
-          ? `<span class="status-badge status-${value
-              .toLowerCase()
-              .replace(/\s+/g, '-')}">${value}</span>`
-          : '';
-
-      case 'type':
-      case 'topicType':
-        return value
-          ? `<span class="priority-badge priority-${value.toLowerCase()}">${value}</span>`
-          : '';
-
-      case 'priority':
-        return value
-          ? `<span class="priority-badge priority-${value.toLowerCase()}">${value}</span>`
-          : '';
-
-      case 'dueDate':
-        if (!value) return '';
-        const isOverdue = this.isOverdue(value);
-        return isOverdue
-          ? `<span style="color: var(--danger)">${value} (Overdue)</span>`
-          : value;
-
-      case 'creationDate':
-      case 'modifiedDate':
-      case 'commentDate':
-        return value;
-
-      case 'commentsCount':
-      case 'viewpointsCount':
-        return row.rowType === 'topic' ? value || 0 : '';
-
-      default:
-        return this.truncateText(value, 30);
-    }
-  }
-
   updatePaginationInfo() {
     const startIndex =
       this.filteredData.length > 0
@@ -1431,22 +1382,6 @@ class AdvancedPreview {
     } else {
       return `<td class="${cssClass}">${value}</td>`;
     }
-  }
-
-  // Enhanced truncation detection
-  needsTooltipForText(originalText, displayText, maxLength = 30) {
-    if (!originalText || !displayText) return false;
-
-    // Check if original text is longer than max length
-    if (originalText.length > maxLength) return true;
-
-    // Check if display text has ellipsis (indicates truncation)
-    if (displayText.includes('...')) return true;
-
-    // Check if display text is significantly shorter than original
-    if (originalText.length - displayText.length > 5) return true;
-
-    return false;
   }
 
   // Updated setupTooltips method

@@ -412,11 +412,11 @@ BCFSleuth operates with complete client-side processing:
 - **Coordinate Processing**: Minimal performance impact for coordinate extraction
 
 ### Dependencies
-- Chart.js 4.4.0 (Analytics)
+- Chart.js 3.9.1 (Analytics)
 - JSZip 3.10.1 (File processing)
 - SheetJS 0.18.5 (Excel generation)
 - jsPDF 3.0.1 (PDF creation)
-- docx 7.8.2 (Word documents)
+- docx 7.8.2, with 9.5.1 as a fallback (Word documents)
 
 ### BCF Coordinate Support
 - **BCF 2.0**: Full coordinate extraction and display

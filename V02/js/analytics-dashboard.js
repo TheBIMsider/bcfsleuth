@@ -1,4 +1,4 @@
-// BCFSleuth Analytics Dashboard - Version 2.0 Phase 2
+// BCFSleuth Analytics Dashboard - Chart.js charts, custom analytics, and chart/report export
 class AnalyticsDashboard {
   constructor(bcfApp) {
     this.app = bcfApp; // Reference to main BCFSleuthApp
@@ -882,29 +882,6 @@ class AnalyticsDashboard {
   }
 
   /**
-   * Get chart colors using ColorManager
-   * @param {Array} labels - Array of labels needing colors
-   * @param {string} colorType - 'status', 'priority', or 'generic'
-   * @returns {Array} - Array of hex colors
-   */
-  getChartColors(labels, colorType = 'generic') {
-    console.log(
-      `🎨 Getting ${labels.length} colors for ${colorType} chart via ColorManager`
-    );
-
-    switch (colorType) {
-      case 'status':
-        const statusColors = ColorManager.getStatusColors(labels);
-        return labels.map((label) => statusColors[label]);
-      case 'priority':
-        const priorityColors = ColorManager.getPriorityColors(labels);
-        return labels.map((label) => priorityColors[label]);
-      default:
-        return ColorManager.generateChartPalette(labels.length);
-    }
-  }
-
-  /**
    * Darken a color for borders - ENHANCED with better color calculation
    * @param {string} color - Hex color
    * @returns {string} - Darkened hex color
@@ -990,65 +967,6 @@ class AnalyticsDashboard {
   }
 
   /**
-   * Export all charts as images
-   */
-  async exportCharts() {
-    console.log('📊 Exporting analytics charts...');
-
-    try {
-      const charts = Object.entries(this.charts);
-      if (charts.length === 0) {
-        alert('No charts available to export');
-        return;
-      }
-
-      // Create a zip file with all chart images
-      if (typeof JSZip === 'undefined') {
-        // Fallback: download charts individually
-        this.exportChartsIndividually();
-        return;
-      }
-
-      const zip = new JSZip();
-      const timestamp = new Date().toISOString().split('T')[0];
-
-      // Export each chart as PNG
-      for (const [chartKey, chart] of charts) {
-        if (chart && chart.canvas) {
-          try {
-            const imageData = chart.canvas.toDataURL('image/png');
-            const base64Data = imageData.split(',')[1];
-
-            const filename = `${chartKey}-chart-${timestamp}.png`;
-            zip.file(filename, base64Data, { base64: true });
-          } catch (error) {
-            console.warn(`Failed to export ${chartKey} chart:`, error);
-          }
-        }
-      }
-
-      // Generate and download zip
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(zipBlob);
-
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `bcf-analytics-charts-${timestamp}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      URL.revokeObjectURL(url);
-
-      console.log('✅ Charts exported successfully');
-      alert(`Successfully exported ${charts.length} charts as ZIP file!`);
-    } catch (error) {
-      console.error('❌ Error exporting charts:', error);
-      alert('Error exporting charts: ' + error.message);
-    }
-  }
-
-  /**
    * Export charts individually (fallback method)
    */
   exportChartsIndividually() {
@@ -1072,7 +990,7 @@ class AnalyticsDashboard {
       }
     });
 
-    alert(`Downloading ${charts.length} chart images individually...`);
+    this.app.showUserFeedback(`Downloading ${charts.length} chart images individually...`, 'info');
   }
 
   /**
@@ -1084,7 +1002,7 @@ class AnalyticsDashboard {
     try {
       const charts = Object.entries(this.charts);
       if (charts.length === 0) {
-        alert('No charts available to export');
+        this.app.showUserFeedback('No charts available to export', 'warning');
         return;
       }
 
@@ -1093,9 +1011,9 @@ class AnalyticsDashboard {
         typeof window.jspdf === 'undefined' ||
         typeof window.jspdf.jsPDF !== 'function'
       ) {
-        alert(
+        this.app.showUserFeedback(
           'PDF functionality requires jsPDF library. Please refresh the page and try again.'
-        );
+        , 'error');
         return;
       }
 
@@ -1218,10 +1136,10 @@ class AnalyticsDashboard {
       pdf.save(filename);
 
       console.log('✅ Charts PDF exported successfully');
-      alert(`Charts PDF exported successfully!\nFilename: ${filename}`);
+      this.app.showUserFeedback(`Charts PDF exported successfully!\nFilename: ${filename}`, 'success');
     } catch (error) {
       console.error('❌ Error exporting charts PDF:', error);
-      alert('Error exporting charts PDF: ' + error.message);
+      this.app.showUserFeedback('Error exporting charts PDF: ' + error.message, 'error');
     }
   }
 
@@ -1380,7 +1298,7 @@ class AnalyticsDashboard {
       });
 
     if (selectedFields.length === 0) {
-      alert('Please select at least one field for analysis');
+      this.app.showUserFeedback('Please select at least one field for analysis', 'warning');
       return;
     }
 
@@ -1687,7 +1605,7 @@ class AnalyticsDashboard {
     // Check if we have report content to export
     const reportContent = document.getElementById('custom-report-results');
     if (!reportContent || !reportContent.innerHTML.trim()) {
-      alert('No report to export. Please generate a report first.');
+      this.app.showUserFeedback('No report to export. Please generate a report first.', 'warning');
       return;
     }
 
@@ -1713,7 +1631,7 @@ class AnalyticsDashboard {
       }
     } catch (error) {
       console.error('❌ Error exporting custom report:', error);
-      alert('Error exporting report: ' + error.message);
+      this.app.showUserFeedback('Error exporting report: ' + error.message, 'error');
     }
   }
 
@@ -1782,7 +1700,7 @@ class AnalyticsDashboard {
     this.downloadTextFile(fileContent, filename);
 
     console.log('✅ Text report exported:', filename);
-    alert(`Text report exported successfully!\nFilename: ${filename}`);
+    this.app.showUserFeedback(`Text report exported successfully!\nFilename: ${filename}`, 'success');
   }
 
   /**
@@ -1810,9 +1728,9 @@ class AnalyticsDashboard {
           console.log('✅ jsPDF became available after delay');
           this.exportCustomReportAsPDF(); // Retry
         } else {
-          alert(
+          this.app.showUserFeedback(
             'PDF functionality requires jsPDF library. Please refresh the page and try again.'
-          );
+          , 'error');
         }
       }, 1000);
       return;
@@ -1843,10 +1761,10 @@ class AnalyticsDashboard {
       pdf.save(filename);
 
       console.log('✅ PDF report exported:', filename);
-      alert(`PDF report exported successfully!\nFilename: ${filename}`);
+      this.app.showUserFeedback(`PDF report exported successfully!\nFilename: ${filename}`, 'success');
     } catch (error) {
       console.error('❌ Error creating PDF report:', error);
-      alert('Error creating PDF report: ' + error.message);
+      this.app.showUserFeedback('Error creating PDF report: ' + error.message, 'error');
     }
   }
 
@@ -1861,7 +1779,7 @@ class AnalyticsDashboard {
     // Check if we have report content to export
     const reportContent = document.getElementById('custom-report-results');
     if (!reportContent || !reportContent.innerHTML.trim()) {
-      alert('No report to export. Please generate a report first.');
+      this.app.showUserFeedback('No report to export. Please generate a report first.', 'warning');
       return;
     }
 
@@ -1879,14 +1797,14 @@ class AnalyticsDashboard {
       }
 
       if (window.docxReady === false) {
-        alert(
+        this.app.showUserFeedback(
           'Word functionality is not available because the DOCX library failed to load.\n\n' +
             'This might be due to:\n' +
             '• Network connectivity issues\n' +
             '• Firewall/proxy blocking CDN access\n' +
             '• Browser extensions blocking scripts\n\n' +
             'Please check your internet connection and try refreshing the page.'
-        );
+        , 'error');
         return;
       }
 
@@ -1898,11 +1816,11 @@ class AnalyticsDashboard {
     }
 
     if (attempts >= maxAttempts) {
-      alert(
+      this.app.showUserFeedback(
         'Word functionality timed out waiting for the DOCX library to load.\n\n' +
           'Please refresh the page and try again. If the problem persists, ' +
           'check your internet connection and browser console for errors.'
-      );
+      , 'error');
       return;
     }
 
@@ -1915,11 +1833,11 @@ class AnalyticsDashboard {
     if (missingComponents.length > 0) {
       console.error('❌ Missing docx components:', missingComponents);
       console.log('Available components:', Object.keys(window.docx));
-      alert(
+      this.app.showUserFeedback(
         `Word functionality is incomplete. Missing components: ${missingComponents.join(
           ', '
         )}`
-      );
+      , 'error');
       return;
     }
 
@@ -1942,10 +1860,10 @@ class AnalyticsDashboard {
       await this.downloadWordDocument(doc, filename);
 
       console.log('✅ Analytics Word document exported:', filename);
-      alert(`Word document exported successfully!\nFilename: ${filename}`);
+      this.app.showUserFeedback(`Word document exported successfully!\nFilename: ${filename}`, 'success');
     } catch (error) {
       console.error('❌ Error creating analytics Word document:', error);
-      alert('Error creating Word document: ' + error.message);
+      this.app.showUserFeedback('Error creating Word document: ' + error.message, 'error');
     }
   }
 
@@ -3189,7 +3107,7 @@ class AnalyticsDashboard {
       this.showExportFeedback(`Chart exported: ${filename}`);
     } catch (error) {
       console.error('Error exporting chart:', error);
-      alert('Error exporting chart: ' + error.message);
+      this.app.showUserFeedback('Error exporting chart: ' + error.message, 'error');
     }
   }
 
@@ -3216,7 +3134,7 @@ class AnalyticsDashboard {
       `Generated: ${new Date().toLocaleString()}`,
     ].join('\n');
 
-    alert(info);
+    this.app.showUserFeedback(info, 'info', 0);
   }
 
   /**
