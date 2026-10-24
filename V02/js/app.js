@@ -22,22 +22,14 @@ class BCFSleuthApp {
 
     // Initialize debug mode control
     window.BCF_DEBUG_MODE = localStorage.getItem('bcf_debug') === 'true';
-    console.log(
-      '🔧 BCFSleuth initialized. Debug mode:',
-      window.BCF_DEBUG_MODE ? 'ON' : 'OFF'
-    );
   }
 
   setupEventListeners() {
-    console.log('🔧 Setting up event listeners...');
-
     // File input and drop zone - with safety checks
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
 
     if (dropZone && fileInput) {
-      console.log('✅ Drop zone and file input found');
-
       // Drag and drop events
       dropZone.addEventListener('dragover', this.handleDragOver.bind(this));
       dropZone.addEventListener('dragleave', this.handleDragLeave.bind(this));
@@ -54,7 +46,6 @@ class BCFSleuthApp {
     const processBtn = document.getElementById('process-btn');
     if (processBtn) {
       processBtn.addEventListener('click', this.processFiles.bind(this));
-      console.log('✅ Process button listener added');
     } else {
       console.warn('⚠️ Process button not found');
     }
@@ -65,14 +56,12 @@ class BCFSleuthApp {
 
     if (exportCsvBtn) {
       exportCsvBtn.addEventListener('click', this.exportCSV.bind(this));
-      console.log('✅ Export CSV button listener added');
     } else {
       console.warn('⚠️ Export CSV button not found');
     }
 
     if (exportExcelBtn) {
       exportExcelBtn.addEventListener('click', this.exportExcel.bind(this));
-      console.log('✅ Export Excel button listener added');
     } else {
       console.warn('⚠️ Export Excel button not found');
     }
@@ -84,12 +73,10 @@ class BCFSleuthApp {
 
     if (selectAllBtn) {
       selectAllBtn.addEventListener('click', this.selectAllFields.bind(this));
-      console.log('✅ Select all fields button listener added');
     }
 
     if (clearAllBtn) {
       clearAllBtn.addEventListener('click', this.clearAllFields.bind(this));
-      console.log('✅ Clear all fields button listener added');
     }
 
     if (selectEssentialBtn) {
@@ -97,14 +84,12 @@ class BCFSleuthApp {
         'click',
         this.selectEssentialFields.bind(this)
       );
-      console.log('✅ Select essential fields button listener added');
     }
 
     // Field checkboxes - with safety check
     const fieldCheckboxes = document.querySelectorAll(
       '.field-item input[type="checkbox"]'
     );
-    console.log(`📋 Found ${fieldCheckboxes.length} field checkboxes`);
 
     fieldCheckboxes.forEach((checkbox) => {
       if (checkbox) {
@@ -117,22 +102,16 @@ class BCFSleuthApp {
 
     // Tab switching event listeners - enhanced with extensive safety checks
     const tabButtons = document.querySelectorAll('.preview-tabs .tab-button');
-    console.log(`🔍 Found ${tabButtons.length} tab buttons`);
 
     if (tabButtons.length === 0) {
       // Try alternative selector
       const altTabButtons = document.querySelectorAll('.tab-button');
-      console.log(
-        `🔍 Alternative search found ${altTabButtons.length} tab buttons`
-      );
 
-      altTabButtons.forEach((button, index) => {
+      altTabButtons.forEach((button) => {
         if (button) {
-          console.log(`📋 Tab button ${index}:`, button.dataset.tab);
           button.addEventListener('click', (e) => {
             e.preventDefault();
             const tabName = e.target.dataset.tab;
-            console.log('🔄 Tab clicked:', tabName);
             if (tabName && this.switchToTab) {
               this.switchToTab(tabName);
             }
@@ -140,13 +119,11 @@ class BCFSleuthApp {
         }
       });
     } else {
-      tabButtons.forEach((button, index) => {
+      tabButtons.forEach((button) => {
         if (button) {
-          console.log(`📋 Tab button ${index}:`, button.dataset.tab);
           button.addEventListener('click', (e) => {
             e.preventDefault();
             const tabName = e.target.dataset.tab;
-            console.log('🔄 Tab clicked:', tabName);
             if (tabName && this.switchToTab) {
               this.switchToTab(tabName);
             }
@@ -154,8 +131,6 @@ class BCFSleuthApp {
         }
       });
     }
-
-    console.log('✅ Event listeners setup complete');
   }
 
   initializeFieldSelection() {
@@ -175,22 +150,6 @@ class BCFSleuthApp {
 
     this.updateFieldCount();
 
-    // Enhanced debug logging for coordinate fields
-    const coordinateFieldsSelected = Array.from(this.selectedFields).filter(
-      (field) =>
-        field.includes('Camera') ||
-        field.includes('FieldOfView') ||
-        field.includes('ViewToWorldScale') ||
-        field.includes('cameraPos') ||
-        field.includes('cameraTarget')
-    );
-
-    console.log('Selected fields updated:', {
-      totalSelected: this.selectedFields.size,
-      coordinateFields: coordinateFieldsSelected.length,
-      coordinateFieldList: coordinateFieldsSelected,
-      allSelected: Array.from(this.selectedFields),
-    });
     if (this.advancedPreview && this.parsedData.length > 0) {
       this.advancedPreview.buildAdvancedTableHeaders();
       if (this.advancedPreview.currentTab === 'advanced') {
@@ -221,8 +180,6 @@ class BCFSleuthApp {
     if (excelButton) {
       excelButton.disabled = !hasFields || this.parsedData.length === 0;
     }
-
-    console.log(`Field count updated: ${selected}/${total} selected`); // Debug log
   }
 
   selectAllFields() {
@@ -242,7 +199,6 @@ class BCFSleuthApp {
       });
 
     this.updateFieldSelection();
-    console.log('📋 Selected all fields and updated section checkboxes');
   }
 
   clearAllFields() {
@@ -262,7 +218,6 @@ class BCFSleuthApp {
       });
 
     this.updateFieldSelection();
-    console.log('📋 Cleared all fields and updated section checkboxes');
   }
   selectEssentialFields() {
     // Clear all first
@@ -309,8 +264,6 @@ class BCFSleuthApp {
           );
         });
     }, 100);
-
-    console.log('📋 Essential fields selected and section states updated');
   }
 
   updateFieldSelectionWithCustomData() {
@@ -334,7 +287,7 @@ class BCFSleuthApp {
     this.customFieldData = customFieldData;
     this.discoveredFields = discoveredFields;
 
-    console.log(
+    this.debugLog(
       `Dynamic field detection complete: ${discoveredFields.total} fields available`
     );
   }
@@ -432,8 +385,6 @@ class BCFSleuthApp {
     const bcfVersionsFound = new Set();
     let hasBCF30Content = false;
 
-    console.log('🔍 Starting enhanced field discovery...');
-
     // Scan all BCF data to discover what fields actually contain data
     this.parsedData.forEach((bcfData) => {
       // Track BCF format for version-aware field discovery
@@ -441,18 +392,19 @@ class BCFSleuthApp {
         bcfData.bcfFormat || bcfData.version?.substring(0, 3) || '2.1';
       bcfVersionsFound.add(bcfFormat);
 
-      console.log(`📋 Analyzing ${bcfFormat} file: ${bcfData.filename}`);
+      this.debugLog(`📋 Analyzing ${bcfFormat} file: ${bcfData.filename}`);
 
       // Always add topicIndex for BCF 2.x files
       if (bcfFormat === '2.0' || bcfFormat === '2.1') {
         discoveredFields.topic.add('topicIndex');
-        console.log(`📋 Added topicIndex field for ${bcfFormat} file`);
       }
 
       // Check if this file has BCF 3.0 content
       if (bcfFormat === '3.0') {
         hasBCF30Content = true;
-        console.log('🆔 BCF 3.0 content detected - will enable BCF 3.0 fields');
+        this.debugLog(
+          '🆔 BCF 3.0 content detected - will enable BCF 3.0 fields'
+        );
       }
 
       bcfData.topics.forEach((topic) => {
@@ -469,14 +421,6 @@ class BCFSleuthApp {
         // (Users might have other BCF files with labels, or want to include empty label columns)
         discoveredFields.topic.add('labels');
 
-        // Additional check: if labels actually contain data, log it for debugging
-        if (topic.labels && topic.labels.length > 0) {
-          console.log(
-            `📋 Topic "${topic.title}" has ${topic.labels.length} labels:`,
-            topic.labels
-          );
-        }
-
         if (topic.assignedTo) discoveredFields.topic.add('assignedTo');
         if (topic.creationDate) discoveredFields.topic.add('creationDate');
         if (topic.creationAuthor) discoveredFields.topic.add('creationAuthor');
@@ -487,50 +431,28 @@ class BCFSleuthApp {
         // BCF 3.0: ServerAssignedId detection (inside topic loop)
         if (bcfFormat === '3.0' && topic.serverAssignedId) {
           discoveredFields.bcf30.add('serverAssignedId');
-          console.log(
-            '✅ Found ServerAssignedId field:',
-            topic.serverAssignedId
-          );
         }
 
         // BCF 3.0 specific field detection (only when BCF 3.0 content is present)
         if (bcfFormat === '3.0' && hasBCF30Content) {
-          console.log('🔍 Checking BCF 3.0 fields for topic:', topic.title);
-
           // ServerAssignedId detection
           if (topic.serverAssignedId) {
             discoveredFields.bcf30.add('serverAssignedId');
-            console.log('✅ Found ServerAssignedId field');
           }
 
           // Multiple ReferenceLinks detection
           if (topic.referenceLinks && topic.referenceLinks.length > 0) {
             discoveredFields.bcf30.add('referenceLinks');
-            console.log(
-              '✅ Found ReferenceLinks field:',
-              topic.referenceLinks.length,
-              'links'
-            );
           }
 
           // DocumentReferences detection
           if (topic.documentReferences && topic.documentReferences.length > 0) {
             discoveredFields.bcf30.add('documentReferences');
-            console.log(
-              '✅ Found DocumentReferences field:',
-              topic.documentReferences.length,
-              'refs'
-            );
           }
 
           // Header Files detection
           if (topic.headerFiles && topic.headerFiles.length > 0) {
             discoveredFields.bcf30.add('headerFiles');
-            console.log(
-              '✅ Found HeaderFiles field:',
-              topic.headerFiles.length,
-              'files'
-            );
           }
         }
 
@@ -573,15 +495,6 @@ class BCFSleuthApp {
             discoveredFields.metadata.add('cameraTargetX');
             discoveredFields.metadata.add('cameraTargetY');
             discoveredFields.metadata.add('cameraTargetZ');
-            console.log('✅ Found viewpoint coordinates in BCF data:', {
-              topicTitle: topic.title,
-              viewpointCount: topic.viewpoints.length,
-              coordinateViewpoints: topic.viewpoints.filter(
-                (vp) =>
-                  (vp.cameraPosition && vp.cameraPosition.x !== null) ||
-                  (vp.cameraTarget && vp.cameraTarget.x !== null)
-              ).length,
-            });
           }
 
           // BCF 3.0: Check for viewpoint index (if BCF 3.0 content present)
@@ -591,7 +504,6 @@ class BCFSleuthApp {
             );
             if (hasViewpointIndex) {
               discoveredFields.bcf30.add('viewpointIndex');
-              console.log('✅ Found ViewpointIndex field');
             }
           }
         }
@@ -633,7 +545,7 @@ class BCFSleuthApp {
       total: totalFields,
     };
 
-    console.log('✅ Enhanced field discovery complete:', {
+    this.debugLog('✅ Enhanced field discovery complete:', {
       bcfVersions: result.bcfVersionsFound,
       bcf30FieldsFound: result.bcf30.length,
       totalFields: result.total,
@@ -706,7 +618,7 @@ class BCFSleuthApp {
       customFieldRegistry.topicCustomFields.size +
       customFieldRegistry.commentCustomFields.size;
 
-    console.log(
+    this.debugLog(
       `Discovered ${customFieldRegistry.totalCustomFields} custom fields:`,
       {
         topicFields: Array.from(customFieldRegistry.topicCustomFields.keys()),
@@ -847,8 +759,6 @@ class BCFSleuthApp {
 
     // Build BCF 3.0 Fields category (ONLY if BCF 3.0 content is actually present)
     if (discoveredFields.hasBCF30Content && discoveredFields.bcf30.length > 0) {
-      console.log('🆔 Building BCF 3.0 fields category...');
-
       const bcf30Category = this.buildFieldCategory(
         'BCF 3.0 Fields',
         discoveredFields.bcf30,
@@ -862,25 +772,12 @@ class BCFSleuthApp {
         ]
       );
       fieldCategories.appendChild(bcf30Category);
-      console.log(
-        '✅ Added BCF 3.0 fields category with',
-        discoveredFields.bcf30.length,
-        'fields'
-      );
 
       // Add visual indicator that BCF 3.0 features are active
       const bcf30Header = bcf30Category.querySelector('h6');
       if (bcf30Header) {
         bcf30Header.innerHTML = `BCF 3.0 Fields <span style="color: var(--primary); font-weight: bold;">(${discoveredFields.bcf30.length} enhanced fields)</span>`;
       }
-    } else if (discoveredFields.bcfVersionsFound.includes('3.0')) {
-      console.log(
-        '🔍 BCF 3.0 file detected but no BCF 3.0 fields found in topics'
-      );
-    } else {
-      console.log(
-        '📋 No BCF 3.0 content detected - BCF 3.0 fields category not shown'
-      );
     }
 
     // Build Viewpoint Coordinates section (new section at bottom)
@@ -907,12 +804,9 @@ class BCFSleuthApp {
       ].includes(field)
     );
 
-    console.log('🎯 Coordinate fields found:', coordinateFields);
-    console.log('🎯 All metadata fields:', discoveredFields.metadata);
+    this.debugLog('🎯 Coordinate fields found:', coordinateFields);
 
     if (coordinateFields.length > 0) {
-      console.log('🎯 Building Viewpoint Coordinates section...');
-
       const coordinatesCategory = this.buildFieldCategory(
         'Viewpoint Coordinates',
         coordinateFields,
@@ -947,13 +841,6 @@ class BCFSleuthApp {
         });
 
       fieldCategories.appendChild(coordinatesCategory);
-      console.log(
-        '✅ Added Viewpoint Coordinates section with',
-        coordinateFields.length,
-        'fields'
-      );
-    } else {
-      console.log('❌ No coordinate fields detected in metadata');
     }
 
     // Re-attach event listeners to new checkboxes
@@ -1080,12 +967,6 @@ class BCFSleuthApp {
         'input[type="checkbox"]'
       );
 
-      console.log(
-        `📋 Section "${categoryName}" ${
-          isChecked ? 'checked' : 'unchecked'
-        } - updating ${categoryCheckboxes.length} fields`
-      );
-
       // Update all checkboxes in this category
       categoryCheckboxes.forEach((checkbox) => {
         checkbox.checked = isChecked;
@@ -1141,10 +1022,6 @@ class BCFSleuthApp {
       sectionCheckbox.checked = false;
       sectionCheckbox.indeterminate = true;
     }
-
-    console.log(
-      `📋 Section checkbox state updated: ${checkedCount}/${totalCount} checked, indeterminate: ${sectionCheckbox.indeterminate}`
-    );
   }
 
   getCustomIndicator(fieldId, customData) {
@@ -1219,11 +1096,6 @@ class BCFSleuthApp {
 
     // Trigger initial field selection update to count the pre-checked essential fields
     this.updateFieldSelection();
-    console.log(
-      'Field selection listeners attached to',
-      document.querySelectorAll('.field-item input[type="checkbox"]').length,
-      'checkboxes'
-    );
   }
 
   getFieldMapping() {
@@ -1502,13 +1374,15 @@ class BCFSleuthApp {
    * This helps debug any remaining issues
    */
   validateCoordinateFieldImplementation() {
-    console.log('🔍 FINAL VALIDATION: Coordinate Field Implementation');
+    if (!window.BCF_DEBUG_MODE) return;
+
+    this.debugLog('🔍 FINAL VALIDATION: Coordinate Field Implementation');
 
     // Check UI field discovery
     const coordinateCheckboxes = document.querySelectorAll(
       'input[id*="Camera"], input[id*="FieldOfView"], input[id*="ViewToWorldScale"], input[id*="cameraPos"], input[id*="cameraTarget"]'
     );
-    console.log(
+    this.debugLog(
       `✅ Found ${coordinateCheckboxes.length} coordinate checkboxes in UI`
     );
 
@@ -1531,7 +1405,7 @@ class BCFSleuthApp {
       });
     });
 
-    console.log('✅ Coordinate data summary:', {
+    this.debugLog('✅ Coordinate data summary:', {
       topicsWithCoordinates: totalTopicsWithCoordinates,
       viewpointsWithCoordinates: totalViewpointsWithCoordinates,
       coordinateFieldsInUI: coordinateCheckboxes.length,
@@ -1550,7 +1424,7 @@ class BCFSleuthApp {
         key.includes('cameraTarget')
     );
 
-    console.log('✅ Field mapping validation:', {
+    this.debugLog('✅ Field mapping validation:', {
       coordinateFieldMappings: coordinateFieldMappings.length,
       mappingComplete: coordinateFieldMappings.length >= 18,
     });
@@ -1559,7 +1433,7 @@ class BCFSleuthApp {
       coordinateCheckboxes.length >= 18 &&
       coordinateFieldMappings.length >= 18
     ) {
-      console.log('🎉 COORDINATE FIELD IMPLEMENTATION COMPLETE!');
+      this.debugLog('✅ Coordinate field implementation validated');
     } else {
       console.warn('⚠️ Coordinate field implementation may be incomplete');
     }
@@ -1570,8 +1444,6 @@ class BCFSleuthApp {
    * Called after results are displayed to ensure buttons exist
    */
   attachExportListeners() {
-    console.log('🔧 Attaching export listeners...');
-
     // Find the export controls container
     const exportControls = document.getElementById('main-export-controls');
     if (!exportControls) {
@@ -1584,8 +1456,6 @@ class BCFSleuthApp {
     let exportExcelBtn = document.getElementById('export-excel');
 
     if (!exportCsvBtn || !exportExcelBtn) {
-      console.log('🔧 Export buttons not found, creating them...');
-
       // Create export buttons container if it doesn't exist
       let exportButtonsContainer =
         exportControls.querySelector('.export-buttons');
@@ -1642,14 +1512,12 @@ class BCFSleuthApp {
     // Now attach event listeners
     if (exportCsvBtn) {
       exportCsvBtn.addEventListener('click', this.exportCSV.bind(this));
-      console.log('✅ Export CSV button listener attached');
     } else {
       console.error('❌ Export CSV button still not found');
     }
 
     if (exportExcelBtn) {
       exportExcelBtn.addEventListener('click', this.exportExcel.bind(this));
-      console.log('✅ Export Excel button listener attached');
     } else {
       console.error('❌ Export Excel button still not found');
     }
@@ -2097,8 +1965,6 @@ class BCFSleuthApp {
     } else if (tabName === 'configuration' && this.configManager) {
       this.configManager.refreshConfigurationDisplay();
     }
-
-    console.log(`Switched to ${tabName} tab`);
   }
 
   /**
@@ -2106,8 +1972,6 @@ class BCFSleuthApp {
    * This will be enhanced in the next step to show actual BCF images
    */
   async initializeImageViewer() {
-    console.log('🖼️ Initializing Image Viewer...');
-
     if (this.parsedData && this.parsedData.length > 0 && this.imageViewer) {
       // BCF files are loaded - trigger lazy image extraction
       this.imageViewer.initialize();
@@ -2135,8 +1999,6 @@ class BCFSleuthApp {
    * This handles real-time chart generation when the tab is accessed
    */
   async initializeAnalyticsDashboard() {
-    console.log('📊 Initializing Analytics Dashboard...');
-
     if (
       this.parsedData &&
       this.parsedData.length > 0 &&
