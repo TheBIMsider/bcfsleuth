@@ -28,7 +28,6 @@ class AdvancedPreview {
 
     this.setupEventListeners();
     this.isInitialized = true;
-    console.log('Advanced Preview initialized');
   }
 
   setupEventListeners() {
@@ -109,7 +108,7 @@ class AdvancedPreview {
     this.populateFilterOptions();
     this.applyFilters();
     this.updateSummaryStats();
-    console.log(
+    this.app.debugLog(
       `Advanced Preview updated with ${this.allTableData.length} rows`
     );
   }
@@ -163,24 +162,6 @@ class AdvancedPreview {
 
           _originalTopic: topic,
         };
-
-        // 🎯 Debug: Log coordinate data inclusion
-        if (coordinateData.cameraType || coordinateData.CameraViewPointX) {
-          console.log('📍 Added BCF camera data to topic row:', {
-            topicTitle: topic.title,
-            cameraType: coordinateData.cameraType,
-            hasCoordinates: !!coordinateData.CameraViewPointX,
-          });
-        }
-
-        // 🎯 Debug: Log coordinate data inclusion
-        if (primaryViewpoint) {
-          console.log('📍 Added BCF camera data to topic row:', {
-            topicTitle: topic.title,
-            cameraType: primaryViewpoint.cameraType,
-            hasCoordinates: !!primaryViewpoint.CameraViewPoint?.X,
-          });
-        }
 
         tableData.push(topicRow);
 
@@ -286,13 +267,6 @@ class AdvancedPreview {
             };
 
             tableData.push(viewpointRow);
-
-            console.log('📍 Added viewpoint row:', {
-              topicTitle: topic.title,
-              viewpointGuid: viewpoint.guid,
-              cameraType: viewpointCoordinates.cameraType,
-              hasCoordinates: !!viewpointCoordinates.CameraViewPointX,
-            });
           });
         }
 
@@ -1180,17 +1154,6 @@ class AdvancedPreview {
     let needsTooltip = false;
     let fullText = '';
 
-    // DEBUG: Log comment fields to help troubleshoot
-    if (originalField.includes('comment') && row.rowType === 'comment') {
-      console.log(`Comment field debug:`, {
-        originalField: originalField,
-        columnField: columnField,
-        rowType: row.rowType,
-        value: value,
-        rawRowData: row,
-      });
-    }
-
     // Format based on field type
     switch (originalField) {
       case 'status':
@@ -1401,15 +1364,12 @@ class AdvancedPreview {
     const expandableCells = document.querySelectorAll(
       '.advanced-table .expandable[data-full-text]'
     );
-    console.log('Setting up tooltips for', expandableCells.length, 'cells'); // Debug
 
-    expandableCells.forEach((cell, index) => {
-      console.log(`Cell ${index}:`, cell.getAttribute('data-full-text')); // Debug
+    expandableCells.forEach((cell) => {
 
       // Mouse enter - show tooltip
       cell.addEventListener('mouseenter', (e) => {
         const fullText = e.target.getAttribute('data-full-text');
-        console.log('Mouse enter, fullText:', fullText); // Debug
 
         if (fullText && fullText.trim()) {
           tooltip.textContent = fullText;
@@ -1420,14 +1380,12 @@ class AdvancedPreview {
           tooltip.style.left = rect.left + 'px';
           tooltip.style.top = rect.bottom + 8 + 'px';
 
-          console.log('Tooltip shown at:', rect.left, rect.bottom + 8); // Debug
         }
       });
 
       // Mouse leave - hide tooltip
       cell.addEventListener('mouseleave', () => {
         tooltip.classList.remove('show');
-        console.log('Tooltip hidden'); // Debug
       });
     });
   }
@@ -1518,7 +1476,6 @@ class AdvancedPreview {
    * Get coordinate data using the correct viewpoint with extracted coordinates
    */
   getTopicCoordinateData(topic, bcfFile) {
-    console.log('🔍 getTopicCoordinateData called for topic:', topic.title);
 
     // Initialize coordinate data object
     const coordinateData = {
@@ -1543,7 +1500,6 @@ class AdvancedPreview {
     };
 
     if (!topic.viewpoints || topic.viewpoints.length === 0) {
-      console.log('📍 No viewpoints found');
       return coordinateData;
     }
 
@@ -1557,18 +1513,7 @@ class AdvancedPreview {
         vp.FieldOfView
     );
 
-    console.log('🔍 Found viewpoints with coordinates:', {
-      totalViewpoints: topic.viewpoints.length,
-      withCoordinates: viewpointsWithCoordinates.length,
-      coordinateViewpoints: viewpointsWithCoordinates.map((vp) => ({
-        guid: vp.guid,
-        file: vp.viewpointFile,
-        type: vp.cameraType,
-      })),
-    });
-
     if (viewpointsWithCoordinates.length === 0) {
-      console.log('📍 No viewpoints with coordinate data found');
       return coordinateData;
     }
 
@@ -1586,13 +1531,6 @@ class AdvancedPreview {
     if (!primaryViewpoint) {
       primaryViewpoint = viewpointsWithCoordinates[0];
     }
-
-    console.log('📍 Selected primary viewpoint:', {
-      guid: primaryViewpoint.guid,
-      file: primaryViewpoint.viewpointFile,
-      type: primaryViewpoint.cameraType,
-      hasCoordinates: !!primaryViewpoint.CameraViewPoint,
-    });
 
     // Extract coordinate data
     coordinateData.cameraType = primaryViewpoint.cameraType || '';
@@ -1665,18 +1603,6 @@ class AdvancedPreview {
         primaryViewpoint.cameraTarget.z
       );
     }
-
-    console.log('📍 Successfully extracted coordinate data:', {
-      cameraType: coordinateData.cameraType,
-      CameraViewPointX: coordinateData.CameraViewPointX,
-      CameraViewPointY: coordinateData.CameraViewPointY,
-      CameraViewPointZ: coordinateData.CameraViewPointZ,
-      ViewToWorldScale: coordinateData.ViewToWorldScale,
-      cameraPosX: coordinateData.cameraPosX,
-      hasCoordinates: !!(
-        coordinateData.CameraViewPointX || coordinateData.cameraPosX
-      ),
-    });
 
     return coordinateData;
   }

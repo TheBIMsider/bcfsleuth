@@ -16,8 +16,6 @@ class AnalyticsDashboard {
       console.error(
         '❌ ColorManager not available - color consistency may be affected'
       );
-    } else {
-      console.log('✅ ColorManager ready for analytics dashboard');
     }
 
     // Chart.js default configuration for all charts
@@ -62,12 +60,9 @@ class AnalyticsDashboard {
   initialize() {
     if (this.isInitialized) return;
 
-    console.log('📊 Initializing Analytics Dashboard...');
 
     this.setupEventListeners();
     this.isInitialized = true;
-
-    console.log('✅ Analytics Dashboard initialized');
   }
 
   /**
@@ -136,8 +131,6 @@ class AnalyticsDashboard {
         this.hideCustomReportBuilder()
       );
     }
-
-    console.log('📊 Analytics event listeners configured');
   }
 
   /**
@@ -146,7 +139,6 @@ class AnalyticsDashboard {
    * @param {Array} parsedData - Array of parsed BCF data
    */
   async updateData(parsedData) {
-    console.log('📊 Updating Analytics Dashboard with BCF data...');
 
     if (!parsedData || parsedData.length === 0) {
       this.showNoDataMessage();
@@ -169,7 +161,7 @@ class AnalyticsDashboard {
       // Show the analytics interface
       this.showAnalyticsInterface();
 
-      console.log(
+      this.app.debugLog(
         `✅ Analytics updated: ${this.filteredData.length} topics analyzed`
       );
     } catch (error) {
@@ -234,7 +226,6 @@ class AnalyticsDashboard {
     });
 
     this.allTopics = topics;
-    console.log(`📋 Extracted ${topics.length} topics for analysis`);
   }
 
   /**
@@ -313,9 +304,6 @@ class AnalyticsDashboard {
       return true;
     });
 
-    console.log(
-      `📊 Applied filters: ${this.filteredData.length} topics match criteria`
-    );
 
     // Update statistics
     this.updateStatistics();
@@ -389,7 +377,6 @@ class AnalyticsDashboard {
       return;
     }
 
-    console.log('📊 Generating analytics charts...');
 
     // Wait for Chart.js to be ready
     const chartReady = await this.waitForChartJS();
@@ -413,8 +400,6 @@ class AnalyticsDashboard {
 
       // Add click handlers to all charts for lightbox functionality
       this.addChartClickHandlers();
-
-      console.log('✅ All analytics charts generated successfully');
     } catch (error) {
       console.error('❌ Error generating charts:', error);
       this.showErrorState('Error generating charts: ' + error.message);
@@ -428,7 +413,6 @@ class AnalyticsDashboard {
   async waitForChartJS() {
     // Check if Chart.js is already available
     if (typeof Chart !== 'undefined') {
-      console.log('✅ Chart.js is already available');
       return true;
     }
 
@@ -438,7 +422,6 @@ class AnalyticsDashboard {
 
     while (attempts < maxAttempts) {
       if (window.chartJSReady === true && typeof Chart !== 'undefined') {
-        console.log('✅ Chart.js is now ready!');
         return true;
       }
 
@@ -447,9 +430,6 @@ class AnalyticsDashboard {
         return false;
       }
 
-      console.log(
-        `⏳ Waiting for Chart.js... (${attempts + 1}/${maxAttempts})`
-      );
       await new Promise((resolve) => setTimeout(resolve, 500));
       attempts++;
     }
@@ -498,9 +478,6 @@ class AnalyticsDashboard {
     const statusColorMap = ColorManager.getStatusColors(labels);
     const backgroundColors = labels.map((label) => statusColorMap[label]);
 
-    console.log(
-      `🎨 Status Chart: Generated ${backgroundColors.length} colors for ${labels.length} statuses via ColorManager`
-    );
 
     this.charts.status = new Chart(ctx, {
       type: 'doughnut',
@@ -597,9 +574,6 @@ class AnalyticsDashboard {
       this.darkenColor(color)
     );
 
-    console.log(
-      `🎨 Priority Chart: Generated ${backgroundColors.length} colors for ${labels.length} priorities via ColorManager`
-    );
 
     this.charts.priority = new Chart(ctx, {
       type: 'bar',
@@ -997,7 +971,6 @@ class AnalyticsDashboard {
    * Export all charts as a single PDF document
    */
   async exportChartsToPDF() {
-    console.log('📄 Exporting charts as PDF...');
 
     try {
       const charts = Object.entries(this.charts);
@@ -1135,7 +1108,6 @@ class AnalyticsDashboard {
       const filename = `BCF_Analytics_Charts_${chartsFileTimestamp}.pdf`;
       pdf.save(filename);
 
-      console.log('✅ Charts PDF exported successfully');
       this.app.showUserFeedback(`Charts PDF exported successfully!\nFilename: ${filename}`, 'success');
     } catch (error) {
       console.error('❌ Error exporting charts PDF:', error);
@@ -1185,7 +1157,6 @@ class AnalyticsDashboard {
    * Show custom report builder
    */
   showCustomReportBuilder() {
-    console.log('📋 Opening custom report builder...');
 
     const container = document.getElementById('custom-report-container');
     if (container) {
@@ -1267,7 +1238,6 @@ class AnalyticsDashboard {
           .forEach((checkbox) => {
             checkbox.checked = true;
           });
-        console.log('📋 Selected all report fields');
       });
     }
 
@@ -1278,7 +1248,6 @@ class AnalyticsDashboard {
           .forEach((checkbox) => {
             checkbox.checked = false;
           });
-        console.log('📋 Cleared all report fields');
       });
     }
   }
@@ -1287,7 +1256,6 @@ class AnalyticsDashboard {
    * Generate custom report based on selected fields
    */
   generateCustomReport() {
-    console.log('📋 Generating custom report...');
 
     // Get selected fields
     const selectedFields = [];
@@ -1600,7 +1568,6 @@ class AnalyticsDashboard {
    * Supports text, PDF, and Word document formats
    */
   exportCustomReport() {
-    console.log('📄 Exporting custom analytics report...');
 
     // Check if we have report content to export
     const reportContent = document.getElementById('custom-report-results');
@@ -1613,7 +1580,6 @@ class AnalyticsDashboard {
     const formatSelect = document.getElementById('report-export-format');
     const exportFormat = formatSelect ? formatSelect.value : 'text';
 
-    console.log(`📋 Export format selected: ${exportFormat}`);
 
     try {
       // Route to appropriate export method based on format
@@ -1639,7 +1605,6 @@ class AnalyticsDashboard {
    * Export custom report as text file (original functionality)
    */
   exportCustomReportAsText() {
-    console.log('📄 Exporting as text file...');
 
     const reportContent = document.getElementById('custom-report-results');
 
@@ -1699,7 +1664,6 @@ class AnalyticsDashboard {
 
     this.downloadTextFile(fileContent, filename);
 
-    console.log('✅ Text report exported:', filename);
     this.app.showUserFeedback(`Text report exported successfully!\nFilename: ${filename}`, 'success');
   }
 
@@ -1708,7 +1672,6 @@ class AnalyticsDashboard {
    * Creates a professional PDF with formatted sections and styling
    */
   async exportCustomReportAsPDF() {
-    console.log('📄 Exporting as PDF document...');
 
     // Check if jsPDF constructor is available
     if (
@@ -1716,8 +1679,7 @@ class AnalyticsDashboard {
       typeof window.jspdf.jsPDF !== 'function'
     ) {
       console.error('jsPDF library not found');
-      console.log('Window jsPDF:', window.jsPDF);
-      console.log(
+      this.app.debugLog(
         'Available PDF-related properties:',
         Object.keys(window).filter((key) => key.toLowerCase().includes('pdf'))
       );
@@ -1725,7 +1687,6 @@ class AnalyticsDashboard {
       // Wait a moment and try again (in case of loading timing)
       setTimeout(() => {
         if (typeof window.jsPDF !== 'undefined') {
-          console.log('✅ jsPDF became available after delay');
           this.exportCustomReportAsPDF(); // Retry
         } else {
           this.app.showUserFeedback(
@@ -1736,12 +1697,7 @@ class AnalyticsDashboard {
       return;
     }
 
-    console.log('✅ jsPDF available, proceeding with PDF generation');
 
-    console.log(
-      '✅ jsPDF check passed, typeof window.jsPDF:',
-      typeof window.jsPDF
-    );
 
     try {
       // Get report data
@@ -1760,7 +1716,6 @@ class AnalyticsDashboard {
       );
       pdf.save(filename);
 
-      console.log('✅ PDF report exported:', filename);
       this.app.showUserFeedback(`PDF report exported successfully!\nFilename: ${filename}`, 'success');
     } catch (error) {
       console.error('❌ Error creating PDF report:', error);
@@ -1774,7 +1729,6 @@ class AnalyticsDashboard {
    * Follows the same pattern as Image Viewer Word export for consistency
    */
   async exportCustomReportAsWord() {
-    console.log('📝 Exporting analytics report as Word document...');
 
     // Check if we have report content to export
     const reportContent = document.getElementById('custom-report-results');
@@ -1784,7 +1738,6 @@ class AnalyticsDashboard {
     }
 
     // Enhanced DOCX library availability check (matching Image Viewer pattern)
-    console.log('🔍 Checking if DOCX library is ready...');
 
     // Wait up to 15 seconds for library to be ready
     let attempts = 0;
@@ -1792,7 +1745,6 @@ class AnalyticsDashboard {
 
     while (attempts < maxAttempts) {
       if (window.docxReady === true && typeof window.docx !== 'undefined') {
-        console.log('✅ DOCX library is ready for analytics export!');
         break;
       }
 
@@ -1808,9 +1760,6 @@ class AnalyticsDashboard {
         return;
       }
 
-      console.log(
-        `⏳ Waiting for DOCX library... (${attempts + 1}/${maxAttempts})`
-      );
       await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 500ms
       attempts++;
     }
@@ -1832,7 +1781,7 @@ class AnalyticsDashboard {
 
     if (missingComponents.length > 0) {
       console.error('❌ Missing docx components:', missingComponents);
-      console.log('Available components:', Object.keys(window.docx));
+      this.app.debugLog('Available components:', Object.keys(window.docx));
       this.app.showUserFeedback(
         `Word functionality is incomplete. Missing components: ${missingComponents.join(
           ', '
@@ -1841,9 +1790,6 @@ class AnalyticsDashboard {
       return;
     }
 
-    console.log(
-      '✅ DOCX library verification complete - proceeding with analytics document generation'
-    );
 
     try {
       // Get report data for document generation
@@ -1859,7 +1805,6 @@ class AnalyticsDashboard {
       );
       await this.downloadWordDocument(doc, filename);
 
-      console.log('✅ Analytics Word document exported:', filename);
       this.app.showUserFeedback(`Word document exported successfully!\nFilename: ${filename}`, 'success');
     } catch (error) {
       console.error('❌ Error creating analytics Word document:', error);
@@ -1874,7 +1819,6 @@ class AnalyticsDashboard {
    * @returns {Object} - Word document instance
    */
   async createAnalyticsWordDocument(reportData) {
-    console.log('📝 Creating analytics Word document...');
 
     const {
       Document,
@@ -2147,7 +2091,6 @@ class AnalyticsDashboard {
       })
     );
 
-    console.log(`✅ Created Word document with ${elements.length} elements`);
     return elements;
   }
 
@@ -2206,12 +2149,10 @@ class AnalyticsDashboard {
     try {
       const { Packer } = window.docx;
 
-      console.log('🔄 Generating Word document blob for browser...');
 
       // Use toBlob for browser compatibility (same as Image Viewer)
       const blob = await Packer.toBlob(doc);
 
-      console.log('✅ Word document blob generated successfully');
 
       // Create download link
       const url = URL.createObjectURL(blob);
@@ -2226,14 +2167,11 @@ class AnalyticsDashboard {
 
       // Clean up
       URL.revokeObjectURL(url);
-
-      console.log('✅ Word document download triggered:', filename);
     } catch (error) {
       console.error('Error downloading Word document:', error);
 
       // Try fallback method if toBlob fails (same as Image Viewer)
       try {
-        console.log('🔄 Trying fallback download method...');
         const { Packer } = window.docx;
 
         // Alternative: Use base64 output
@@ -2263,8 +2201,6 @@ class AnalyticsDashboard {
         document.body.removeChild(link);
 
         URL.revokeObjectURL(url);
-
-        console.log('✅ Fallback Word document download successful:', filename);
       } catch (fallbackError) {
         console.error(
           '❌ Fallback download method also failed:',
@@ -2604,9 +2540,6 @@ class AnalyticsDashboard {
    * This enables users to click any chart to view it in full-screen mode
    */
   addChartClickHandlers() {
-    console.log(
-      '🖱️ Adding click handlers to charts for lightbox functionality...'
-    );
 
     // Define the chart order for navigation
     this.chartOrder = ['status', 'priority', 'timeline', 'author', 'comments'];
@@ -2629,8 +2562,6 @@ class AnalyticsDashboard {
           event.stopPropagation();
           this.openChartLightbox(index);
         });
-
-        console.log(`✅ Added click handler to ${chartKey} chart`);
       }
     });
 
@@ -2687,7 +2618,6 @@ class AnalyticsDashboard {
     });
 
     this.chartKeyboardSetup = true;
-    console.log('⌨️ Chart lightbox keyboard navigation configured');
   }
 
   /**
@@ -2695,7 +2625,6 @@ class AnalyticsDashboard {
    * @param {number} chartIndex - Index of chart in chartOrder array
    */
   openChartLightbox(chartIndex) {
-    console.log('📊 Opening chart lightbox for chart index:', chartIndex);
 
     // Validate chart index
     if (chartIndex < 0 || chartIndex >= this.chartOrder.length) {
@@ -2728,8 +2657,6 @@ class AnalyticsDashboard {
     setTimeout(() => {
       this.displayChartInLightbox(chartIndex);
     }, 50); // Small delay to ensure DOM is ready
-
-    console.log('✅ Chart lightbox opened successfully');
   }
   /**
    * Display chart in lightbox with enhanced size and quality
@@ -2772,8 +2699,6 @@ class AnalyticsDashboard {
 
     // Reset zoom
     this.resetChartZoom();
-
-    console.log('📈 Displayed chart in lightbox:', chartTitle);
   }
 
   /**
@@ -2797,12 +2722,6 @@ class AnalyticsDashboard {
     const container = lightboxCanvas.parentElement;
     const containerRect = container.getBoundingClientRect();
 
-    console.log(
-      'Container dimensions:',
-      containerRect.width,
-      'x',
-      containerRect.height
-    );
 
     if (containerRect.width === 0 || containerRect.height === 0) {
       console.warn('Container not ready, retrying...');
@@ -2843,7 +2762,6 @@ class AnalyticsDashboard {
     targetWidth = Math.max(600, targetWidth);
     targetHeight = Math.max(400, targetHeight);
 
-    console.log('Target chart size:', targetWidth, 'x', targetHeight);
 
     // Set canvas size
     lightboxCanvas.width = targetWidth;
@@ -2908,13 +2826,6 @@ class AnalyticsDashboard {
     // Create chart
     const ctx = lightboxCanvas.getContext('2d');
     this.lightboxChart = new Chart(ctx, lightboxConfig);
-
-    console.log(
-      '🎨 Chart rendered - landscape optimized:',
-      targetWidth,
-      'x',
-      targetHeight
-    );
   }
 
   /**
@@ -2940,12 +2851,6 @@ class AnalyticsDashboard {
 
     this.currentChartIndex = targetIndex;
     this.displayChartInLightbox(targetIndex);
-
-    console.log(
-      `🔄 Navigated to chart ${targetIndex + 1} of ${this.chartOrder.length}: ${
-        this.chartOrder[targetIndex]
-      }`
-    );
   }
 
   /**
@@ -2977,7 +2882,6 @@ class AnalyticsDashboard {
    * Close the chart lightbox
    */
   closeChartLightbox() {
-    console.log('🚪 Closing chart lightbox');
 
     const lightbox = document.getElementById('chart-lightbox');
     if (lightbox) {
@@ -2995,8 +2899,6 @@ class AnalyticsDashboard {
 
     // Reset zoom
     this.resetChartZoom();
-
-    console.log('✅ Chart lightbox closed');
   }
 
   /**
@@ -3023,8 +2925,6 @@ class AnalyticsDashboard {
     lightboxCanvas.style.transform = `scale(${this.currentZoom})`;
     lightboxCanvas.style.transformOrigin = 'center center';
     lightboxCanvas.style.cursor = this.currentZoom > 1 ? 'grab' : 'default';
-
-    console.log(`🔍 Chart zoom level: ${Math.round(this.currentZoom * 100)}%`);
   }
 
   /**
@@ -3038,8 +2938,6 @@ class AnalyticsDashboard {
     lightboxCanvas.style.transform = 'scale(1)';
     lightboxCanvas.style.transformOrigin = 'center center';
     lightboxCanvas.style.cursor = 'default';
-
-    console.log('🎯 Chart zoom reset to 100%');
   }
 
   /**
@@ -3063,8 +2961,6 @@ class AnalyticsDashboard {
     this.currentZoom = scale;
     lightboxCanvas.style.transform = `scale(${scale})`;
     lightboxCanvas.style.cursor = scale > 1 ? 'grab' : 'default';
-
-    console.log(`📐 Chart fit to screen: ${Math.round(scale * 100)}%`);
   }
 
   /**
@@ -3101,7 +2997,6 @@ class AnalyticsDashboard {
       link.click();
       document.body.removeChild(link);
 
-      console.log('✅ Chart exported:', filename);
 
       // Show feedback
       this.showExportFeedback(`Chart exported: ${filename}`);

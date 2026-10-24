@@ -16,21 +16,7 @@ class CSVExporter {
     let topicNumber = 1; // Add topic counter
 
     bcfDataArray.forEach((bcfData) => {
-      console.log(
-        'Processing file:',
-        bcfData.filename,
-        'with',
-        bcfData.topics.length,
-        'topics'
-      );
       bcfData.topics.forEach((topic) => {
-        console.log(
-          'Topic:',
-          topic.title,
-          'has',
-          topic.comments ? topic.comments.length : 0,
-          'comments'
-        );
 
         // Add main topic row with primary viewpoint's BCF data (same logic as comments)
         const topicRow = {
@@ -46,7 +32,6 @@ class CSVExporter {
         // Add primary viewpoint's BCF camera data to topic row
         // Priority: 1) viewpoint.bcfv, 2) first viewpoint with coordinates
         if (topic.viewpoints && topic.viewpoints.length > 0) {
-          console.log(`🎯 Finding primary viewpoint for topic: ${topic.title}`);
 
           // Method 1: Look for the main viewpoint.bcfv file (highest priority)
           let primaryViewpoint = topic.viewpoints.find((vp) => {
@@ -71,11 +56,6 @@ class CSVExporter {
           }
 
           if (primaryViewpoint) {
-            console.log(
-              `📍 Using primary viewpoint: ${primaryViewpoint.guid} (${
-                primaryViewpoint.viewpointFile || 'no file'
-              })`
-            );
 
             // Add ALL BCF camera data to the main topic row
             topicRow.cameraType = primaryViewpoint.cameraType || '';
@@ -108,15 +88,6 @@ class CSVExporter {
             topicRow.cameraTargetX = primaryViewpoint.cameraTarget?.x ?? null;
             topicRow.cameraTargetY = primaryViewpoint.cameraTarget?.y ?? null;
             topicRow.cameraTargetZ = primaryViewpoint.cameraTarget?.z ?? null;
-
-            console.log('📍 Added complete BCF camera data to topic row:', {
-              topicGuid: topic.guid,
-              cameraType: topicRow.cameraType,
-              CameraViewPointX: topicRow.CameraViewPointX,
-              CameraViewPointY: topicRow.CameraViewPointY,
-              CameraViewPointZ: topicRow.CameraViewPointZ,
-              hasLegacyCoords: topicRow.cameraPosX !== null,
-            });
           }
         }
 
@@ -172,16 +143,6 @@ class CSVExporter {
           coordinateFields.includes(field)
         );
 
-        console.log('🔍 CSV Export Debug:', {
-          topicTitle: topic.title,
-          selectedFields: selectedFields.length,
-          hasCoordinateFields: hasCoordinateFields,
-          viewpointCount: topic.viewpoints ? topic.viewpoints.length : 0,
-          selectedCoordinateFields: selectedFields.filter((field) =>
-            coordinateFields.includes(field)
-          ),
-        });
-
         // Create viewpoint rows for ALL viewpoints with coordinate data (like multiple comments)
         if (
           hasCoordinateFields &&
@@ -219,10 +180,6 @@ class CSVExporter {
             );
           });
 
-          console.log(
-            `📍 Found ${coordinateViewpoints.length} viewpoints with coordinate data for topic: ${topic.title}`
-          );
-
           coordinateViewpoints.forEach((viewpoint, index) => {
             const viewpointRow = {
               rowType: 'viewpoint',
@@ -258,21 +215,6 @@ class CSVExporter {
             };
 
             allRows.push(viewpointRow);
-
-            console.log(
-              `📍 Added viewpoint row ${index + 1}/${
-                coordinateViewpoints.length
-              }:`,
-              {
-                topicNumber: viewpointRow.topicNumber,
-                viewpointGuid: viewpointRow.viewpointGuid,
-                cameraType: viewpointRow.cameraType,
-                hasCoordinates: !!(
-                  viewpointRow.CameraViewPointX || viewpointRow.cameraPosX
-                ),
-                viewpointFile: viewpoint.viewpointFile || 'unknown',
-              }
-            );
           });
         }
 
@@ -741,11 +683,6 @@ class CSVExporter {
     if (!documentReferences || documentReferences.length === 0) {
       return '';
     }
-
-    console.log(
-      '📄 Formatting document references for CSV:',
-      documentReferences.length
-    );
 
     // Format each document reference with its key information
     return documentReferences

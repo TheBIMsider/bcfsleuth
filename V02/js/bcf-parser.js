@@ -1,12 +1,23 @@
 // BCF Parser - Handles BCF file extraction and parsing
 class BCFParser {
+  /**
+   * Debug logging that respects the app's debug mode (silent unless enabled)
+   * @param {string} message - Debug message
+   * @param {any} data - Optional data to log
+   */
+  static debugLog(message, data = null) {
+    window.bcfApp?.debugLog(message, data);
+  }
+
   static async parse(file) {
     try {
       // Load the BCF file as a ZIP archive
       const zip = await JSZip.loadAsync(file);
 
-      // DEBUG: Analyze BCF file structure
-      await this.debugBCFStructure(zip, file.name);
+      // Dump archive structure only when debug mode is on
+      if (window.BCF_DEBUG_MODE) {
+        await this.debugBCFStructure(zip, file.name);
+      }
 
       // Parse BCF structure
       const bcfData = {
@@ -66,7 +77,7 @@ class BCFParser {
           const confirmed3_0 = await this.confirmBCF30Format(zip);
           if (confirmed3_0) {
             bcfData.bcfFormat = '3.0';
-            console.log('✅ BCF 3.0 format confirmed:', versionId);
+            this.debugLog('✅ BCF 3.0 format confirmed:', versionId);
           } else {
             // Fallback if structure doesn't match BCF 3.0
             bcfData.bcfFormat = '2.1';
@@ -74,14 +85,14 @@ class BCFParser {
           }
         } else if (versionId.startsWith('2.1')) {
           bcfData.bcfFormat = '2.1';
-          console.log('✅ BCF 2.1 format detected:', versionId);
+          this.debugLog('✅ BCF 2.1 format detected:', versionId);
         } else if (versionId.startsWith('2.0')) {
           bcfData.bcfFormat = '2.0';
-          console.log('✅ BCF 2.0 format detected:', versionId);
+          this.debugLog('✅ BCF 2.0 format detected:', versionId);
         } else {
           // Unknown version - use intelligent detection
           bcfData.bcfFormat = await this.detectFormatFromStructure(zip);
-          console.log(
+          this.debugLog(
             '🔍 Unknown version detected, using structure analysis:',
             versionId
           );
@@ -119,11 +130,6 @@ class BCFParser {
       const parser = new DOMParser();
       const doc = parser.parseFromString(projectXml, 'text/xml');
 
-      console.log(
-        'Project XML found, format:',
-        bcfData.bcfFormat || 'detecting...'
-      );
-
       let projectName = '';
       let projectId = '';
       let hasExtensionSchema = false;
@@ -135,26 +141,24 @@ class BCFParser {
         projectName = result.name;
         projectId = result.id;
         hasExtensionSchema = false; // Removed in BCF 3.0
-        console.log('Parsed BCF 3.0 project structure');
       } else {
         // BCF 2.x: ProjectExtension structure (your existing logic enhanced)
         const result = this.parseBCF2xProject(doc);
         projectName = result.name;
         projectId = result.id;
         hasExtensionSchema = result.hasExtensionSchema;
-        console.log('Parsed BCF 2.x project structure');
       }
 
       // Fallback: Try all methods if primary method failed
       if (!projectName) {
-        console.log('Primary parsing failed, trying fallback methods...');
+        this.debugLog('Primary parsing failed, trying fallback methods...');
         const fallbackResult = this.parseProjectFallback(doc);
         projectName = fallbackResult.name || projectName;
         projectId = fallbackResult.id || projectId;
       }
 
-      console.log('✅ Final parsed project name:', projectName);
-      console.log('✅ Final parsed project ID:', projectId);
+      this.debugLog('✅ Final parsed project name:', projectName);
+      this.debugLog('✅ Final parsed project ID:', projectId);
 
       bcfData.project = {
         name: projectName || 'Unknown Project',
@@ -276,7 +280,7 @@ class BCFParser {
         }
       });
 
-      console.log('Parsed extensions:', extensions.customFields);
+      this.debugLog('Parsed extensions:', extensions.customFields);
       bcfData.extensions = extensions;
     } catch (error) {
       console.warn('Error parsing extensions file:', error);
@@ -293,15 +297,11 @@ class BCFParser {
     const documentsFile = zip.file('documents.xml');
     if (!documentsFile) {
       // No documents.xml file - this is normal for BCF 2.x files
-      console.log('📄 No documents.xml found (normal for BCF 2.x)');
       bcfData.documents = null;
       return;
     }
 
     try {
-      console.log(
-        '📄 Found documents.xml - parsing BCF 3.0 document structure...'
-      );
       const documentsXml = await documentsFile.async('text');
       const parser = new DOMParser();
       const doc = parser.parseFromString(documentsXml, 'text/xml');
@@ -341,7 +341,7 @@ class BCFParser {
 
       documents.totalDocuments = documents.documentList.length;
 
-      console.log(
+      this.debugLog(
         `📄 Parsed ${documents.totalDocuments} documents from documents.xml`
       );
       bcfData.documents = documents;
@@ -373,30 +373,13 @@ class BCFParser {
     });
 
     const topicFoldersArray = Array.from(topicFolders);
-    console.log('Found topic folders:', topicFoldersArray);
-    console.log('All file paths:', Object.keys(zip.files));
+    this.debugLog('Found topic folders:', topicFoldersArray);
 
     // Parse each topic with BCF format information
     for (const topicGuid of topicFolders) {
       try {
         const topic = await this.parseTopic(zip, topicGuid, bcfData.bcfFormat);
         if (topic) {
-          // Log what we extracted
-          if (bcfData.bcfFormat === '2.0' || bcfData.bcfFormat === '2.1') {
-            console.log(
-              `✅ BCF 2.x topic parsed - Index: ${
-                topic.topicIndex || 'None'
-              }, Title: ${topic.title}`
-            );
-          }
-
-          // For BCF 3.0, serverAssignedId is extracted during topic initialization
-          if (bcfData.bcfFormat === '3.0' && topic.serverAssignedId) {
-            console.log(
-              `✅ BCF 3.0 serverAssignedId found: ${topic.serverAssignedId} for topic: ${topic.title}`
-            );
-          }
-
           topics.push(topic);
         }
       } catch (error) {
@@ -439,17 +422,6 @@ class BCFParser {
 
       // Parse comments (they might be in markup.bcf instead of separate comments.bcf)
       await this.parseComments(zip, topicGuid, topic, doc);
-
-      // Debug: log actual comment count after parsing
-      console.log(
-        `Topic ${topic.title} parsed with ${topic.comments.length} comments`
-      );
-
-      // DEBUG: Log the actual markup.bcf content to understand structure
-      console.log(
-        `📄 Markup.bcf content for topic ${topic.title}:`,
-        doc.documentElement.outerHTML.substring(0, 1000)
-      );
 
       // Process viewpoints and coordinates using dedicated method
       await this.processTopicViewpoints(zip, topicGuid, doc, topic);
@@ -514,22 +486,6 @@ class BCFParser {
         topic.labels.push(labelValue.trim());
       }
     }
-
-    // Debug logging for label extraction
-    if (topic.labels.length > 0) {
-      console.log(
-        `🏷️ Found ${topic.labels.length} labels for topic "${topic.title}":`,
-        topic.labels
-      );
-    } else {
-      // Check if Labels element exists but is empty
-      const emptyLabelsContainer = doc.querySelector('Labels, TopicLabels');
-      if (emptyLabelsContainer) {
-        console.log(
-          `🏷️ Labels container found but empty for topic "${topic.title}"`
-        );
-      }
-    }
   }
 
   /**
@@ -548,14 +504,6 @@ class BCFParser {
 
     // Scan entire document for any unrecognized elements
     this.scanForUnknownElements(doc, topic._customFields);
-
-    // Log custom fields found for debugging
-    const customFieldCount = Object.keys(topic._customFields).length;
-    if (customFieldCount > 0) {
-      console.log(
-        `🔧 Found ${customFieldCount} custom fields for topic "${topic.title}"`
-      );
-    }
   }
 
   /**
@@ -572,29 +520,6 @@ class BCFParser {
 
     // Extract detailed coordinate data from .bcfv files
     await this.extractViewpointCoordinatesFromZip(zip, topicGuid, topic);
-
-    // Generate comprehensive coordinate extraction summary
-    const coordinatesFound = topic.viewpoints.filter(
-      (vp) =>
-        (vp.cameraPosition && vp.cameraPosition.x !== null) ||
-        (vp.cameraTarget && vp.cameraTarget.x !== null)
-    );
-
-    console.log(
-      `🎯 Topic "${topic.title}" viewpoint coordinate extraction complete:`,
-      {
-        viewpointCount: topic.viewpoints.length,
-        coordinatesFound: coordinatesFound.length,
-        allViewpoints: topic.viewpoints.map((vp) => ({
-          guid: vp.guid,
-          hasCoordinates:
-            (vp.cameraPosition && vp.cameraPosition.x !== null) ||
-            (vp.cameraTarget && vp.cameraTarget.x !== null),
-          cameraPos: vp.cameraPosition,
-          cameraTarget: vp.cameraTarget,
-        })),
-      }
-    );
   }
 
   /**
@@ -694,10 +619,6 @@ class BCFParser {
 
     // Extract BCF 3.0 specific fields if format is 3.0
     if (bcfFormat === '3.0') {
-      console.log(
-        '🔍 Checking BCF 3.0 specific fields for topic:',
-        topic.title
-      );
       this.extractBCF30Fields(topicElement, doc, topic);
     }
 
@@ -728,11 +649,6 @@ class BCFParser {
       }
     });
 
-    console.log(
-      `📂 Found ${topicImageFiles.length} image files in topic folder:`,
-      topicImageFiles.map((f) => f.filename)
-    );
-
     return topicImageFiles;
   }
 
@@ -757,7 +673,6 @@ class BCFParser {
           imageFile = zip.file(directPath);
           if (imageFile) {
             matchedFilename = snapshotName;
-            console.log(`✅ Direct match: ${snapshotName}`);
           }
         }
 
@@ -774,9 +689,6 @@ class BCFParser {
           if (guidBasedFiles.length > 0) {
             imageFile = guidBasedFiles[0].file;
             matchedFilename = guidBasedFiles[0].filename;
-            console.log(
-              `✅ GUID-based match: ${matchedFilename} for viewpoint ${viewpoint.guid}`
-            );
           }
         }
 
@@ -794,9 +706,6 @@ class BCFParser {
           if (patternMatches.length > 0) {
             imageFile = patternMatches[0].file;
             matchedFilename = patternMatches[0].filename;
-            console.log(
-              `✅ Pattern match: ${matchedFilename} for snapshot ${snapshotName}`
-            );
           }
         }
 
@@ -806,14 +715,6 @@ class BCFParser {
             viewpoint,
             imageFile,
             matchedFilename
-          );
-        } else {
-          console.log(
-            `🔷 No image found for viewpoint ${
-              viewpoint.guid || 'unknown'
-            } (snapshot: ${
-              snapshotName || 'none'
-            }) - this is normal for viewpoints without snapshots`
           );
         }
       } catch (error) {
@@ -843,10 +744,6 @@ class BCFParser {
     viewpoint.imageType = imageType;
     viewpoint.hasImage = true;
     viewpoint.actualFilename = matchedFilename; // Store the actual filename used
-
-    console.log(
-      `✅ Extracted image: ${matchedFilename} (${imageType}) for viewpoint ${viewpoint.guid}`
-    );
   }
 
   static async parseComments(zip, topicGuid, topic, markupDoc) {
@@ -974,24 +871,12 @@ class BCFParser {
     const viewpoints = doc.querySelectorAll('Viewpoint');
     topic.viewpoints = [];
 
-    console.log(
-      `🔍 Found ${viewpoints.length} viewpoints for topic: ${topic.title}`
-    );
-
     viewpoints.forEach((viewpointElement, index) => {
       // Try different ways to get the GUID
       let guid =
         viewpointElement.getAttribute('Guid') ||
         viewpointElement.getAttribute('guid') ||
         viewpointElement.getAttribute('ViewPointGuid');
-
-      console.log(`🔍 Raw viewpoint element for index ${index}:`, {
-        tagName: viewpointElement.tagName,
-        attributes: Array.from(viewpointElement.attributes).map(
-          (attr) => `${attr.name}="${attr.value}"`
-        ),
-        textContent: viewpointElement.textContent.substring(0, 100),
-      });
 
       // If still no GUID, try to extract from child elements
       if (!guid) {
@@ -1040,17 +925,7 @@ class BCFParser {
       this.extractViewpointCoordinates(doc, viewpoint);
 
       topic.viewpoints.push(viewpoint);
-
-      console.log(
-        `📍 Viewpoint ${index + 1}: GUID=${viewpoint.guid}, File=${
-          viewpoint.viewpointFile
-        }, Snapshot=${viewpoint.snapshot}`
-      );
     });
-
-    console.log(
-      `✅ Parsed ${topic.viewpoints.length} viewpoints for topic: ${topic.title}`
-    );
   }
 
   /**
@@ -1063,10 +938,6 @@ class BCFParser {
     // Initialize coordinate structures with null values
     viewpoint.cameraPosition = { x: null, y: null, z: null };
     viewpoint.cameraTarget = { x: null, y: null, z: null };
-
-    console.log(
-      `🔧 Initialized coordinate structures for viewpoint ${viewpoint.guid}`
-    );
   }
 
   /**
@@ -1078,18 +949,10 @@ class BCFParser {
    * @param {Object} topic - The topic object containing viewpoints
    */
   static async extractViewpointCoordinatesFromZip(zip, topicGuid, topic) {
-    console.log(`🎯 Starting coordinate extraction for topic: ${topic.title}`);
-
     // Discover all .bcfv files in this topic folder
     const allBcfvFiles = this.discoverViewpointFiles(zip, topicGuid);
 
-    console.log(
-      `🔍 Found ${allBcfvFiles.length} .bcfv files in topic ${topicGuid}:`,
-      allBcfvFiles
-    );
-
     if (allBcfvFiles.length === 0) {
-      console.log(`🔍 No .bcfv files found in topic ${topicGuid}`);
       return;
     }
 
@@ -1135,8 +998,6 @@ class BCFParser {
   static async processViewpointFiles(zip, topic, allBcfvFiles) {
     for (const bcfvFile of allBcfvFiles) {
       try {
-        console.log(`📄 Processing viewpoint file: ${bcfvFile.path}`);
-
         // Find or create viewpoint object
         let viewpoint = topic.viewpoints.find(
           (vp) => vp.guid === bcfvFile.guid
@@ -1153,18 +1014,11 @@ class BCFParser {
             cameraTarget: { x: null, y: null, z: null },
           };
           topic.viewpoints.push(viewpoint);
-          console.log(
-            `➕ Created new viewpoint object for GUID: ${bcfvFile.guid}`
-          );
         }
 
         // Parse the viewpoint XML file
         const viewpointFile = zip.file(bcfvFile.path);
         const viewpointXml = await viewpointFile.async('text');
-        console.log(
-          `📄 Viewpoint XML content (first 200 chars):`,
-          viewpointXml.substring(0, 200)
-        );
 
         const parser = new DOMParser();
         const viewpointDoc = parser.parseFromString(viewpointXml, 'text/xml');
@@ -1186,11 +1040,11 @@ class BCFParser {
           viewpoint.cameraPosition.x !== null ||
           viewpoint.cameraTarget.x !== null
         ) {
-          console.log(
+          this.debugLog(
             `✅ Successfully extracted coordinates for viewpoint ${viewpoint.guid}`
           );
         } else {
-          console.log(
+          this.debugLog(
             `❌ No coordinates extracted for viewpoint ${viewpoint.guid}`
           );
         }
@@ -1221,7 +1075,7 @@ class BCFParser {
       );
     });
 
-    console.log(`🎯 Coordinate extraction complete for topic: ${topic.title}`, {
+    this.debugLog(`🎯 Coordinate extraction complete for topic: ${topic.title}`, {
       totalViewpoints: topic.viewpoints.length,
       viewpointsWithCoordinates: viewpointsWithCoordinates.length,
       coordinateBreakdown: viewpointsWithCoordinates.map((vp) => ({
@@ -1252,25 +1106,21 @@ class BCFParser {
     // Pattern 1: Viewpoint_{guid}.bcfv
     if (nameWithoutExt.startsWith('Viewpoint_')) {
       const guid = nameWithoutExt.replace('Viewpoint_', '');
-      console.log(`📍 Extracted GUID from Viewpoint_ format: ${guid}`);
       return guid;
     }
 
     // Pattern 2: {guid}.bcfv (direct GUID)
     if (nameWithoutExt.match(/^[0-9a-f-]{36}$/i)) {
-      console.log(`📍 Direct GUID format: ${nameWithoutExt}`);
       return nameWithoutExt;
     }
 
     // Pattern 3: viewpoint.bcfv (generic)
     if (nameWithoutExt === 'viewpoint') {
       const genericGuid = 'viewpoint-generic';
-      console.log(`📍 Generic viewpoint file, using GUID: ${genericGuid}`);
       return genericGuid;
     }
 
     // Pattern 4: Any other format - use the filename as identifier
-    console.log(`📍 Unknown format, using filename as GUID: ${nameWithoutExt}`);
     return nameWithoutExt;
   }
 
@@ -1322,8 +1172,6 @@ class BCFParser {
       coordinates.X = parseFloat(xElement.textContent);
       coordinates.Y = parseFloat(yElement.textContent);
       coordinates.Z = parseFloat(zElement.textContent);
-
-      console.log(`✅ Extracted ${coordinateType}:`, coordinates);
     }
 
     return coordinates;
@@ -1346,17 +1194,12 @@ class BCFParser {
       const fieldOfView = cameraElement.querySelector('FieldOfView');
       if (fieldOfView) {
         properties.FieldOfView = parseFloat(fieldOfView.textContent);
-        console.log(`✅ Extracted FieldOfView:`, properties.FieldOfView);
       }
     } else if (cameraType === 'Orthogonal') {
       // Extract ViewToWorldScale for orthogonal cameras
       const viewToWorldScale = cameraElement.querySelector('ViewToWorldScale');
       if (viewToWorldScale) {
         properties.ViewToWorldScale = parseFloat(viewToWorldScale.textContent);
-        console.log(
-          `✅ Extracted ViewToWorldScale:`,
-          properties.ViewToWorldScale
-        );
       }
     }
 
@@ -1399,14 +1242,11 @@ class BCFParser {
     const cameraInfo = this.findCameraElement(viewpointDoc);
 
     if (!cameraInfo) {
-      console.log(`🔷 No camera element found in viewpoint ${viewpoint.guid}`);
+      this.debugLog(`🔷 No camera element found in viewpoint ${viewpoint.guid}`);
       return;
     }
 
     const { element: cameraElement, type: cameraType } = cameraInfo;
-    console.log(
-      `🔷 Found ${cameraType} camera for viewpoint ${viewpoint.guid}`
-    );
 
     // Initialize viewpoint camera properties
     viewpoint.cameraType = cameraType;
@@ -1434,17 +1274,6 @@ class BCFParser {
     this.createBackwardCompatibilityCoordinates(viewpoint);
 
     // Log comprehensive extraction summary
-    console.log(
-      `🎯 Complete camera data extracted for viewpoint ${viewpoint.guid}:`,
-      {
-        type: cameraType,
-        CameraViewPoint: viewpoint.CameraViewPoint,
-        CameraDirection: viewpoint.CameraDirection,
-        CameraUpVector: viewpoint.CameraUpVector,
-        FieldOfView: viewpoint.FieldOfView,
-        ViewToWorldScale: viewpoint.ViewToWorldScale,
-      }
-    );
   }
 
   static getElementText(parentOrDoc, tagName) {
@@ -1620,12 +1449,10 @@ class BCFParser {
    */
   static async detectFormatFromStructure(zip) {
     try {
-      console.log('🔍 Running enhanced structure-based format detection...');
-
       // Priority 1: Check for BCF 3.0 indicators first
       const bcf30Confirmed = await this.confirmBCF30Format(zip);
       if (bcf30Confirmed) {
-        console.log('✅ Structure analysis confirms BCF 3.0');
+        this.debugLog('✅ Structure analysis confirms BCF 3.0');
         return '3.0';
       }
 
@@ -1641,12 +1468,12 @@ class BCFParser {
         if (projectExtension) {
           const extensionSchema = doc.querySelector('ExtensionSchema');
           if (extensionSchema) {
-            console.log(
+            this.debugLog(
               '✅ Structure analysis confirms BCF 2.1: ProjectExtension + ExtensionSchema'
             );
             return '2.1';
           } else {
-            console.log(
+            this.debugLog(
               '✅ Structure analysis confirms BCF 2.0: ProjectExtension without ExtensionSchema'
             );
             return '2.0';
@@ -1657,12 +1484,12 @@ class BCFParser {
       // Priority 3: Check for extensions.xsd file (BCF 2.1+ feature)
       const extensionsFile = zip.file('extensions.xsd');
       if (extensionsFile) {
-        console.log('✅ Found extensions.xsd - indicates BCF 2.1+');
+        this.debugLog('✅ Found extensions.xsd - indicates BCF 2.1+');
         return '2.1';
       }
 
       // Default fallback to most common stable format
-      console.log(
+      this.debugLog(
         '🎯 No clear format indicators - defaulting to BCF 2.1 (most common)'
       );
       return '2.1';
@@ -1683,12 +1510,10 @@ class BCFParser {
    */
   static async confirmBCF30Format(zip) {
     try {
-      console.log('🔍 Verifying BCF 3.0 format indicators...');
-
       // Indicator 1: Check for documents.xml (BCF 3.0 feature)
       const documentsFile = zip.file('documents.xml');
       if (documentsFile) {
-        console.log('📄 Found documents.xml - strong BCF 3.0 indicator');
+        this.debugLog('📄 Found documents.xml - strong BCF 3.0 indicator');
         return true;
       }
 
@@ -1704,12 +1529,12 @@ class BCFParser {
         const projectExtension = doc.querySelector('ProjectExtension');
 
         if (projectInfo && !projectExtension) {
-          console.log('🏗️ Found ProjectInfo structure - BCF 3.0 confirmed');
+          this.debugLog('🏗️ Found ProjectInfo structure - BCF 3.0 confirmed');
           return true;
         }
 
         if (projectExtension && !projectInfo) {
-          console.log('🏗️ Found ProjectExtension structure - this is BCF 2.x');
+          this.debugLog('🏗️ Found ProjectExtension structure - this is BCF 2.x');
           return false;
         }
       }
@@ -1717,12 +1542,12 @@ class BCFParser {
       // Indicator 3: Check for BCF 3.0 topic features (ServerAssignedId)
       const topicIndicators = await this.checkForBCF30TopicFeatures(zip);
       if (topicIndicators) {
-        console.log('📋 Found BCF 3.0 topic features');
+        this.debugLog('📋 Found BCF 3.0 topic features');
         return true;
       }
 
       // If no clear BCF 3.0 indicators found, it's likely BCF 2.x
-      console.log('📊 No clear BCF 3.0 indicators found, treating as BCF 2.x');
+      this.debugLog('📊 No clear BCF 3.0 indicators found, treating as BCF 2.x');
       return false;
     } catch (error) {
       console.warn('❌ Error during BCF 3.0 confirmation:', error);
@@ -1749,7 +1574,6 @@ class BCFParser {
       });
 
       if (!sampleTopicGuid) {
-        console.log('🔍 No topics found for BCF 3.0 feature detection');
         return false;
       }
 
@@ -1763,7 +1587,7 @@ class BCFParser {
         // Look for ServerAssignedId attribute (BCF 3.0 feature)
         const topicElement = doc.querySelector('Topic');
         if (topicElement && topicElement.hasAttribute('ServerAssignedId')) {
-          console.log(
+          this.debugLog(
             '🆔 Found ServerAssignedId attribute - BCF 3.0 feature detected'
           );
           return true;
@@ -1772,7 +1596,7 @@ class BCFParser {
         // Look for multiple ReferenceLink elements (BCF 3.0 allows multiple)
         const referenceLinks = doc.querySelectorAll('Topic > ReferenceLink');
         if (referenceLinks.length > 1) {
-          console.log(
+          this.debugLog(
             '🔗 Found multiple ReferenceLink elements - BCF 3.0 feature'
           );
           return true;
@@ -1792,8 +1616,6 @@ class BCFParser {
    * Also handles additional BCF 3.0 project metadata
    */
   static parseBCF30Project(doc) {
-    console.log('🏗️ Parsing BCF 3.0 ProjectInfo structure...');
-
     const projectInfo = doc.querySelector('ProjectInfo');
     if (!projectInfo) {
       console.warn('⚠️ BCF 3.0: ProjectInfo element not found');
@@ -1810,7 +1632,7 @@ class BCFParser {
     const projectName = project.getAttribute('Name') || '';
     const projectId = project.getAttribute('ProjectId') || '';
 
-    console.log('✅ BCF 3.0 project parsed successfully:', {
+    this.debugLog('✅ BCF 3.0 project parsed successfully:', {
       name: projectName,
       id: projectId,
     });
@@ -1828,8 +1650,6 @@ class BCFParser {
    * Maintains compatibility with existing project parsing logic
    */
   static parseBCF2xProject(doc) {
-    console.log('🏗️ Parsing BCF 2.x ProjectExtension structure...');
-
     const projectExtension = doc.querySelector('ProjectExtension');
     if (!projectExtension) {
       console.warn('⚠️ BCF 2.x: ProjectExtension element not found');
@@ -1862,7 +1682,7 @@ class BCFParser {
     const hasExtensionSchema = !!extensionSchema;
     const bcfVersion = hasExtensionSchema ? '2.1' : '2.0';
 
-    console.log(`✅ BCF ${bcfVersion} project parsed successfully:`, {
+    this.debugLog(`✅ BCF ${bcfVersion} project parsed successfully:`, {
       name: projectName,
       id: projectId,
       hasExtensions: hasExtensionSchema,
@@ -1890,7 +1710,7 @@ class BCFParser {
     if (projectExtensionElement && !projectName) {
       projectName = this.getElementText(projectExtensionElement, 'Name');
       projectId = projectExtensionElement.getAttribute('ProjectId');
-      console.log('Fallback: Found ProjectExtension structure');
+      this.debugLog('Fallback: Found ProjectExtension structure');
     }
 
     // Method 2: ProjectInfo/Name (standard BCF 2.1 structure)
@@ -1905,7 +1725,7 @@ class BCFParser {
           projectInfoElement
             .querySelector('Project')
             ?.getAttribute('ProjectId');
-        console.log('Fallback: Found ProjectInfo structure');
+        this.debugLog('Fallback: Found ProjectInfo structure');
       }
     }
 
@@ -1919,7 +1739,7 @@ class BCFParser {
         projectId =
           projectElement.getAttribute('ProjectId') ||
           projectElement.getAttribute('Id');
-        console.log('Fallback: Found direct Project structure');
+        this.debugLog('Fallback: Found direct Project structure');
       }
     }
 
@@ -1936,14 +1756,11 @@ class BCFParser {
    */
   static extractBCF30Fields(topicElement, doc, topic) {
     try {
-      console.log('🆔 Extracting BCF 3.0 fields for topic:', topic.title);
-
       // Extract ServerAssignedId (BCF 3.0 new attribute)
       if (topicElement) {
         const serverAssignedId = topicElement.getAttribute('ServerAssignedId');
         if (serverAssignedId) {
           topic.serverAssignedId = serverAssignedId;
-          console.log('✅ Found ServerAssignedId:', serverAssignedId);
         }
       }
 
@@ -1953,31 +1770,19 @@ class BCFParser {
         topic.referenceLinks = Array.from(referenceLinks)
           .map((link) => link.textContent?.trim() || '')
           .filter((link) => link); // Remove empty links
-
-        console.log(
-          '🔗 Found multiple reference links:',
-          topic.referenceLinks.length
-        );
       }
 
       // Extract BCF 3.0 DocumentReferences (new structure)
       const documentReferences = this.extractBCF30DocumentReferences(doc);
       if (documentReferences.length > 0) {
         topic.documentReferences = documentReferences;
-        console.log('📄 Found document references:', documentReferences.length);
       }
 
       // Extract Header Files (BCF 3.0: enhanced Files structure in Header)
       const headerFiles = this.extractBCF30HeaderFiles(doc);
       if (headerFiles.length > 0) {
         topic.headerFiles = headerFiles;
-        console.log('📂 Found header files:', headerFiles.length);
       }
-
-      console.log(
-        '✅ BCF 3.0 fields extraction complete for topic:',
-        topic.title
-      );
     } catch (error) {
       console.warn('❌ Error extracting BCF 3.0 fields:', error);
     }
@@ -2025,11 +1830,6 @@ class BCFParser {
           documentReferences.push(documentRef);
         }
       });
-
-      console.log(
-        '📄 BCF 3.0: Parsed document references:',
-        documentReferences
-      );
     } catch (error) {
       console.warn('❌ Error parsing BCF 3.0 document references:', error);
     }
@@ -2077,8 +1877,6 @@ class BCFParser {
           headerFiles.push(fileInfo);
         }
       });
-
-      console.log('BCF 3.0: Parsed header files:', headerFiles);
     } catch (error) {
       console.warn('Error parsing BCF 3.0 header files:', error);
     }
@@ -2224,8 +2022,8 @@ class BCFParser {
    * This helps us understand what's actually in the BCF file
    */
   static async debugBCFStructure(zip, filename) {
-    console.log(`🔍 DEBUGGING BCF Structure for: ${filename}`);
-    console.log('📁 All files in BCF archive:');
+    this.debugLog(`🔍 DEBUGGING BCF Structure for: ${filename}`);
+    this.debugLog('📁 All files in BCF archive:');
 
     const fileList = [];
     zip.forEach((relativePath, file) => {
@@ -2276,28 +2074,28 @@ class BCFParser {
       }
     });
 
-    console.log('📊 BCF Structure Analysis:');
-    console.log('Root files:', structure.rootFiles);
-    console.log(
+    this.debugLog('📊 BCF Structure Analysis:');
+    this.debugLog('Root files:', structure.rootFiles);
+    this.debugLog(
       'Topic folders found:',
       Object.keys(structure.topicFolders).length
     );
-    console.log('Image files found:', structure.imageFiles.length);
+    this.debugLog('Image files found:', structure.imageFiles.length);
 
     // Log each topic folder contents
     Object.entries(structure.topicFolders).forEach(([guid, files]) => {
-      console.log(`📂 Topic ${guid}:`, files);
+      this.debugLog(`📂 Topic ${guid}:`, files);
     });
 
     // Log image files specifically
     if (structure.imageFiles.length > 0) {
-      console.log('🖼️ Image files detected:');
+      this.debugLog('🖼️ Image files detected:');
       structure.imageFiles.forEach((img) => {
-        console.log(`  - ${img.fullPath} (${img.size} bytes)`);
+        this.debugLog(`  - ${img.fullPath} (${img.size} bytes)`);
       });
     } else {
-      console.log('❌ No image files found in BCF archive');
-      console.log('💡 This BCF file may not contain viewpoint snapshots');
+      this.debugLog('❌ No image files found in BCF archive');
+      this.debugLog('💡 This BCF file may not contain viewpoint snapshots');
     }
 
     return structure;

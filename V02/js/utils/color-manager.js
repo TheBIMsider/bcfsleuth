@@ -123,10 +123,6 @@ class ColorManager {
       colorMap[value] = color;
     });
 
-    console.log(
-      `🎨 Generated ${uniqueValues.length} colors for ${context} context:`,
-      colorMap
-    );
     return colorMap;
   }
 
@@ -224,99 +220,6 @@ class ColorManager {
     const b = parseInt(hex.substr(4, 2), 16);
 
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-
-  /**
-   * Get a single color for a specific value
-   * @param {string} value - Value to get color for
-   * @param {string} context - Context ('status', 'priority', 'generic')
-   * @param {Array} allValues - All values in the dataset (for consistent color assignment)
-   * @returns {string} - Hex color
-   */
-  static getColorForValue(value, context = 'auto', allValues = []) {
-    if (allValues.length > 0) {
-      const colorMap = this.getDistinctColors(allValues, context);
-      return colorMap[value] || this.BASE_PALETTE[0];
-    }
-
-    const normalizedValue = value
-      ? value.toString().toLowerCase().trim()
-      : 'unknown';
-
-    if (context === 'auto') {
-      context = this.detectContext([value]);
-    }
-
-    if (context === 'status' && this.STATUS_COLORS[normalizedValue]) {
-      return this.STATUS_COLORS[normalizedValue];
-    }
-
-    if (context === 'priority' && this.PRIORITY_COLORS[normalizedValue]) {
-      return this.PRIORITY_COLORS[normalizedValue];
-    }
-
-    return this.BASE_PALETTE[0];
-  }
-
-  /**
-   * Generate gradient colors between two colors
-   * Useful for heat maps or progressive indicators
-   * @param {string} startColor - Starting hex color
-   * @param {string} endColor - Ending hex color
-   * @param {number} steps - Number of steps in gradient
-   * @returns {Array} - Array of gradient colors
-   */
-  static generateGradient(startColor, endColor, steps) {
-    const start = this.hexToRgb(startColor);
-    const end = this.hexToRgb(endColor);
-    const gradient = [];
-
-    for (let i = 0; i < steps; i++) {
-      const ratio = i / (steps - 1);
-      const r = Math.round(start.r + (end.r - start.r) * ratio);
-      const g = Math.round(start.g + (end.g - start.g) * ratio);
-      const b = Math.round(start.b + (end.b - start.b) * ratio);
-
-      gradient.push(this.rgbToHex(r, g, b));
-    }
-
-    return gradient;
-  }
-
-  /**
-   * Convert hex to RGB object
-   * @param {string} hex - Hex color
-   * @returns {Object} - {r, g, b} values
-   */
-  static hexToRgb(hex) {
-    hex = hex.replace('#', '');
-    return {
-      r: parseInt(hex.substr(0, 2), 16),
-      g: parseInt(hex.substr(2, 2), 16),
-      b: parseInt(hex.substr(4, 2), 16),
-    };
-  }
-
-  /**
-   * Convert RGB to hex
-   * @param {number} r - Red value (0-255)
-   * @param {number} g - Green value (0-255)
-   * @param {number} b - Blue value (0-255)
-   * @returns {string} - Hex color
-   */
-  static rgbToHex(r, g, b) {
-    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-  }
-
-  /**
-   * Get high contrast text color (black or white) for a background color
-   * @param {string} backgroundColor - Background hex color
-   * @returns {string} - '#000000' or '#ffffff'
-   */
-  static getContrastTextColor(backgroundColor) {
-    const rgb = this.hexToRgb(backgroundColor);
-    const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
-    return brightness > 128 ? '#000000' : '#ffffff';
   }
 }
 

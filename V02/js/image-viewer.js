@@ -32,7 +32,6 @@ class ImageViewer {
     this.setupEventListeners();
     this.createLightbox();
     this.isInitialized = true;
-    console.log('📸 Image Viewer initialized');
   }
 
   /**
@@ -108,7 +107,6 @@ class ImageViewer {
    * Now includes lazy image extraction
    */
   async updateData(parsedData) {
-    console.log('🔄 Updating Image Viewer with BCF data...');
 
     // Show loading state
     this.showLoadingState();
@@ -123,7 +121,7 @@ class ImageViewer {
       this.updateStats();
       this.applyFilters();
 
-      console.log(
+      this.app.debugLog(
         `📊 Image Viewer updated: ${this.allImages.length} total images found`
       );
     } catch (error) {
@@ -138,19 +136,6 @@ class ImageViewer {
    * Perform lazy image extraction for all topics
    */
   async performLazyImageExtraction(parsedData) {
-    // Debug: Check if BCFParser methods are available
-    console.log('🔍 Checking BCFParser availability:');
-    console.log('- typeof BCFParser:', typeof BCFParser);
-    console.log('- window.BCFParser:', !!window.BCFParser);
-    console.log(
-      '- BCFParser.extractImagesForTopics:',
-      !!(typeof BCFParser !== 'undefined' && BCFParser.extractImagesForTopics)
-    );
-    console.log(
-      '- BCFParser.extractViewpointImages:',
-      !!(typeof BCFParser !== 'undefined' && BCFParser.extractViewpointImages)
-    );
-
     const allTopics = [];
 
     // Collect all topics from all BCF files
@@ -166,13 +151,12 @@ class ImageViewer {
     );
 
     if (topicsNeedingExtraction.length > 0) {
-      console.log(
+      this.app.debugLog(
         `🖼️ Extracting images for ${topicsNeedingExtraction.length} topics...`
       );
 
       // Use the BCFParser's image extraction methods that actually exist
       try {
-        console.log('🖼️ Using available BCFParser image extraction methods...');
 
         if (typeof BCFParser !== 'undefined') {
           // Call the individual extraction method for each topic
@@ -198,7 +182,6 @@ class ImageViewer {
               }
             }
           }
-          console.log('✅ Individual image extraction completed successfully');
         } else {
           throw new Error('BCFParser not available');
         }
@@ -206,8 +189,6 @@ class ImageViewer {
         console.warn('Error in lazy image extraction, using fallback:', error);
         await this.fallbackImageExtraction(topicsNeedingExtraction);
       }
-    } else {
-      console.log('✅ All topics already have images extracted');
     }
   }
 
@@ -218,7 +199,6 @@ class ImageViewer {
    * @param {Object} topic - The topic object
    */
   async extractTopicImages(zip, topicGuid, topic) {
-    console.log(`🖼️ Extracting images for topic: ${topic.title}`);
 
     // Discover image files in the topic folder
     const topicImageFiles = BCFParser.discoverTopicImageFiles(zip, topicGuid);
@@ -233,10 +213,6 @@ class ImageViewer {
 
     // Update topic with image count
     topic.imageCount = topic.viewpoints.filter((vp) => vp.hasImage).length;
-
-    console.log(
-      `✅ Extracted ${topic.imageCount} images for topic: ${topic.title}`
-    );
   }
 
   /**
@@ -269,10 +245,6 @@ class ImageViewer {
         }
       }
     }
-
-    console.log(
-      `✅ Fallback extraction complete: ${totalImagesExtracted} images extracted`
-    );
   }
 
   /**
@@ -849,11 +821,9 @@ class ImageViewer {
   createLightbox() {
     // Check if lightbox already exists
     if (document.getElementById('bcf-image-lightbox')) {
-      console.log('Lightbox already exists');
       return;
     }
 
-    console.log('🖼️ Creating image lightbox modal...');
 
     // Create lightbox HTML structure
     const lightboxHTML = `
@@ -923,8 +893,6 @@ class ImageViewer {
     this.minZoom = 0.1;
     this.maxZoom = 5;
     this.zoomStep = 0.2;
-
-    console.log('✅ Lightbox created successfully');
   }
 
   /**
@@ -1011,8 +979,6 @@ class ImageViewer {
       },
       { passive: false }
     ); // passive: false allows preventDefault()
-
-    console.log('✅ Lightbox keyboard and mouse wheel controls setup complete');
   }
 
   /**
@@ -1020,7 +986,6 @@ class ImageViewer {
    * @param {number} imageIndex - Index of image in filteredImages array
    */
   openLightbox(imageIndex) {
-    console.log('🖼️ Opening lightbox for image index:', imageIndex);
 
     // Validate image index
     if (imageIndex < 0 || imageIndex >= this.filteredImages.length) {
@@ -1047,8 +1012,6 @@ class ImageViewer {
     // Show lightbox
     lightbox.classList.add('active');
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
-
-    console.log('✅ Lightbox opened successfully');
   }
 
   /**
@@ -1093,8 +1056,6 @@ class ImageViewer {
 
     // Update navigation button states
     this.updateNavigationButtons();
-
-    console.log('📷 Displayed image:', image.title);
   }
 
   /**
@@ -1120,12 +1081,6 @@ class ImageViewer {
 
     this.currentLightboxIndex = targetIndex;
     this.displayLightboxImage(targetIndex);
-
-    console.log(
-      `🔄 Navigated to image ${targetIndex + 1} of ${
-        this.lightboxImages.length
-      }`
-    );
   }
 
   /**
@@ -1157,7 +1112,6 @@ class ImageViewer {
    * Close the lightbox
    */
   closeLightbox() {
-    console.log('🚪 Closing lightbox');
 
     const lightbox = document.getElementById('bcf-image-lightbox');
     if (lightbox) {
@@ -1169,8 +1123,6 @@ class ImageViewer {
 
     // Reset zoom
     this.resetZoom();
-
-    console.log('✅ Lightbox closed');
   }
 
   /**
@@ -1195,8 +1147,6 @@ class ImageViewer {
 
     lightboxImage.style.transform = `scale(${this.currentZoom})`;
     lightboxImage.style.cursor = this.currentZoom > 1 ? 'grab' : 'default';
-
-    console.log(`🔍 Zoom level: ${Math.round(this.currentZoom * 100)}%`);
   }
 
   /**
@@ -1209,8 +1159,6 @@ class ImageViewer {
     this.currentZoom = 1;
     lightboxImage.style.transform = 'scale(1)';
     lightboxImage.style.cursor = 'default';
-
-    console.log('🎯 Zoom reset to 100%');
   }
 
   /**
@@ -1232,8 +1180,6 @@ class ImageViewer {
     this.currentZoom = scale;
     lightboxImage.style.transform = `scale(${scale})`;
     lightboxImage.style.cursor = scale > 1 ? 'grab' : 'default';
-
-    console.log(`📐 Fit to screen: ${Math.round(scale * 100)}%`);
   }
 
   /**
@@ -1284,7 +1230,6 @@ class ImageViewer {
    * @param {number} imageIndex - Index of image in filteredImages array
    */
   downloadImage(imageIndex) {
-    console.log('💾 Starting download for image index:', imageIndex);
 
     // Validate image index
     if (imageIndex < 0 || imageIndex >= this.filteredImages.length) {
@@ -1324,7 +1269,6 @@ class ImageViewer {
       // Clean up
       URL.revokeObjectURL(url);
 
-      console.log('✅ Download triggered:', filename);
 
       // Show success feedback
       this.showDownloadFeedback(`Downloaded: ${filename}`);
@@ -1361,7 +1305,6 @@ class ImageViewer {
       filename = `${projectName}_${truncatedTitle}_View${viewpointIndex}_${date}.${extension}`;
     }
 
-    console.log('📝 Generated filename:', filename);
     return filename;
   }
 
@@ -1386,7 +1329,6 @@ class ImageViewer {
    * Download all filtered images as individual files
    */
   downloadAllImages() {
-    console.log('💾 Starting bulk download of all filtered images...');
 
     if (this.filteredImages.length === 0) {
       this.app.showUserFeedback('No images to download. Please check your filters.', 'warning');
@@ -1429,7 +1371,6 @@ class ImageViewer {
       this.showDownloadFeedback(
         `✅ Downloaded ${this.filteredImages.length} images successfully!`
       );
-      console.log('✅ Bulk download complete');
       return;
     }
 
@@ -1557,15 +1498,12 @@ class ImageViewer {
     // Hide progress and show success
     this.hideDownloadProgress();
     this.showDownloadFeedback(`✅ ZIP archive downloaded: ${zipFilename}`);
-
-    console.log('✅ ZIP download complete:', zipFilename);
   }
 
   /**
    * Download filtered images as ZIP archive
    */
   async downloadImagesAsZip() {
-    console.log('📦 Starting ZIP download of filtered images...');
 
     // Validate download request
     if (!this.validateZipDownload()) {
@@ -1675,7 +1613,6 @@ class ImageViewer {
   cancelDownload() {
     this.downloadCancelled = true;
     this.hideDownloadProgress();
-    console.log('📛 Download cancelled by user');
   }
 
   /**
@@ -1711,7 +1648,6 @@ class ImageViewer {
    * Generate PDF report with images and metadata - Simplified Version
    */
   async generatePDFReport() {
-    console.log('📄 Starting PDF report generation...');
 
     if (this.filteredImages.length === 0) {
       this.app.showUserFeedback('No images to include in PDF report. Please check your filters.', 'warning');
@@ -1771,8 +1707,6 @@ class ImageViewer {
       // Hide progress and show success
       this.hideDownloadProgress();
       this.showDownloadFeedback(`✅ PDF report generated: ${filename}`);
-
-      console.log('✅ PDF report generated successfully:', filename);
     } catch (error) {
       console.error('Error generating PDF report:', error);
       this.hideDownloadProgress();
@@ -1785,7 +1719,6 @@ class ImageViewer {
    * Enhanced with better library loading detection
    */
   async generateWordReport() {
-    console.log('📝 Starting Word document report generation...');
 
     if (this.filteredImages.length === 0) {
       this.app.showUserFeedback('No images to include in Word report. Please check your filters.', 'warning');
@@ -1793,7 +1726,6 @@ class ImageViewer {
     }
 
     // ENHANCED: Wait for library to be ready
-    console.log('🔍 Checking if DOCX library is ready...');
 
     // Wait up to 15 seconds for library to load
     let attempts = 0;
@@ -1801,7 +1733,6 @@ class ImageViewer {
 
     while (attempts < maxAttempts) {
       if (window.docxReady === true && typeof window.docx !== 'undefined') {
-        console.log('✅ DOCX library is ready!');
         break;
       }
 
@@ -1817,9 +1748,6 @@ class ImageViewer {
         return;
       }
 
-      console.log(
-        `⏳ Waiting for DOCX library... (${attempts + 1}/${maxAttempts})`
-      );
       await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 500ms
       attempts++;
     }
@@ -1841,7 +1769,7 @@ class ImageViewer {
 
     if (missingComponents.length > 0) {
       console.error('❌ Missing docx components:', missingComponents);
-      console.log('Available components:', Object.keys(window.docx));
+      this.app.debugLog('Available components:', Object.keys(window.docx));
       this.app.showUserFeedback(
         `Word functionality is incomplete. Missing components: ${missingComponents.join(
           ', '
@@ -1850,9 +1778,6 @@ class ImageViewer {
       return;
     }
 
-    console.log(
-      '✅ DOCX library verification complete - proceeding with document generation'
-    );
 
     // Show layout options
     const layout = await this.showWordLayoutDialog();
@@ -1891,8 +1816,6 @@ class ImageViewer {
       // Hide progress and show success
       this.hideDownloadProgress();
       this.showDownloadFeedback(`✅ Word document generated: ${filename}`);
-
-      console.log('✅ Word document generated successfully:', filename);
     } catch (error) {
       console.error('Error generating Word document:', error);
       this.hideDownloadProgress();
@@ -1959,7 +1882,6 @@ class ImageViewer {
    * @param {string} layout - Selected layout type
    */
   selectWordLayout(layout) {
-    console.log('✅ Word Layout Selected:', layout);
 
     const dialog = document.getElementById('word-layout-dialog');
     if (dialog) {
@@ -1978,7 +1900,6 @@ class ImageViewer {
    * @returns {Object} - Word document object
    */
   async generateGridWordReport() {
-    console.log('📋 Generating Word grid layout document...');
 
     // UPDATED: DOCX 9.5.1 API structure
     const {
@@ -2017,7 +1938,6 @@ class ImageViewer {
    * @returns {Object} - Word document object
    */
   async generateDetailedWordReport() {
-    console.log('📖 Generating Word detailed layout document...');
 
     const {
       Document,
@@ -2050,7 +1970,6 @@ class ImageViewer {
    * @returns {Object} - Word document object
    */
   async generateSummaryWordReport() {
-    console.log('📊 Generating Word summary layout document...');
 
     const {
       Document,
@@ -2596,12 +2515,10 @@ class ImageViewer {
     try {
       const { Packer } = window.docx;
 
-      console.log('🔄 Generating Word document buffer for browser...');
 
       // FIXED: Use toBlob instead of toBuffer for browser compatibility
       const blob = await Packer.toBlob(doc);
 
-      console.log('✅ Word document blob generated successfully');
 
       // Create download link
       const url = URL.createObjectURL(blob);
@@ -2616,14 +2533,11 @@ class ImageViewer {
 
       // Clean up
       URL.revokeObjectURL(url);
-
-      console.log('✅ Word document download triggered:', filename);
     } catch (error) {
       console.error('Error downloading Word document:', error);
 
       // Try fallback method if toBlob fails
       try {
-        console.log('🔄 Trying fallback download method...');
         const { Packer } = window.docx;
 
         // Alternative: Use base64 output
@@ -2653,8 +2567,6 @@ class ImageViewer {
         document.body.removeChild(link);
 
         URL.revokeObjectURL(url);
-
-        console.log('✅ Fallback Word document download successful:', filename);
       } catch (fallbackError) {
         console.error(
           '❌ Fallback download method also failed:',
@@ -2735,7 +2647,6 @@ class ImageViewer {
    * @param {string} layout - Selected layout type
    */
   selectSimplePDFLayout(layout) {
-    console.log('✅ PDF Layout Selected:', layout);
 
     const dialog = document.getElementById('pdf-layout-dialog');
     if (dialog) {
@@ -2753,7 +2664,6 @@ class ImageViewer {
    * @returns {jsPDF} - PDF document
    */
   async generateGridPDFReport() {
-    console.log('📋 Generating grid layout PDF...');
 
     const jsPDF = window.jspdf.jsPDF;
     const pdf = new jsPDF('portrait', 'mm', 'a4');
@@ -2761,7 +2671,6 @@ class ImageViewer {
     // Use filtered images directly
     const imagesToUse = this.filteredImages;
 
-    console.log(`📊 Processing ${imagesToUse.length} images for grid PDF`);
 
     // Add standardized cover page
     PDFUtils.addStandardizedCoverPage(pdf, 'Grid');
@@ -2816,7 +2725,6 @@ class ImageViewer {
         const x = margin + col * (imageWidth + 10);
         const y = margin + 25 + row * (imageHeight + 15);
 
-        console.log(`📷 Adding image ${i + j + 1}: ${image.title}`);
 
         await this.addImageToPDF(
           pdf,
@@ -2835,7 +2743,6 @@ class ImageViewer {
       }
     }
 
-    console.log('✅ Grid PDF generation complete');
     return pdf;
   }
 
@@ -2851,7 +2758,6 @@ class ImageViewer {
     // Add standardized cover page
     PDFUtils.addStandardizedCoverPage(pdf, reportType);
 
-    console.log(`📄 Initialized ${reportType} PDF document with cover page`);
     return pdf;
   }
 
@@ -2879,8 +2785,6 @@ class ImageViewer {
         await new Promise((resolve) => setTimeout(resolve, 10));
       }
     }
-
-    console.log('✅ All detailed pages added to PDF');
   }
 
   /**
@@ -2930,8 +2834,6 @@ class ImageViewer {
         await new Promise((resolve) => setTimeout(resolve, 10));
       }
     }
-
-    console.log('✅ All summary pages added to PDF');
   }
 
   /**
@@ -3139,7 +3041,6 @@ class ImageViewer {
    * @returns {jsPDF} - PDF document
    */
   async generateDetailedPDFReport() {
-    console.log('📖 Generating detailed layout PDF...');
 
     // Use filtered images directly
     const imagesToUse = this.filteredImages;
@@ -3150,7 +3051,6 @@ class ImageViewer {
     // Add detailed pages with progress tracking
     await this.addDetailedPagesWithProgress(pdf, imagesToUse);
 
-    console.log('✅ Detailed PDF generation complete');
     return pdf;
   }
 
@@ -3159,7 +3059,6 @@ class ImageViewer {
    * @returns {jsPDF} - PDF document
    */
   async generateSummaryPDFReport() {
-    console.log('📊 Generating summary layout PDF...');
 
     // Use filtered images directly
     const imagesToUse = this.filteredImages;
@@ -3170,7 +3069,6 @@ class ImageViewer {
     // Add summary pages with progress tracking
     await this.addSummaryPagesWithProgress(pdf, imagesToUse);
 
-    console.log('✅ Summary PDF generation complete');
     return pdf;
   }
 
@@ -3233,7 +3131,6 @@ class ImageViewer {
    */
   async addImageToPDF(pdf, image, x, y, maxWidth, maxHeight, compact = true) {
     try {
-      console.log('Adding image to PDF:', image.title);
 
       // Prepare image data
       const imageData = image.imageData;
@@ -3294,11 +3191,6 @@ class ImageViewer {
           if (finalWidth < minSize) finalWidth = minSize;
           if (finalHeight < minSize) finalHeight = minSize;
 
-          console.log(
-            `Image aspect ratio preserved: ${originalWidth}x${originalHeight} -> ${finalWidth.toFixed(
-              1
-            )}x${finalHeight.toFixed(1)}mm`
-          );
 
           resolve({
             width: finalWidth,
@@ -3329,14 +3221,6 @@ class ImageViewer {
         imageY,
         imageDimensions.width,
         imageDimensions.height
-      );
-
-      console.log(
-        `✅ Image added: ${
-          image.title
-        } (${format}) - ${imageDimensions.width.toFixed(
-          1
-        )}x${imageDimensions.height.toFixed(1)}mm`
       );
     } catch (error) {
       console.warn('Error adding image to PDF:', error);
