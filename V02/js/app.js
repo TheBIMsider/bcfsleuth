@@ -273,15 +273,8 @@ class BCFSleuthApp {
     // Analyze all parsed BCF data to find custom values
     const customFieldData = this.analyzeCustomFieldUsage();
 
-    // Discover custom fields from raw XML data
-    const customFieldRegistry = this.discoverCustomFields();
-
     // Rebuild the entire field selection UI based on discovered data
-    this.rebuildFieldSelectionUI(
-      discoveredFields,
-      customFieldData,
-      customFieldRegistry
-    );
+    this.rebuildFieldSelectionUI(discoveredFields, customFieldData);
 
     // Store custom data for potential future use
     this.customFieldData = customFieldData;
@@ -555,105 +548,7 @@ class BCFSleuthApp {
     return result;
   }
 
-  discoverCustomFields() {
-    const customFieldRegistry = {
-      topicCustomFields: new Map(),
-      commentCustomFields: new Map(),
-      totalCustomFields: 0,
-    };
-
-    this.parsedData.forEach((bcfData) => {
-      bcfData.topics.forEach((topic) => {
-        // Analyze topic custom fields
-        if (topic._customFields) {
-          Object.entries(topic._customFields).forEach(([fieldName, value]) => {
-            if (value && value.toString().trim()) {
-              if (!customFieldRegistry.topicCustomFields.has(fieldName)) {
-                customFieldRegistry.topicCustomFields.set(fieldName, {
-                  values: new Set(),
-                  count: 0,
-                  displayName: this.makeDisplayName(fieldName),
-                  category: this.categorizeCustomField(fieldName),
-                });
-              }
-              const fieldData =
-                customFieldRegistry.topicCustomFields.get(fieldName);
-              fieldData.values.add(value.toString().trim());
-              fieldData.count++;
-            }
-          });
-        }
-
-        // Analyze comment custom fields
-        if (topic.comments) {
-          topic.comments.forEach((comment) => {
-            if (comment._customFields) {
-              Object.entries(comment._customFields).forEach(
-                ([fieldName, value]) => {
-                  if (value && value.toString().trim()) {
-                    if (
-                      !customFieldRegistry.commentCustomFields.has(fieldName)
-                    ) {
-                      customFieldRegistry.commentCustomFields.set(fieldName, {
-                        values: new Set(),
-                        count: 0,
-                        displayName: this.makeDisplayName(fieldName),
-                        category: this.categorizeCustomField(fieldName),
-                      });
-                    }
-                    const fieldData =
-                      customFieldRegistry.commentCustomFields.get(fieldName);
-                    fieldData.values.add(value.toString().trim());
-                    fieldData.count++;
-                  }
-                }
-              );
-            }
-          });
-        }
-      });
-    });
-
-    customFieldRegistry.totalCustomFields =
-      customFieldRegistry.topicCustomFields.size +
-      customFieldRegistry.commentCustomFields.size;
-
-    this.debugLog(
-      `Discovered ${customFieldRegistry.totalCustomFields} custom fields:`,
-      {
-        topicFields: Array.from(customFieldRegistry.topicCustomFields.keys()),
-        commentFields: Array.from(
-          customFieldRegistry.commentCustomFields.keys()
-        ),
-      }
-    );
-
-    return customFieldRegistry;
-  }
-
-  makeDisplayName(fieldName) {
-    // Convert technical field names to user-friendly display names
-    return fieldName
-      .replace(/^(topic|comment)_/, '') // Remove prefix
-      .replace(/_(attr|element)_/, ' ') // Replace separators
-      .replace(/_/g, ' ') // Replace remaining underscores
-      .replace(/\b\w/g, (l) => l.toUpperCase()); // Title case
-  }
-
-  categorizeCustomField(fieldName) {
-    // Categorize custom fields for better organization
-    if (fieldName.includes('attr')) return 'Attributes';
-    if (fieldName.includes('namespace')) return 'Vendor Extensions';
-    if (fieldName.includes('element')) return 'Custom Elements';
-    if (fieldName.includes('comment')) return 'Comment Extensions';
-    return 'Other Custom Fields';
-  }
-
-  rebuildFieldSelectionUI(
-    discoveredFields,
-    customData,
-    customFieldRegistry = null
-  ) {
+  rebuildFieldSelectionUI(discoveredFields, customData) {
     const fieldSelection = document.querySelector('.field-selection');
     if (!fieldSelection) return;
 
@@ -1072,15 +967,6 @@ class BCFSleuthApp {
           : '';
     }
     return '';
-    // Add custom fields section if any were discovered
-    if (customFieldRegistry && customFieldRegistry.totalCustomFields > 0) {
-      const customFieldsCategory =
-        this.buildCustomFieldsCategory(customFieldRegistry);
-      fieldCategories.appendChild(customFieldsCategory);
-    }
-
-    // Re-attach event listeners to new checkboxes
-    this.attachFieldSelectionListeners();
   }
 
   attachFieldSelectionListeners() {
@@ -1779,59 +1665,6 @@ class BCFSleuthApp {
     }
 
     return window.BCF_DEBUG_MODE;
-  }
-
-  buildCustomFieldsCategory(customFieldRegistry) {
-    const categoryDiv = document.createElement('div');
-    categoryDiv.className = 'field-category';
-
-    const header = document.createElement('h6');
-    header.textContent = `Custom Fields (${customFieldRegistry.totalCustomFields} discovered)`;
-    categoryDiv.appendChild(header);
-
-    const gridDiv = document.createElement('div');
-    gridDiv.className = 'field-grid';
-
-    // Add topic custom fields
-    customFieldRegistry.topicCustomFields.forEach((fieldData, fieldName) => {
-      const fieldItem = document.createElement('div');
-      fieldItem.className = 'field-item';
-
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.id = `field-custom-${fieldName}`;
-      checkbox.checked = false; // Custom fields not selected by default
-
-      const label = document.createElement('label');
-      label.setAttribute('for', `field-custom-${fieldName}`);
-      label.innerHTML = `${fieldData.displayName} <span class="custom-indicator">(${fieldData.count} values)</span>`;
-
-      fieldItem.appendChild(checkbox);
-      fieldItem.appendChild(label);
-      gridDiv.appendChild(fieldItem);
-    });
-
-    // Add comment custom fields
-    customFieldRegistry.commentCustomFields.forEach((fieldData, fieldName) => {
-      const fieldItem = document.createElement('div');
-      fieldItem.className = 'field-item';
-
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.id = `field-custom-${fieldName}`;
-      checkbox.checked = false; // Custom fields not selected by default
-
-      const label = document.createElement('label');
-      label.setAttribute('for', `field-custom-${fieldName}`);
-      label.innerHTML = `${fieldData.displayName} <span class="custom-indicator">(${fieldData.count} values)</span>`;
-
-      fieldItem.appendChild(checkbox);
-      fieldItem.appendChild(label);
-      gridDiv.appendChild(fieldItem);
-    });
-
-    categoryDiv.appendChild(gridDiv);
-    return categoryDiv;
   }
 
   formatDate(dateString) {
