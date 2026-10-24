@@ -349,6 +349,10 @@ When adding support for new BCF versions:
 4. **Add version detection** in the parsing logic
 5. **Update export utilities** to handle new fields
 
+### Custom Fields in the Field Selection UI
+
+The parser still captures unrecognized attributes and elements in `topic._customFields` / `comment._customFields`, and `extensions.xml` values drive the "(N custom)" indicators in the field selection UI. There is **no** separate "Custom Fields" category in the UI: an earlier half-wired attempt was removed because the exporters and advanced preview map only the fixed `field-*` IDs from `getFieldMapping()`, so custom checkboxes could not produce output. To add one, wire it end to end: category UI, `getFieldMapping()`, CSV, Excel, advanced preview, PDF and Word. Also filter the parser output first, since `_customFields` currently includes standard BCF attributes such as `Guid`.
+
 ### Adding New Utility Modules
 
 Follow the established pattern:
