@@ -1,4 +1,4 @@
-// BCFSleuth Configuration Management - Phase 3d
+// BCFSleuth Configuration Management - field templates, preferences, and processing history
 class ConfigurationManager {
   constructor(bcfApp) {
     this.app = bcfApp; // Reference to main app
@@ -130,7 +130,7 @@ class ConfigurationManager {
     const filename = document.getElementById('template-filename').value.trim();
 
     if (!name) {
-      alert('Please enter a template name');
+      this.app.showUserFeedback('Please enter a template name', 'warning');
       return;
     }
 
@@ -139,16 +139,16 @@ class ConfigurationManager {
       (t) => t.name.toLowerCase() === name.toLowerCase()
     );
     if (existingTemplate) {
-      alert(
+      this.app.showUserFeedback(
         'A template with this name already exists. Please choose a different name.'
-      );
+      , 'warning');
       return;
     }
 
     // Get currently selected fields
     const selectedFields = this.app.getSelectedFieldNames();
     if (!selectedFields || selectedFields.length === 0) {
-      alert('Please select some fields before saving a template');
+      this.app.showUserFeedback('Please select some fields before saving a template', 'warning');
       return;
     }
 
@@ -169,13 +169,13 @@ class ConfigurationManager {
     this.clearTemplateForm();
 
     console.log('Template created:', template);
-    alert(`Template "${name}" saved successfully!`);
+    this.app.showUserFeedback(`Template "${name}" saved successfully!`, 'success');
   }
 
   updateExistingTemplate(templateId) {
     const template = this.templates.find((t) => t.id === templateId);
     if (!template) {
-      alert('Template not found');
+      this.app.showUserFeedback('Template not found', 'error');
       return;
     }
 
@@ -186,7 +186,7 @@ class ConfigurationManager {
     const filename = document.getElementById('template-filename').value.trim();
 
     if (!name) {
-      alert('Please enter a template name');
+      this.app.showUserFeedback('Please enter a template name', 'warning');
       return;
     }
 
@@ -195,16 +195,16 @@ class ConfigurationManager {
       (t) => t.id !== templateId && t.name.toLowerCase() === name.toLowerCase()
     );
     if (existingTemplate) {
-      alert(
+      this.app.showUserFeedback(
         'A template with this name already exists. Please choose a different name.'
-      );
+      , 'warning');
       return;
     }
 
     // Get currently selected fields
     const selectedFields = this.app.getSelectedFieldNames();
     if (!selectedFields || selectedFields.length === 0) {
-      alert('Please select some fields before updating the template');
+      this.app.showUserFeedback('Please select some fields before updating the template', 'warning');
       return;
     }
 
@@ -221,13 +221,13 @@ class ConfigurationManager {
     this.exitEditMode();
 
     console.log('Template updated:', template);
-    alert(`Template "${name}" updated successfully!`);
+    this.app.showUserFeedback(`Template "${name}" updated successfully!`, 'success');
   }
 
   saveFromCurrentSelection() {
     const selectedFields = this.app.getSelectedFieldNames();
     if (!selectedFields || selectedFields.length === 0) {
-      alert('Please select some fields first');
+      this.app.showUserFeedback('Please select some fields first', 'warning');
       return;
     }
 
@@ -267,7 +267,7 @@ class ConfigurationManager {
   applyTemplate(templateId) {
     const template = this.templates.find((t) => t.id === templateId);
     if (!template) {
-      alert('Template not found');
+      this.app.showUserFeedback('Template not found', 'error');
       return;
     }
 
@@ -302,9 +302,9 @@ class ConfigurationManager {
     this.saveToStorage();
     this.displayTemplates();
 
-    alert(
+    this.app.showUserFeedback(
       `Template "${template.name}" applied successfully!\nFields: ${template.selectedFields.length} selected\nFilename: ${template.customFilename}`
-    );
+    , 'success');
     console.log('Template applied:', template);
   }
 
@@ -406,7 +406,7 @@ class ConfigurationManager {
     this.saveToStorage();
     this.applyStoredPreferences();
 
-    alert('Preferences saved successfully!');
+    this.app.showUserFeedback('Preferences saved successfully!', 'success');
     console.log('Preferences saved:', this.preferences);
   }
 
@@ -418,7 +418,7 @@ class ConfigurationManager {
       this.saveToStorage();
       this.loadPreferencesIntoUI();
       this.applyStoredPreferences();
-      alert('Preferences reset to defaults');
+      this.app.showUserFeedback('Preferences reset to defaults', 'success');
     }
   }
 
@@ -549,7 +549,7 @@ class ConfigurationManager {
 
   exportHistory() {
     if (this.processingHistory.length === 0) {
-      alert('No history to export');
+      this.app.showUserFeedback('No history to export', 'warning');
       return;
     }
 
@@ -574,7 +574,7 @@ class ConfigurationManager {
 
   exportTemplates() {
     if (this.templates.length === 0) {
-      alert('No templates to export. Create some templates first.');
+      this.app.showUserFeedback('No templates to export. Create some templates first.', 'warning');
       return;
     }
 
@@ -619,19 +619,19 @@ class ConfigurationManager {
       URL.revokeObjectURL(url);
 
       console.log(`Exported ${this.templates.length} templates to ${filename}`);
-      alert(
+      this.app.showUserFeedback(
         `Successfully exported ${this.templates.length} templates!\nFile: ${filename}`
-      );
+      , 'success');
     } catch (error) {
       console.error('Export error:', error);
-      alert('Error exporting templates: ' + error.message);
+      this.app.showUserFeedback('Error exporting templates: ' + error.message, 'error');
     }
   }
 
   importTemplates() {
     const fileInput = document.getElementById('import-file-input');
     if (!fileInput) {
-      alert('Import functionality not available');
+      this.app.showUserFeedback('Import functionality not available', 'error');
       return;
     }
 
@@ -644,7 +644,7 @@ class ConfigurationManager {
 
     // Validate file type
     if (!file.name.toLowerCase().endsWith('.json')) {
-      alert('Please select a valid JSON file (.json)');
+      this.app.showUserFeedback('Please select a valid JSON file (.json)', 'warning');
       return;
     }
 
@@ -655,14 +655,14 @@ class ConfigurationManager {
         this.processImportedTemplates(importData);
       } catch (error) {
         console.error('Import parsing error:', error);
-        alert(
+        this.app.showUserFeedback(
           "Error reading template file: Invalid JSON format.\n\nPlease ensure you're importing a valid BCFSleuth template file."
-        );
+        , 'error');
       }
     };
 
     reader.onerror = () => {
-      alert('Error reading file. Please try again.');
+      this.app.showUserFeedback('Error reading file. Please try again.', 'error');
     };
 
     reader.readAsText(file);
@@ -687,17 +687,17 @@ class ConfigurationManager {
   validateImportData(data) {
     // Check basic structure
     if (!data || typeof data !== 'object') {
-      alert('Invalid template file: Not a valid JSON object');
+      this.app.showUserFeedback('Invalid template file: Not a valid JSON object', 'error');
       return false;
     }
 
     if (!data.templates || !Array.isArray(data.templates)) {
-      alert('Invalid template file: Missing or invalid templates array');
+      this.app.showUserFeedback('Invalid template file: Missing or invalid templates array', 'error');
       return false;
     }
 
     if (data.templates.length === 0) {
-      alert('No templates found in the import file');
+      this.app.showUserFeedback('No templates found in the import file', 'warning');
       return false;
     }
 
@@ -710,9 +710,9 @@ class ConfigurationManager {
     );
 
     if (invalidTemplates.length > 0) {
-      alert(
+      this.app.showUserFeedback(
         `Invalid template file: ${invalidTemplates.length} templates are missing required fields (name, selectedFields)`
-      );
+      , 'error');
       return false;
     }
 
@@ -765,7 +765,7 @@ class ConfigurationManager {
         if (newTemplates.length > 0) {
           this.performTemplateImport(newTemplates);
         } else {
-          alert('No new templates to import');
+          this.app.showUserFeedback('No new templates to import', 'info');
         }
         break;
 
@@ -826,12 +826,12 @@ class ConfigurationManager {
     if (successCount > 0) {
       this.saveToStorage();
       this.displayTemplates();
-      alert(`Successfully imported ${successCount} template(s)!`);
+      this.app.showUserFeedback(`Successfully imported ${successCount} template(s)!`, 'success');
       console.log(`Imported ${successCount} templates`);
     } else {
-      alert(
+      this.app.showUserFeedback(
         'No templates were imported. Please check the file format and try again.'
-      );
+      , 'warning');
     }
 
     // Clear the file input
@@ -956,7 +956,7 @@ class ConfigurationManager {
   editTemplate(templateId) {
     const template = this.templates.find((t) => t.id === templateId);
     if (!template) {
-      alert('Template not found');
+      this.app.showUserFeedback('Template not found', 'error');
       return;
     }
 
@@ -1108,6 +1108,6 @@ class ConfigurationManager {
   }
 
   reprocessFromHistory(historyId) {
-    alert('Reprocessing from history will be implemented in a future update');
+    this.app.showUserFeedback('Reprocessing from history will be implemented in a future update', 'info');
   }
 }

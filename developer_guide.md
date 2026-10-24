@@ -160,13 +160,16 @@ function generateAndDownloadZip(blob, filename) { /* download handling */ }
 All user-facing errors use the standardized feedback system:
 
 ```javascript
-// Standardized error display
-showUserFeedback('Operation completed successfully', 'success', 3000);
-showUserFeedback('Warning: Large file detected', 'warning', 5000);
-showUserFeedback('Error: Invalid BCF format', 'error', 0); // Persistent error
+// Standardized feedback: a non-blocking toast with a dismiss button.
+// Modules reach it through the app instance (this.app); never use alert().
+// Types: 'error', 'warning', 'success', 'info'.
+// Default durations: error stays until dismissed, warning 8s, success 4s, info 5s.
+this.app.showUserFeedback('Operation completed successfully', 'success', 3000);
+this.app.showUserFeedback('Warning: Large file detected', 'warning', 5000);
+this.app.showUserFeedback('Error: Invalid BCF format', 'error', 0); // Until dismissed
 
 // Debug logging (conditional)
-debugLog('Processing viewpoint', { topicId, viewpointId, coordinates });
+this.app.debugLog('Processing viewpoint', { topicId, viewpointId, coordinates });
 
 // Toggle debug mode
 window.bcfApp.toggleDebugMode(); // Enable/disable via console
@@ -211,11 +214,11 @@ function exportToNewFormat(topics) {
 function processExport() {
     try {
         const result = exportToNewFormat(topics);
-        showUserFeedback('Export completed successfully', 'success');
+        this.app.showUserFeedback('Export completed successfully', 'success');
         return result;
     } catch (error) {
-        debugLog('Export failed', { error: error.message });
-        showUserFeedback('Export failed: ' + error.message, 'error');
+        this.app.debugLog('Export failed', { error: error.message });
+        this.app.showUserFeedback('Export failed: ' + error.message, 'error');
         return null;
     }
 }
@@ -379,7 +382,7 @@ if (typeof module !== 'undefined' && module.exports) {
 Before adding new code, verify:
 
 - ✅ **No duplicate methods** - Check if functionality exists in utilities
-- ✅ **Proper error handling** - Use showUserFeedback() for user messages
+- ✅ **Proper error handling** - Use this.app.showUserFeedback() for user messages, never alert()
 - ✅ **Debug logging** - Add debugLog() calls for troubleshooting
 - ✅ **Method size** - Keep methods focused and under 50 lines
 - ✅ **JSDoc comments** - Document all public methods
