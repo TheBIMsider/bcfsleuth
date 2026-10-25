@@ -16,6 +16,31 @@
 
 class CoordinateUtils {
   /**
+   * Camera/coordinate field names (BCF camera data plus legacy position/target).
+   * Exporters use this to decide whether coordinate columns are selected.
+   */
+  static COORDINATE_FIELDS = [
+    'cameraType',
+    'CameraViewPointX',
+    'CameraViewPointY',
+    'CameraViewPointZ',
+    'CameraDirectionX',
+    'CameraDirectionY',
+    'CameraDirectionZ',
+    'CameraUpVectorX',
+    'CameraUpVectorY',
+    'CameraUpVectorZ',
+    'FieldOfView',
+    'ViewToWorldScale',
+    'cameraPosX',
+    'cameraPosY',
+    'cameraPosZ',
+    'cameraTargetX',
+    'cameraTargetY',
+    'cameraTargetZ',
+  ];
+
+  /**
    * Format coordinate value with consistent precision
    * Handles null, undefined, empty string, and invalid numbers
    * @param {number|string|null|undefined} value - Raw coordinate value
@@ -217,6 +242,38 @@ class CoordinateUtils {
     const scale =
       primaryViewpoint.ViewToWorldScale || primaryViewpoint.viewToWorldScale;
     return this.formatCoordinate(scale);
+  }
+
+  /**
+   * Check whether a point has any component that is not null
+   * @param {Object} point - Object holding the components (e.g. {X, Y, Z})
+   * @param {string[]} keys - Component keys to test
+   * @returns {boolean} - True if the point exists and any component is not null
+   */
+  static hasAnyComponent(point, keys) {
+    return !!point && keys.some((key) => point[key] !== null);
+  }
+
+  /**
+   * Check whether a single viewpoint carries any BCF or legacy coordinate data.
+   * Unlike hasCoordinateData (which inspects a topic's primary viewpoint), this
+   * tests one viewpoint and decides whether it gets its own export row.
+   * @param {Object} viewpoint - Parsed viewpoint
+   * @returns {boolean} - True if the viewpoint has any camera/coordinate data
+   */
+  static viewpointHasCoordinateData(viewpoint) {
+    const upper = ['X', 'Y', 'Z'];
+    const lower = ['x', 'y', 'z'];
+    return !!(
+      viewpoint.cameraType ||
+      this.hasAnyComponent(viewpoint.CameraViewPoint, upper) ||
+      this.hasAnyComponent(viewpoint.CameraDirection, upper) ||
+      this.hasAnyComponent(viewpoint.CameraUpVector, upper) ||
+      viewpoint.FieldOfView !== null ||
+      viewpoint.ViewToWorldScale !== null ||
+      this.hasAnyComponent(viewpoint.cameraPosition, lower) ||
+      this.hasAnyComponent(viewpoint.cameraTarget, lower)
+    );
   }
 
   /**

@@ -1,27 +1,5 @@
 // CSV Exporter - Handles CSV generation from BCF data
 class CSVExporter {
-  /** Camera/coordinate fields (BCF camera data plus legacy position/target). */
-  static COORDINATE_FIELDS = [
-    'cameraType',
-    'CameraViewPointX',
-    'CameraViewPointY',
-    'CameraViewPointZ',
-    'CameraDirectionX',
-    'CameraDirectionY',
-    'CameraDirectionZ',
-    'CameraUpVectorX',
-    'CameraUpVectorY',
-    'CameraUpVectorZ',
-    'FieldOfView',
-    'ViewToWorldScale',
-    'cameraPosX',
-    'cameraPosY',
-    'cameraPosZ',
-    'cameraTargetX',
-    'cameraTargetY',
-    'cameraTargetZ',
-  ];
-
   /** Comment-specific fields, blank on topic rows. */
   static COMMENT_FIELDS = [
     'commentNumber',
@@ -111,7 +89,7 @@ class CSVExporter {
   static collectExportRows(bcfDataArray, selectedFields) {
     const allRows = [];
     const includeViewpointRows = selectedFields.some((field) =>
-      this.COORDINATE_FIELDS.includes(field)
+      CoordinateUtils.COORDINATE_FIELDS.includes(field)
     );
     let topicNumber = 1;
 
@@ -147,38 +125,12 @@ class CSVExporter {
       ...topic,
     };
 
-    const primaryViewpoint = this.findPrimaryViewpoint(topic.viewpoints);
+    const primaryViewpoint = CoordinateUtils.getPrimaryViewpoint(topic);
     if (primaryViewpoint) {
       Object.assign(topicRow, this.extractCameraFields(primaryViewpoint));
     }
 
     return topicRow;
-  }
-
-  /**
-   * Picks the viewpoint whose camera data represents the topic.
-   * Priority: 1) viewpoint.bcfv, 2) first viewpoint with camera data, 3) first viewpoint.
-   * @param {Object[]} viewpoints - Topic viewpoints
-   * @returns {Object|undefined} Primary viewpoint, if any
-   */
-  static findPrimaryViewpoint(viewpoints) {
-    if (!viewpoints || viewpoints.length === 0) {
-      return undefined;
-    }
-
-    return (
-      viewpoints.find(
-        (vp) =>
-          vp.viewpointFile === 'viewpoint.bcfv' ||
-          vp.guid === 'viewpoint-generic' ||
-          (vp.viewpointFile &&
-            vp.viewpointFile.toLowerCase().includes('viewpoint.bcfv'))
-      ) ||
-      viewpoints.find(
-        (vp) => vp.cameraType || vp.CameraViewPoint || vp.cameraPosition
-      ) ||
-      viewpoints[0]
-    );
   }
 
   /**
@@ -242,36 +194,6 @@ class CSVExporter {
   }
 
   /**
-   * Checks whether a point has any component that is not null.
-   * @param {Object} point - Object holding the components
-   * @param {string[]} keys - Component keys to test
-   * @returns {boolean} True if the point exists and any component is not null
-   */
-  static hasAnyComponent(point, keys) {
-    return !!point && keys.some((key) => point[key] !== null);
-  }
-
-  /**
-   * Checks whether a viewpoint carries any BCF or legacy coordinate data.
-   * @param {Object} viewpoint - Parsed viewpoint
-   * @returns {boolean} True if the viewpoint should get its own row
-   */
-  static hasCoordinateData(viewpoint) {
-    const upper = ['X', 'Y', 'Z'];
-    const lower = ['x', 'y', 'z'];
-    return !!(
-      viewpoint.cameraType ||
-      this.hasAnyComponent(viewpoint.CameraViewPoint, upper) ||
-      this.hasAnyComponent(viewpoint.CameraDirection, upper) ||
-      this.hasAnyComponent(viewpoint.CameraUpVector, upper) ||
-      viewpoint.FieldOfView !== null ||
-      viewpoint.ViewToWorldScale !== null ||
-      this.hasAnyComponent(viewpoint.cameraPosition, lower) ||
-      this.hasAnyComponent(viewpoint.cameraTarget, lower)
-    );
-  }
-
-  /**
    * Builds one row per viewpoint that has coordinate data (like multiple comments).
    * @param {Object} bcfData - Parsed BCF file the topic belongs to
    * @param {Object} topic - Topic whose viewpoints to export
@@ -284,7 +206,7 @@ class CSVExporter {
     }
 
     return topic.viewpoints
-      .filter((viewpoint) => this.hasCoordinateData(viewpoint))
+      .filter((viewpoint) => CoordinateUtils.viewpointHasCoordinateData(viewpoint))
       .map((viewpoint, index) => ({
         rowType: 'viewpoint',
         topicNumber: `${topicNumber}.V${index + 1}`,
@@ -480,7 +402,7 @@ class CSVExporter {
    */
   static buildCameraFieldMap(row) {
     const fieldMap = { cameraType: row.cameraType || '' };
-    this.COORDINATE_FIELDS.forEach((field) => {
+    CoordinateUtils.COORDINATE_FIELDS.forEach((field) => {
       if (field !== 'cameraType') {
         fieldMap[field] = CoordinateUtils.formatCoordinate(row[field]);
       }
@@ -520,7 +442,7 @@ class CSVExporter {
     }
     if (rowType === 'viewpoint') {
       return !(
-        this.COORDINATE_FIELDS.includes(field) ||
+        CoordinateUtils.COORDINATE_FIELDS.includes(field) ||
         this.VIEWPOINT_ROW_FIELDS.includes(field)
       );
     }

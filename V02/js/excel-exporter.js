@@ -95,18 +95,22 @@ class ExcelExporter {
     ];
   }
 
-  static buildWorksheetData(bcfDataArray, selectedFields) {
-    const data = [];
-    const today = new Date().toLocaleDateString();
+  /**
+   * Pads a row with empty strings up to the given width.
+   * @param {Array} values - Leading cell values
+   * @param {number} width - Total number of cells
+   * @returns {Array} Padded row
+   */
+  static padRow(values, width) {
+    return [...values, ...Array(Math.max(0, width - values.length)).fill('')];
+  }
 
-    // Title row
-    data.push([
-      `BCF Analysis Report ${today}`,
-      ...Array(selectedFields.length).fill(''),
-    ]);
-    data.push([]); // Empty row
-
-    // Project information section
+  /**
+   * Totals files, topics, comments, project names and BCF versions across all files.
+   * @param {Object[]} bcfDataArray - Parsed BCF files
+   * @returns {{totalTopics: number, totalComments: number, projectNames: Set<string>, bcfVersions: Set<string>}}
+   */
+  static summarizeBcfData(bcfDataArray) {
     let totalTopics = 0;
     let totalComments = 0;
     const projectNames = new Set();
@@ -121,178 +125,149 @@ class ExcelExporter {
       if (bcfData.version) bcfVersions.add(bcfData.version);
     });
 
-    data.push([
-      'Files processed:',
-      bcfDataArray.length,
-      ...Array(selectedFields.length - 1).fill(''),
-    ]);
-    data.push([
-      'Project(s):',
-      projectNames.size === 1
-        ? Array.from(projectNames)[0]
-        : `${projectNames.size} projects`,
-      ...Array(selectedFields.length - 1).fill(''),
-    ]);
-    data.push([
-      'BCF Version(s):',
-      Array.from(bcfVersions).join(', '),
-      ...Array(selectedFields.length - 1).fill(''),
-    ]);
-    data.push([
-      'Total Topics:',
-      totalTopics,
-      ...Array(selectedFields.length - 1).fill(''),
-    ]);
-    data.push([
-      'Total Comments:',
-      totalComments,
-      ...Array(selectedFields.length - 1).fill(''),
-    ]);
-    data.push([]); // Empty row
+    return { totalTopics, totalComments, projectNames, bcfVersions };
+  }
 
-    // Main table headers
-    const headers = this.getExcelHeaders(selectedFields);
-    data.push(headers);
+  /**
+   * Builds the report title row followed by an empty row.
+   * @param {string[]} selectedFields - Selected field names
+   * @returns {Array[]} Title rows
+   */
+  static buildTitleRows(selectedFields) {
+    const today = new Date().toLocaleDateString();
+    return [
+      this.padRow([`BCF Analysis Report ${today}`], selectedFields.length + 1),
+      [],
+    ];
+  }
 
-    // Process each topic with professional spacing
+  /**
+   * Builds the project information rows (files, projects, versions, totals)
+   * followed by an empty row.
+   * @param {Object[]} bcfDataArray - Parsed BCF files
+   * @param {string[]} selectedFields - Selected field names
+   * @returns {Array[]} Summary rows
+   */
+  static buildSummaryRows(bcfDataArray, selectedFields) {
+    const { totalTopics, totalComments, projectNames, bcfVersions } =
+      this.summarizeBcfData(bcfDataArray);
+    const width = selectedFields.length + 1;
+
+    return [
+      this.padRow(['Files processed:', bcfDataArray.length], width),
+      this.padRow(
+        [
+          'Project(s):',
+          projectNames.size === 1
+            ? Array.from(projectNames)[0]
+            : `${projectNames.size} projects`,
+        ],
+        width
+      ),
+      this.padRow(
+        ['BCF Version(s):', Array.from(bcfVersions).join(', ')],
+        width
+      ),
+      this.padRow(['Total Topics:', totalTopics], width),
+      this.padRow(['Total Comments:', totalComments], width),
+      [],
+    ];
+  }
+
+  /**
+   * Builds the viewpoint section of a topic: a header row and one row per
+   * viewpoint with coordinate data (same filtering as the CSV export).
+   * @param {Object} topic - Parsed topic
+   * @param {string[]} selectedFields - Selected field names
+   * @param {number} topicNumber - 1-based topic counter
+   * @returns {Array[]} Section rows, empty if no viewpoint has coordinate data
+   */
+  static buildViewpointSection(topic, selectedFields, topicNumber) {
+    const coordinateViewpoints = (topic.viewpoints || []).filter((viewpoint) =>
+      CoordinateUtils.viewpointHasCoordinateData(viewpoint)
+    );
+    if (coordinateViewpoints.length === 0) {
+      return [];
+    }
+
+    const headerRow = this.padRow(
+      ['Viewpoint #', 'Coordinates', 'Camera Position', 'Camera Target', 'GUID'],
+      selectedFields.length + 1
+    );
+    return [
+      headerRow,
+      ...coordinateViewpoints.map((viewpoint, index) =>
+        this.buildViewpointRow(viewpoint, selectedFields, index + 1, topicNumber)
+      ),
+    ];
+  }
+
+  /**
+   * Builds the comment section of a topic: a header row and one row per comment,
+   * sorted by date. Only included when the commentNumber field is selected.
+   * Sorts topic.comments in place.
+   * @param {Object} topic - Parsed topic
+   * @param {string[]} selectedFields - Selected field names
+   * @param {number} topicNumber - 1-based topic counter
+   * @returns {Array[]} Section rows, empty if not applicable
+   */
+  static buildCommentSection(topic, selectedFields, topicNumber) {
+    if (
+      !selectedFields.includes('commentNumber') ||
+      !topic.comments ||
+      topic.comments.length === 0
+    ) {
+      return [];
+    }
+
+    const headerRow = this.padRow(
+      ['Comment #', 'Comments', 'Author', 'Date', 'Comment Text'],
+      selectedFields.length + 1
+    );
+    const sortedComments = topic.comments.sort(
+      (a, b) =>
+        new Date(a.date || '1970-01-01') - new Date(b.date || '1970-01-01')
+    );
+    return [
+      headerRow,
+      ...sortedComments.map((comment, index) =>
+        this.buildCommentRow(comment, selectedFields, index + 1, topicNumber)
+      ),
+    ];
+  }
+
+  /**
+   * Builds the worksheet rows: title, project summary, main table header, then
+   * per topic the topic row, viewpoint section, comment section and a spacer row.
+   * @param {Object[]} bcfDataArray - Parsed BCF files
+   * @param {string[]} selectedFields - Selected field names
+   * @returns {Array[]} Worksheet rows (array of arrays)
+   */
+  static buildWorksheetData(bcfDataArray, selectedFields) {
+    const data = [
+      ...this.buildTitleRows(selectedFields),
+      ...this.buildSummaryRows(bcfDataArray, selectedFields),
+      this.getExcelHeaders(selectedFields),
+    ];
+    // Viewpoint sections only when coordinate fields are selected (mirrors CSV)
+    const includeViewpoints = selectedFields.some((field) =>
+      CoordinateUtils.COORDINATE_FIELDS.includes(field)
+    );
+
     let topicNumber = 1;
     bcfDataArray.forEach((bcfData) => {
       bcfData.topics.forEach((topic) => {
-        // Main topic row
-        const topicRow = this.buildTopicRow(
-          topic,
-          bcfData,
-          selectedFields,
-          topicNumber
+        data.push(
+          this.buildTopicRow(topic, bcfData, selectedFields, topicNumber)
         );
-        data.push(topicRow);
-
-        // Viewpoint coordinates section (if coordinate fields are selected and viewpoints exist)
-        // This mirrors the CSV logic exactly for consistency
-        const coordinateFields = [
-          'cameraType',
-          'CameraViewPointX',
-          'CameraViewPointY',
-          'CameraViewPointZ',
-          'CameraDirectionX',
-          'CameraDirectionY',
-          'CameraDirectionZ',
-          'CameraUpVectorX',
-          'CameraUpVectorY',
-          'CameraUpVectorZ',
-          'FieldOfView',
-          'ViewToWorldScale',
-          'cameraPosX',
-          'cameraPosY',
-          'cameraPosZ',
-          'cameraTargetX',
-          'cameraTargetY',
-          'cameraTargetZ',
-        ];
-        const hasCoordinateFields = selectedFields.some((field) =>
-          coordinateFields.includes(field)
-        );
-
-        if (
-          hasCoordinateFields &&
-          topic.viewpoints &&
-          topic.viewpoints.length > 0
-        ) {
-          // Use same comprehensive filtering as CSV (detect ANY coordinate data)
-          const coordinateViewpoints = topic.viewpoints.filter((viewpoint) => {
-            return (
-              // Check for BCF camera data
-              viewpoint.cameraType ||
-              (viewpoint.CameraViewPoint &&
-                (viewpoint.CameraViewPoint.X !== null ||
-                  viewpoint.CameraViewPoint.Y !== null ||
-                  viewpoint.CameraViewPoint.Z !== null)) ||
-              (viewpoint.CameraDirection &&
-                (viewpoint.CameraDirection.X !== null ||
-                  viewpoint.CameraDirection.Y !== null ||
-                  viewpoint.CameraDirection.Z !== null)) ||
-              (viewpoint.CameraUpVector &&
-                (viewpoint.CameraUpVector.X !== null ||
-                  viewpoint.CameraUpVector.Y !== null ||
-                  viewpoint.CameraUpVector.Z !== null)) ||
-              viewpoint.FieldOfView !== null ||
-              viewpoint.ViewToWorldScale !== null ||
-              // Check for legacy coordinate data
-              (viewpoint.cameraPosition &&
-                (viewpoint.cameraPosition.x !== null ||
-                  viewpoint.cameraPosition.y !== null ||
-                  viewpoint.cameraPosition.z !== null)) ||
-              (viewpoint.cameraTarget &&
-                (viewpoint.cameraTarget.x !== null ||
-                  viewpoint.cameraTarget.y !== null ||
-                  viewpoint.cameraTarget.z !== null))
-            );
-          });
-
-          if (coordinateViewpoints.length > 0) {
-            // Viewpoint coordinates header
-            const viewpointHeaderRow = [
-              'Viewpoint #',
-              'Coordinates',
-              'Camera Position',
-              'Camera Target',
-              'GUID',
-            ];
-            // Pad to match selected fields length
-            while (viewpointHeaderRow.length < selectedFields.length + 1) {
-              viewpointHeaderRow.push('');
-            }
-            data.push(viewpointHeaderRow);
-
-            coordinateViewpoints.forEach((viewpoint, index) => {
-              const viewpointRow = this.buildViewpointRow(
-                viewpoint,
-                selectedFields,
-                index + 1,
-                topicNumber
-              );
-              data.push(viewpointRow);
-            });
-          }
-        }
-
-        // Comments section (if commentNumber field is selected and comments exist)
-        if (
-          selectedFields.includes('commentNumber') &&
-          topic.comments &&
-          topic.comments.length > 0
-        ) {
-          // Comments header
-          const commentHeaderRow = [
-            'Comment #',
-            'Comments',
-            'Author',
-            'Date',
-            'Comment Text',
-          ];
-          // Pad to match selected fields length
-          while (commentHeaderRow.length < selectedFields.length + 1) {
-            commentHeaderRow.push('');
-          }
-          data.push(commentHeaderRow);
-
-          // Sort comments by date
-          const sortedComments = topic.comments.sort(
-            (a, b) =>
-              new Date(a.date || '1970-01-01') -
-              new Date(b.date || '1970-01-01')
+        if (includeViewpoints) {
+          data.push(
+            ...this.buildViewpointSection(topic, selectedFields, topicNumber)
           );
-
-          sortedComments.forEach((comment, index) => {
-            const commentRow = this.buildCommentRow(
-              comment,
-              selectedFields,
-              index + 1,
-              topicNumber // Pass topic number for hierarchical numbering
-            );
-            data.push(commentRow);
-          });
         }
+        data.push(
+          ...this.buildCommentSection(topic, selectedFields, topicNumber)
+        );
 
         // Empty row for spacing between topics
         data.push(Array(selectedFields.length + 1).fill(''));
@@ -370,8 +345,44 @@ class ExcelExporter {
     return headers;
   }
 
-  static buildTopicRow(topic, bcfData, selectedFields, topicNumber) {
-    const fieldMap = {
+  /** BCF camera vector types, each with X/Y/Z components. */
+  static CAMERA_VECTORS = ['CameraViewPoint', 'CameraDirection', 'CameraUpVector'];
+
+  /** Axis suffixes of the camera fields. */
+  static AXES = ['X', 'Y', 'Z'];
+
+  /** Legacy camera points: field-name prefix and viewpoint property. */
+  static LEGACY_POINTS = [
+    { prefix: 'cameraPos', key: 'cameraPosition' },
+    { prefix: 'cameraTarget', key: 'cameraTarget' },
+  ];
+
+  /**
+   * Builds a row: the row label followed by one cell per selected field.
+   * Fields missing from the map (or with a falsy value) render blank.
+   * @param {string} label - First column value (Topic # / hierarchical number)
+   * @param {Object} fieldMap - Map of field name to cell value
+   * @param {string[]} selectedFields - Selected field names, in column order
+   * @returns {Array} Row values
+   */
+  static buildRowFromFieldMap(label, fieldMap, selectedFields) {
+    const row = [label];
+    selectedFields.forEach((field) => {
+      row.push(fieldMap[field] || '');
+    });
+
+    return row;
+  }
+
+  /**
+   * Builds the topic-level (non-camera) field map. Comment and viewpoint
+   * index fields are omitted so they render blank on topic rows.
+   * @param {Object} topic - Parsed topic
+   * @param {Object} bcfData - Parsed BCF file the topic belongs to
+   * @returns {Object} Map of field name to display value
+   */
+  static buildTopicInfoFieldMap(topic, bcfData) {
+    return {
       title: topic.title || 'Untitled',
       description: this.cleanDescription(topic.description || ''),
       status: topic.topicStatus || 'Unknown',
@@ -392,11 +403,6 @@ class ExcelExporter {
       topicGuid: topic.guid || '',
       commentsCount: topic.comments ? topic.comments.length : 0,
       viewpointsCount: topic.viewpoints ? topic.viewpoints.length : 0,
-      commentNumber: '', // Empty for topic rows
-      commentDate: '', // Empty for topic rows
-      commentAuthor: '', // Empty for topic rows
-      commentText: '', // Empty for topic rows
-      commentStatus: '', // Empty for topic rows
       // Enhanced BCF 3.0 field mappings with comprehensive data handling
       serverAssignedId: topic.serverAssignedId || '',
       referenceLinks: this.formatReferenceLinksExcel(topic.referenceLinks),
@@ -404,246 +410,144 @@ class ExcelExporter {
         topic.documentReferences
       ),
       headerFiles: this.formatHeaderFilesExcel(topic.headerFiles),
-      viewpointIndex: '', // Empty for topic rows
+    };
+  }
 
-      // Complete BCF camera field mappings (use primary viewpoint like comments)
+  /**
+   * Builds the camera field map for a topic row from its primary viewpoint.
+   * @param {Object} topic - Parsed topic
+   * @returns {Object} Map of camera field name to formatted value
+   */
+  static buildTopicCameraFieldMap(topic) {
+    const fieldMap = {
       cameraType: this.getPrimaryViewpointProperty(topic, 'cameraType'),
-      CameraViewPointX: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
-        topic,
-        'CameraViewPoint',
-        'X'
-      ),
-      CameraViewPointY: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
-        topic,
-        'CameraViewPoint',
-        'Y'
-      ),
-      CameraViewPointZ: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
-        topic,
-        'CameraViewPoint',
-        'Z'
-      ),
-      CameraDirectionX: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
-        topic,
-        'CameraDirection',
-        'X'
-      ),
-      CameraDirectionY: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
-        topic,
-        'CameraDirection',
-        'Y'
-      ),
-      CameraDirectionZ: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
-        topic,
-        'CameraDirection',
-        'Z'
-      ),
-      CameraUpVectorX: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
-        topic,
-        'CameraUpVector',
-        'X'
-      ),
-      CameraUpVectorY: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
-        topic,
-        'CameraUpVector',
-        'Y'
-      ),
-      CameraUpVectorZ: CoordinateUtils.getPrimaryViewpointBCFCoordinate(
-        topic,
-        'CameraUpVector',
-        'Z'
-      ),
       FieldOfView: this.getPrimaryViewpointProperty(topic, 'FieldOfView'),
       ViewToWorldScale: this.getPrimaryViewpointProperty(
         topic,
         'ViewToWorldScale'
       ),
-
-      // Legacy coordinate field mappings (using new primary viewpoint logic)
-      cameraPosX: CoordinateUtils.getPrimaryViewpointCoordinate(
-        topic,
-        'cameraPosition',
-        'x'
-      ),
-      cameraPosY: CoordinateUtils.getPrimaryViewpointCoordinate(
-        topic,
-        'cameraPosition',
-        'y'
-      ),
-      cameraPosZ: CoordinateUtils.getPrimaryViewpointCoordinate(
-        topic,
-        'cameraPosition',
-        'z'
-      ),
-      cameraTargetX: CoordinateUtils.getPrimaryViewpointCoordinate(
-        topic,
-        'cameraTarget',
-        'x'
-      ),
-      cameraTargetY: CoordinateUtils.getPrimaryViewpointCoordinate(
-        topic,
-        'cameraTarget',
-        'y'
-      ),
-      cameraTargetZ: CoordinateUtils.getPrimaryViewpointCoordinate(
-        topic,
-        'cameraTarget',
-        'z'
-      ),
     };
 
-    const row = [topicNumber.toString()]; // Convert to string to prevent auto-formatting
-    selectedFields.forEach((field) => {
-      row.push(fieldMap[field] || '');
+    this.CAMERA_VECTORS.forEach((type) => {
+      this.AXES.forEach((axis) => {
+        fieldMap[`${type}${axis}`] =
+          CoordinateUtils.getPrimaryViewpointBCFCoordinate(topic, type, axis);
+      });
     });
 
-    return row;
+    // Legacy coordinate fields (using primary viewpoint logic)
+    this.LEGACY_POINTS.forEach(({ prefix, key }) => {
+      this.AXES.forEach((axis) => {
+        fieldMap[`${prefix}${axis}`] =
+          CoordinateUtils.getPrimaryViewpointCoordinate(
+            topic,
+            key,
+            axis.toLowerCase()
+          );
+      });
+    });
+
+    return fieldMap;
   }
 
+  /**
+   * Builds the main topic row.
+   * @param {Object} topic - Parsed topic
+   * @param {Object} bcfData - Parsed BCF file the topic belongs to
+   * @param {string[]} selectedFields - Selected field names
+   * @param {number} topicNumber - 1-based topic counter
+   * @returns {Array} Row values
+   */
+  static buildTopicRow(topic, bcfData, selectedFields, topicNumber) {
+    const fieldMap = {
+      ...this.buildTopicInfoFieldMap(topic, bcfData),
+      ...this.buildTopicCameraFieldMap(topic),
+    };
+
+    // Topic number as string to prevent auto-formatting
+    return this.buildRowFromFieldMap(
+      topicNumber.toString(),
+      fieldMap,
+      selectedFields
+    );
+  }
+
+  /**
+   * Builds the field map for a viewpoint row: only the viewpoint index and
+   * camera fields have values, all other fields render blank.
+   * @param {Object} viewpoint - Parsed viewpoint
+   * @returns {Object} Map of field name to formatted value
+   */
+  static buildViewpointFieldMap(viewpoint) {
+    const format = (value) => CoordinateUtils.formatCoordinate(value);
+    const fieldMap = {
+      viewpointIndex: viewpoint.index || '',
+      cameraType: viewpoint.cameraType || '',
+      FieldOfView: format(viewpoint.FieldOfView),
+      ViewToWorldScale: format(viewpoint.ViewToWorldScale),
+    };
+
+    this.CAMERA_VECTORS.forEach((type) => {
+      this.AXES.forEach((axis) => {
+        fieldMap[`${type}${axis}`] = format(viewpoint[type]?.[axis]);
+      });
+    });
+
+    // Legacy coordinate fields (for backward compatibility)
+    this.LEGACY_POINTS.forEach(({ prefix, key }) => {
+      this.AXES.forEach((axis) => {
+        fieldMap[`${prefix}${axis}`] = format(
+          viewpoint[key]?.[axis.toLowerCase()]
+        );
+      });
+    });
+
+    return fieldMap;
+  }
+
+  /**
+   * Builds a viewpoint row (labelled "<topic>.V<viewpoint>") with camera data only.
+   * @param {Object} viewpoint - Parsed viewpoint
+   * @param {string[]} selectedFields - Selected field names
+   * @param {number} viewpointNumber - 1-based viewpoint counter within the topic
+   * @param {number} topicNumber - 1-based topic counter
+   * @returns {Array} Row values
+   */
   static buildViewpointRow(
     viewpoint,
     selectedFields,
     viewpointNumber,
     topicNumber
   ) {
-    const fieldMap = {
-      title: '', // Empty for viewpoint rows
-      description: '', // Empty for viewpoint rows
-      status: '', // Empty for viewpoint rows
-      type: '', // Empty for viewpoint rows
-      priority: '', // Empty for viewpoint rows
-      stage: '', // Empty for viewpoint rows
-      labels: '', // Empty for viewpoint rows
-      assignedTo: '', // Empty for viewpoint rows
-      creationDate: '', // Empty for viewpoint rows
-      creationAuthor: '', // Empty for viewpoint rows
-      modifiedDate: '', // Empty for viewpoint rows
-      modifiedAuthor: '', // Empty for viewpoint rows
-      dueDate: '', // Empty for viewpoint rows
-      sourceFile: '', // Empty for viewpoint rows
-      projectName: '', // Empty for viewpoint rows
-      bcfVersion: '', // Empty for viewpoint rows
-      topicGuid: '', // Empty for viewpoint rows
-      commentsCount: '', // Empty for viewpoint rows
-      viewpointsCount: '', // Empty for viewpoint rows
-      commentNumber: '', // Empty for viewpoint rows
-      commentDate: '', // Empty for viewpoint rows
-      commentAuthor: '', // Empty for viewpoint rows
-      commentText: '', // Empty for viewpoint rows
-      commentStatus: '', // Empty for viewpoint rows
-
-      // BCF 3.0 fields (empty for viewpoint rows except viewpointIndex)
-      serverAssignedId: '',
-      referenceLinks: '',
-      documentReferences: '',
-      headerFiles: '',
-      viewpointIndex: viewpoint.index || '',
-
-      // Complete BCF camera field mappings - all 18 coordinate fields
-      cameraType: viewpoint.cameraType || '',
-      CameraViewPointX: CoordinateUtils.formatCoordinate(
-        viewpoint.CameraViewPoint?.X
-      ),
-      CameraViewPointY: CoordinateUtils.formatCoordinate(
-        viewpoint.CameraViewPoint?.Y
-      ),
-      CameraViewPointZ: CoordinateUtils.formatCoordinate(
-        viewpoint.CameraViewPoint?.Z
-      ),
-      CameraDirectionX: CoordinateUtils.formatCoordinate(
-        viewpoint.CameraDirection?.X
-      ),
-      CameraDirectionY: CoordinateUtils.formatCoordinate(
-        viewpoint.CameraDirection?.Y
-      ),
-      CameraDirectionZ: CoordinateUtils.formatCoordinate(
-        viewpoint.CameraDirection?.Z
-      ),
-      CameraUpVectorX: CoordinateUtils.formatCoordinate(
-        viewpoint.CameraUpVector?.X
-      ),
-      CameraUpVectorY: CoordinateUtils.formatCoordinate(
-        viewpoint.CameraUpVector?.Y
-      ),
-      CameraUpVectorZ: CoordinateUtils.formatCoordinate(
-        viewpoint.CameraUpVector?.Z
-      ),
-      FieldOfView: CoordinateUtils.formatCoordinate(viewpoint.FieldOfView),
-      ViewToWorldScale: CoordinateUtils.formatCoordinate(
-        viewpoint.ViewToWorldScale
-      ),
-
-      // Legacy coordinate field mappings (for backward compatibility)
-      cameraPosX: CoordinateUtils.formatCoordinate(viewpoint.cameraPosition?.x),
-      cameraPosY: CoordinateUtils.formatCoordinate(viewpoint.cameraPosition?.y),
-      cameraPosZ: CoordinateUtils.formatCoordinate(viewpoint.cameraPosition?.z),
-      cameraTargetX: CoordinateUtils.formatCoordinate(
-        viewpoint.cameraTarget?.x
-      ),
-      cameraTargetY: CoordinateUtils.formatCoordinate(
-        viewpoint.cameraTarget?.y
-      ),
-      cameraTargetZ: CoordinateUtils.formatCoordinate(
-        viewpoint.cameraTarget?.z
-      ),
-    };
-
-    const row = [`${topicNumber}.V${viewpointNumber}`]; // V for viewpoint
-    selectedFields.forEach((field) => {
-      row.push(fieldMap[field] || '');
-    });
-
-    return row;
+    return this.buildRowFromFieldMap(
+      `${topicNumber}.V${viewpointNumber}`,
+      this.buildViewpointFieldMap(viewpoint),
+      selectedFields
+    );
   }
 
+  /**
+   * Builds a comment row (labelled "<topic>.<comment>"); only comment fields have values.
+   * @param {Object} comment - Parsed comment
+   * @param {string[]} selectedFields - Selected field names
+   * @param {number} commentNumber - 1-based comment counter within the topic
+   * @param {number} topicNumber - 1-based topic counter
+   * @returns {Array} Row values
+   */
   static buildCommentRow(comment, selectedFields, commentNumber, topicNumber) {
     const fieldMap = {
-      title: '', // Empty for comment rows
-      description: '', // Empty for comment rows
-      status: '', // Empty for comment rows
-      type: '', // Empty for comment rows
-      priority: '', // Empty for comment rows
-      stage: '', // Empty for comment rows
-      labels: '', // Empty for comment rows
-      assignedTo: '', // Empty for comment rows
-      creationDate: '', // Empty for comment rows
-      creationAuthor: '', // Empty for comment rows
-      modifiedDate: '', // Empty for comment rows
-      modifiedAuthor: '', // Empty for comment rows
-      dueDate: '', // Empty for comment rows
-      sourceFile: '', // Empty for comment rows
-      projectName: '', // Empty for comment rows
-      bcfVersion: '', // Empty for comment rows
-      topicGuid: '', // Empty for comment rows
-      commentsCount: '', // Empty for comment rows
-      viewpointsCount: '', // Empty for comment rows
       commentNumber: commentNumber,
       commentDate: this.formatDate(comment.date),
       commentAuthor: comment.author || 'Unknown',
       commentText: this.cleanDescription(comment.comment || ''),
       commentStatus: comment.status || '',
-
-      // BCF 3.0 fields (empty for comment rows)
-      serverAssignedId: '',
-      referenceLinks: '',
-      headerFiles: '',
-      viewpointIndex: '',
-
-      // Viewpoint coordinate field mappings (empty for comment rows)
-      cameraPosX: '',
-      cameraPosY: '',
-      cameraPosZ: '',
-      cameraTargetX: '',
-      cameraTargetY: '',
-      cameraTargetZ: '',
     };
 
-    const row = [`${topicNumber}.${commentNumber}`]; // Comment numbering
-    selectedFields.forEach((field) => {
-      row.push(fieldMap[field] || '');
-    });
-
-    return row;
+    return this.buildRowFromFieldMap(
+      `${topicNumber}.${commentNumber}`,
+      fieldMap,
+      selectedFields
+    );
   }
 
   static formatLabels(labels) {
@@ -653,83 +557,88 @@ class ExcelExporter {
     return labels.filter((label) => label.trim()).join('; ');
   }
 
-  static formatWorksheet(worksheet, rowCount, selectedFields) {
-    // Set professional column widths
-    const colWidths = [{ wch: 12 }]; // Topic # column
+  /** Column widths (in characters) grouped by field name. */
+  static COLUMN_WIDTH_GROUPS = [
+    { wch: 50, fields: ['title', 'description', 'commentText'] },
+    { wch: 25, fields: ['creationAuthor', 'commentAuthor', 'assignedTo'] },
+    {
+      wch: 15,
+      fields: [
+        'status',
+        'type',
+        'priority',
+        'stage',
+        'creationDate',
+        'modifiedDate',
+        'dueDate',
+        'commentDate',
+        'cameraType',
+        'FieldOfView',
+        'ViewToWorldScale',
+      ],
+    },
+    { wch: 30, fields: ['sourceFile', 'projectName'] },
+    { wch: 40, fields: ['topicGuid'] },
+    {
+      // BCF coordinate and legacy coordinate fields - wider for precision
+      wch: 18,
+      fields: [
+        'CameraViewPointX',
+        'CameraViewPointY',
+        'CameraViewPointZ',
+        'CameraDirectionX',
+        'CameraDirectionY',
+        'CameraDirectionZ',
+        'CameraUpVectorX',
+        'CameraUpVectorY',
+        'CameraUpVectorZ',
+        'cameraPosX',
+        'cameraPosY',
+        'cameraPosZ',
+        'cameraTargetX',
+        'cameraTargetY',
+        'cameraTargetZ',
+      ],
+    },
+  ];
 
-    selectedFields.forEach((field) => {
-      switch (field) {
-        case 'title':
-        case 'description':
-        case 'commentText':
-          colWidths.push({ wch: 50 });
-          break;
-        case 'creationAuthor':
-        case 'commentAuthor':
-        case 'assignedTo':
-          colWidths.push({ wch: 25 });
-          break;
-        case 'status':
-        case 'type':
-        case 'priority':
-        case 'stage':
-          colWidths.push({ wch: 15 });
-          break;
-        case 'creationDate':
-        case 'modifiedDate':
-        case 'dueDate':
-        case 'commentDate':
-          colWidths.push({ wch: 15 });
-          break;
-        case 'sourceFile':
-        case 'projectName':
-          colWidths.push({ wch: 30 });
-          break;
-        case 'topicGuid':
-          colWidths.push({ wch: 40 });
-          break;
-        // Camera type field
-        case 'cameraType':
-          colWidths.push({ wch: 15 });
-          break;
-        // BCF coordinate fields - wider columns for precision
-        case 'CameraViewPointX':
-        case 'CameraViewPointY':
-        case 'CameraViewPointZ':
-        case 'CameraDirectionX':
-        case 'CameraDirectionY':
-        case 'CameraDirectionZ':
-        case 'CameraUpVectorX':
-        case 'CameraUpVectorY':
-        case 'CameraUpVectorZ':
-          colWidths.push({ wch: 18 });
-          break;
-        // Camera properties
-        case 'FieldOfView':
-        case 'ViewToWorldScale':
-          colWidths.push({ wch: 15 });
-          break;
-        // Legacy coordinate fields
-        case 'cameraPosX':
-        case 'cameraPosY':
-        case 'cameraPosZ':
-        case 'cameraTargetX':
-        case 'cameraTargetY':
-        case 'cameraTargetZ':
-          colWidths.push({ wch: 18 });
-          break;
-        default:
-          colWidths.push({ wch: 12 });
-      }
-    });
+  /** Width (in characters) for fields not listed in COLUMN_WIDTH_GROUPS. */
+  static DEFAULT_COLUMN_WIDTH = 12;
 
-    worksheet['!cols'] = colWidths;
+  /**
+   * Gets the column width setting for a field.
+   * @param {string} field - Field name
+   * @returns {{wch: number}} SheetJS column width object
+   */
+  static getColumnWidth(field) {
+    const group = this.COLUMN_WIDTH_GROUPS.find((g) =>
+      g.fields.includes(field)
+    );
+    return { wch: group ? group.wch : this.DEFAULT_COLUMN_WIDTH };
+  }
 
-    // Find title row, project info section, and main headers for styling
+  /**
+   * Builds the worksheet column widths: Topic # column first, then one per field.
+   * @param {string[]} selectedFields - Selected field names
+   * @returns {Array<{wch: number}>} Column width settings
+   */
+  static buildColumnWidths(selectedFields) {
+    return [
+      { wch: 12 }, // Topic # column
+      ...selectedFields.map((field) => this.getColumnWidth(field)),
+    ];
+  }
+
+  /**
+   * Scans the top rows of the sheet for the report title row and the main table header row.
+   * @param {Object} worksheet - SheetJS worksheet
+   * @param {number} rowCount - Total number of rows
+   * @returns {{titleRowIndex: number, headerRowIndex: number}} Row indexes, -1 if not found
+   */
+  static findLayoutRows(worksheet, rowCount) {
     let titleRowIndex = -1;
     let headerRowIndex = -1;
 
-    // Scan for the title and header rows
     for (let r = 0; r < Math.min(15, rowCount); r++) {
       const cellA = worksheet[XLSX.utils.encode_cell({ r, c: 0 })];
       if (cellA && cellA.v && typeof cellA.v === 'string') {
@@ -741,20 +650,35 @@ class ExcelExporter {
       }
     }
 
-    // Apply professional formatting
-    if (titleRowIndex >= 0) {
-      // Title row formatting - bold and larger
-      const titleCell =
-        worksheet[XLSX.utils.encode_cell({ r: titleRowIndex, c: 0 })];
-      if (titleCell) {
-        titleCell.s = {
-          font: { bold: true, sz: 14 },
-          alignment: { horizontal: 'left' },
-        };
-      }
+    return { titleRowIndex, headerRowIndex };
+  }
+
+  /**
+   * Styles the report title cell (bold, larger).
+   * @param {Object} worksheet - SheetJS worksheet
+   * @param {number} titleRowIndex - Title row index, -1 to skip
+   */
+  static styleTitleRow(worksheet, titleRowIndex) {
+    if (titleRowIndex < 0) {
+      return;
     }
 
-    // Format project info section (rows 3-7 typically)
+    const titleCell =
+      worksheet[XLSX.utils.encode_cell({ r: titleRowIndex, c: 0 })];
+    if (titleCell) {
+      titleCell.s = {
+        font: { bold: true, sz: 14 },
+        alignment: { horizontal: 'left' },
+      };
+    }
+  }
+
+  /**
+   * Styles the project information rows (label cells bold, value cells left-aligned).
+   * @param {Object} worksheet - SheetJS worksheet
+   * @param {number} rowCount - Total number of rows
+   */
+  static styleProjectInfoRows(worksheet, rowCount) {
     for (let r = 2; r < Math.min(8, rowCount); r++) {
       const cellA = worksheet[XLSX.utils.encode_cell({ r, c: 0 })];
       const cellB = worksheet[XLSX.utils.encode_cell({ r, c: 1 })];
@@ -766,13 +690,11 @@ class ExcelExporter {
           cellA.v.includes('processed') ||
           cellA.v.includes('Total'))
       ) {
-        // Format label cells (column A)
         cellA.s = {
           font: { bold: true },
           alignment: { horizontal: 'left' },
         };
 
-        // Format value cells (column B)
         if (cellB) {
           cellB.s = {
             alignment: { horizontal: 'left' },
@@ -780,72 +702,79 @@ class ExcelExporter {
         }
       }
     }
+  }
 
-    // Format main table headers
-    if (headerRowIndex >= 0) {
-      for (let c = 0; c < selectedFields.length + 1; c++) {
-        const headerCell =
-          worksheet[XLSX.utils.encode_cell({ r: headerRowIndex, c })];
-        if (headerCell) {
-          headerCell.s = {
-            font: { bold: true },
-            alignment: { horizontal: 'center' },
-            fill: { fgColor: { rgb: 'E6E6FA' } }, // Light purple background
-            border: {
-              top: { style: 'thin', color: { rgb: '000000' } },
-              bottom: { style: 'thin', color: { rgb: '000000' } },
-              left: { style: 'thin', color: { rgb: '000000' } },
-              right: { style: 'thin', color: { rgb: '000000' } },
-            },
-          };
-        }
-      }
+  /**
+   * Styles the main table header row (bold, centered, shaded, bordered).
+   * @param {Object} worksheet - SheetJS worksheet
+   * @param {number} headerRowIndex - Header row index, -1 to skip
+   * @param {number} fieldCount - Number of selected fields
+   */
+  static styleHeaderRow(worksheet, headerRowIndex, fieldCount) {
+    if (headerRowIndex < 0) {
+      return;
     }
 
-    // Format main table headers
-    if (headerRowIndex >= 0) {
-      for (let c = 0; c < selectedFields.length + 1; c++) {
-        const headerCell =
-          worksheet[XLSX.utils.encode_cell({ r: headerRowIndex, c })];
-        if (headerCell) {
-          headerCell.s = {
-            font: { bold: true },
-            alignment: { horizontal: 'center' },
-            fill: { fgColor: { rgb: 'E6E6FA' } }, // Light purple background
-            border: {
-              top: { style: 'thin', color: { rgb: '000000' } },
-              bottom: { style: 'thin', color: { rgb: '000000' } },
-              left: { style: 'thin', color: { rgb: '000000' } },
-              right: { style: 'thin', color: { rgb: '000000' } },
-            },
-          };
-        }
+    for (let c = 0; c < fieldCount + 1; c++) {
+      const headerCell =
+        worksheet[XLSX.utils.encode_cell({ r: headerRowIndex, c })];
+      if (headerCell) {
+        headerCell.s = {
+          font: { bold: true },
+          alignment: { horizontal: 'center' },
+          fill: { fgColor: { rgb: 'E6E6FA' } }, // Light purple background
+          border: {
+            top: { style: 'thin', color: { rgb: '000000' } },
+            bottom: { style: 'thin', color: { rgb: '000000' } },
+            left: { style: 'thin', color: { rgb: '000000' } },
+            right: { style: 'thin', color: { rgb: '000000' } },
+          },
+        };
       }
     }
+  }
 
-    // ADDED: Format Topic # column (column A) to be left-aligned
+  /**
+   * Left-aligns the Topic # column (column A) below the header row.
+   * @param {Object} worksheet - SheetJS worksheet
+   * @param {number} headerRowIndex - Header row index
+   * @param {number} rowCount - Total number of rows
+   */
+  static styleTopicNumberColumn(worksheet, headerRowIndex, rowCount) {
     for (let r = headerRowIndex + 1; r < rowCount; r++) {
       const topicNumberCell = worksheet[XLSX.utils.encode_cell({ r, c: 0 })];
       if (topicNumberCell && topicNumberCell.v) {
         topicNumberCell.s = {
-          alignment: { horizontal: 'left' }, // Left-align topic numbers
+          alignment: { horizontal: 'left' },
           font: { bold: false },
         };
       }
     }
+  }
 
-    // Format comment section headers
+  /**
+   * Styles the "Comments" section header rows (bold italic).
+   * @param {Object} worksheet - SheetJS worksheet
+   * @param {number} headerRowIndex - Header row index
+   * @param {number} rowCount - Total number of rows
+   * @param {number} fieldCount - Number of selected fields
+   */
+  static styleCommentHeaderRows(
+    worksheet,
+    headerRowIndex,
+    rowCount,
+    fieldCount
+  ) {
     for (let r = headerRowIndex + 1; r < rowCount; r++) {
       const cellB = worksheet[XLSX.utils.encode_cell({ r, c: 1 })];
       if (cellB && cellB.v === 'Comments') {
-        // Style comment section header
         cellB.s = {
           font: { bold: true, italic: true },
           alignment: { horizontal: 'left' },
         };
 
         // Style the other header cells in this row
-        for (let c = 2; c < Math.min(5, selectedFields.length + 1); c++) {
+        for (let c = 2; c < Math.min(5, fieldCount + 1); c++) {
           const cell = worksheet[XLSX.utils.encode_cell({ r, c })];
           if (cell) {
             cell.s = {
@@ -856,13 +785,37 @@ class ExcelExporter {
         }
       }
     }
+  }
+
+  /**
+   * Applies column widths, cell styles and the data range to the worksheet.
+   * @param {Object} worksheet - SheetJS worksheet
+   * @param {number} rowCount - Total number of rows
+   * @param {string[]} selectedFields - Selected field names
+   */
+  static formatWorksheet(worksheet, rowCount, selectedFields) {
+    worksheet['!cols'] = this.buildColumnWidths(selectedFields);
+
+    const { titleRowIndex, headerRowIndex } = this.findLayoutRows(
+      worksheet,
+      rowCount
+    );
+    this.styleTitleRow(worksheet, titleRowIndex);
+    this.styleProjectInfoRows(worksheet, rowCount);
+    this.styleHeaderRow(worksheet, headerRowIndex, selectedFields.length);
+    this.styleTopicNumberColumn(worksheet, headerRowIndex, rowCount);
+    this.styleCommentHeaderRows(
+      worksheet,
+      headerRowIndex,
+      rowCount,
+      selectedFields.length
+    );
 
     // Set the range to include all data
-    const range = XLSX.utils.encode_range({
+    worksheet['!ref'] = XLSX.utils.encode_range({
       s: { c: 0, r: 0 },
       e: { c: selectedFields.length, r: rowCount - 1 },
     });
-    worksheet['!ref'] = range;
   }
 
   // Utility methods for clean formatting
