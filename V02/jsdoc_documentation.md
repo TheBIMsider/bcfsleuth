@@ -678,6 +678,30 @@ loadPDFImageDimensions(imageType, imageData, maxWidth, maxHeight) {
 
 The other new helpers (`buildGridWordHeader`, `buildWordGridTable`, `createWordImagePairCells`, `buildDetailedWordHeader`, `buildDetailedImageSection`, `buildDetailedMetadataParagraphs`, `buildSummaryWordStatistics`, `waitForDocxLibrary`, `verifyDocxComponents`, `generateWordDocumentForLayout`, `addPDFImagePlaceholder`, `addPDFImageMetadata`, `createSummaryTableRow`, `createSummaryTableCell`, `createResultLineParagraph`, `addChartsPDFTitle`, `addChartsPDFSummary`, `calculateChartPDFSize`, `addChartsPDFFooters`, `calculateLightboxSize`, `applyLightboxCanvasSize`, `buildLightboxChartConfig`) have JSDoc in the source.
 
+## App helpers (js/app.js)
+
+```javascript
+/**
+ * Wires up all static UI event listeners (file input, buttons, field
+ * selection controls, preview tabs). Each area has its own helper.
+ */
+setupEventListeners() {
+    // Orchestrates setupFileInputListeners, setupProcessButtonListener,
+    // setupExportButtonListeners, setupFieldSelectionControlListeners,
+    // setupTabListeners
+}
+
+/**
+ * Attaches click handlers that switch preview tabs. Falls back to any
+ * `.tab-button` when none are inside `.preview-tabs`.
+ */
+setupTabListeners() {
+    // Implementation...
+}
+```
+
+`discoverAvailableFields` orchestrates `discoverTopicFields`, `discoverBCF30TopicFields`, `discoverViewpointFields` (with `viewpointHasCoordinates`), `discoverCommentFields` and `buildDiscoveryResult`. `rebuildFieldSelectionUI` orchestrates `buildTopicCategory`, `buildDatesAuthorsCategory`, `buildFileProjectCategory`, `buildCommentsCountsCategory`, `buildBCF30Category` and `buildViewpointCoordinatesCategory`, which take `(discoveredFields, customData)` and return an element or `null`. All of them have JSDoc in the source. The top-level constants `VIEWPOINT_COORDINATE_FIELDS` and `FIELD_CATEGORY_DEFINITIONS` hold the camera field list and the category field ID/label pairs.
+
 ## Usage Instructions
 
 ### Adding JSDoc Comments to Files

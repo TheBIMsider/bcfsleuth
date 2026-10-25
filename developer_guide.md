@@ -232,6 +232,18 @@ The Word and PDF report methods in `js/image-viewer.js` and `js/analytics-dashbo
 
 **Shared logic** lives in `WordUtils` (paragraphs, image decoding and the image fallback) and `PDFUtils` (image sizing and format). Do not copy these back into a report builder.
 
+### App Structure (`js/app.js`)
+
+The three largest `app.js` methods are short orchestrators over focused helpers. Public names are unchanged, so add new steps as helpers rather than growing them.
+
+**Field discovery** (`discoverAvailableFields`): loops over files, detects the BCF format per file, then per topic calls `discoverTopicFields` (standard fields), `discoverBCF30TopicFields` (3.0 only), `discoverViewpointFields` (uses `viewpointHasCoordinates`; adds the camera fields once any viewpoint has coordinates) and `discoverCommentFields`. `buildDiscoveryResult` turns the collected sets into the returned object.
+
+**Field selection UI** (`rebuildFieldSelectionUI`): after the guards and the field-count header, it calls one builder per category in display order: `buildTopicCategory`, `buildDatesAuthorsCategory`, `buildFileProjectCategory`, `buildCommentsCountsCategory`, `buildBCF30Category` and `buildViewpointCoordinatesCategory`. Each returns an element, or `null` when the category has nothing to show. Field IDs and labels live in the `FIELD_CATEGORY_DEFINITIONS` constant at the top of the file, and the camera field list in `VIEWPOINT_COORDINATE_FIELDS`. To add a field, add it to the matching definition and to discovery.
+
+**Event wiring** (`setupEventListeners`): calls `setupFileInputListeners`, `setupProcessButtonListener`, `setupExportButtonListeners`, `setupFieldSelectionControlListeners` and `setupTabListeners`. Missing elements log a warning and are skipped, as before.
+
+**Note:** the old BCF 3.0 discovery added `serverAssignedId` twice; it is now added once, with the same output.
+
 ## Error Handling Standards
 
 ### Unified Feedback System
