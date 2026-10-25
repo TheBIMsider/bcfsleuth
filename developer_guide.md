@@ -39,7 +39,10 @@ if (CoordinateUtils.hasCoordinateData(topic)) {
 - `formatCoordinate(value)` - 3-decimal precision formatting
 - `getPrimaryViewpoint(topic)` - Intelligent viewpoint selection
 - `getPrimaryViewpointBCFCoordinate(topic, type, axis)` - BCF coordinate access
-- `hasCoordinateData(topic)` - Coordinate availability checking
+- `hasCoordinateData(topic)` - Coordinate availability checking (primary viewpoint of a topic)
+- `viewpointHasCoordinateData(viewpoint)` - Whether a single viewpoint has any camera data (decides if it gets its own export row)
+- `hasAnyComponent(point, keys)` - Whether a point has any non-null component
+- `COORDINATE_FIELDS` - Static list of the 18 camera and legacy coordinate field names, shared by both exporters
 
 ### PDFUtils (`js/utils/pdf-utils.js`)
 
@@ -152,6 +155,27 @@ function validateZipDownload(selectedImages) { /* validation logic */ }
 async function createZipWithImages(images, callback) { /* ZIP creation */ }
 function generateAndDownloadZip(blob, filename) { /* download handling */ }
 ```
+
+### Exporter Structure
+
+`CSVExporter.export` and `ExcelExporter.export` are the only entry points called from `app.js`. Everything else is a small static helper, so each step can be read and changed on its own.
+
+**`CSVExporter`** (`js/csv-exporter.js`)
+- `export` validates, calls `collectExportRows`, and joins the CSV text.
+- `collectExportRows` walks files and topics; per topic it adds `buildTopicRow`, then `buildViewpointRows` and `buildCommentRows`.
+- `buildTopicFieldMap` and `buildCameraFieldMap` map field names to values; `extractCameraFields` reads one viewpoint's camera data.
+- `getRowTypeLabel` and `isFieldHiddenForRow` apply the per-row-type field rules (`COMMENT_FIELDS`, `COMMENT_ROW_HIDDEN_FIELDS`, `VIEWPOINT_ROW_FIELDS`).
+
+**`ExcelExporter`** (`js/excel-exporter.js`)
+- `buildWorksheetData` assembles `buildTitleRows`, `buildSummaryRows` (via `summarizeBcfData`), the header row, then per topic the topic row, `buildViewpointSection` and `buildCommentSection`. `padRow` pads rows to the table width.
+- Row builders (`buildTopicRow`, `buildViewpointRow`, `buildCommentRow`) build a field map and pass it to `buildRowFromFieldMap`. Camera field maps loop over `CAMERA_VECTORS`, `AXES` and `LEGACY_POINTS`.
+- `formatWorksheet` applies widths and styles through `buildColumnWidths` (data table `COLUMN_WIDTH_GROUPS`, default `DEFAULT_COLUMN_WIDTH`), `findLayoutRows` and the `style...` methods.
+
+**Shared logic** lives in `CoordinateUtils`: the coordinate field list, primary-viewpoint selection and the "does this viewpoint have camera data" test. Do not copy these back into an exporter.
+
+**Known difference (not changed):** the Excel topic row formats camera values through `getPrimaryViewpointBCFCoordinate`, which also falls back to legacy field names; the CSV topic row does not. Files that use the older names can show different camera values in the two exports.
+
+**Browser support:** the exporters and `CoordinateUtils` use `static` class fields, which need Safari 14.1+ (current Chrome, Firefox and Edge are fine).
 
 ## Error Handling Standards
 
