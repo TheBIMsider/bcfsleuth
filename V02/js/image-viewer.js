@@ -295,7 +295,7 @@ class ImageViewer {
         <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--danger);">
           <h3>⚠️ Image Extraction Error</h3>
           <p>There was an error extracting images from your BCF files:</p>
-          <p><code>${errorMessage}</code></p>
+          <p><code>${this.escapeHtml(errorMessage)}</code></p>
           <p><em>You can still use the other features of BCFSleuth.</em></p>
         </div>
       `;
@@ -703,8 +703,15 @@ class ImageViewer {
    * Create HTML for a single image card
    */
   createImageCard(image, globalIndex) {
-    const imageUrl = `data:${image.imageType};base64,${image.imageData}`;
-    const statusClass = image.status.toLowerCase().replace(/\s+/g, '-');
+    const safeType = /^image\/[a-z0-9.+-]+$/i.test(image.imageType)
+      ? image.imageType
+      : 'image/png';
+    const imageUrl = `data:${safeType};base64,${this.escapeHtml(
+      image.imageData
+    )}`;
+    const statusClass = this.escapeHtml(
+      String(image.status).toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    );
     const formattedDate = this.formatDate(image.creationDate);
 
     return `
@@ -715,9 +722,9 @@ class ImageViewer {
             ${this.escapeHtml(image.title)}
           </div>
           <div class="card-meta">
-            <span class="card-status status-${statusClass}">${
+            <span class="card-status status-${statusClass}">${this.escapeHtml(
       image.status
-    }</span>
+    )}</span>
             <span class="card-author">${this.escapeHtml(image.author)}</span>
             <span class="card-date">${formattedDate}</span>
           </div>
@@ -781,10 +788,7 @@ class ImageViewer {
   }
 
   escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text.toString();
-    return div.innerHTML;
+    return HtmlUtils.escape(text);
   }
 
   getTotalPages() {
@@ -1575,7 +1579,7 @@ class ImageViewer {
             }%"></div>
           </div>
           <div class="progress-text">
-            ${message} (${current}/${total})
+            ${this.escapeHtml(message)} (${current}/${total})
           </div>
           <button onclick="window.bcfApp.imageViewer.cancelDownload()" class="btn btn-secondary">
             Cancel
@@ -1637,7 +1641,7 @@ class ImageViewer {
 
     const feedbackHTML = `
       <div id="download-feedback" class="download-feedback">
-        ${message}
+        ${this.escapeHtml(message)}
       </div>
     `;
 
@@ -1863,12 +1867,12 @@ class ImageViewer {
   showWordLayoutDialog() {
     return new Promise((resolve) => {
       const dialogHTML = `
-      <div id="word-layout-dialog" class="pdf-layout-dialog">
-        <div class="pdf-dialog-overlay" onclick="document.getElementById('word-layout-dialog').remove(); resolve(null);"></div>
+      <div id="word-layout-dialog" class="pdf-layout-dialog" role="dialog" aria-modal="true">
+        <div class="pdf-dialog-overlay" data-dialog-cancel></div>
         <div class="pdf-dialog-content">
           <div class="pdf-dialog-header">
             <h3>Word Document Layout</h3>
-            <button class="pdf-dialog-close" onclick="document.getElementById('word-layout-dialog').remove(); resolve(null);">✕</button>
+            <button class="pdf-dialog-close" data-dialog-cancel>✕</button>
           </div>
           
           <div class="pdf-layout-options">
@@ -1896,7 +1900,7 @@ class ImageViewer {
 
           <div class="pdf-dialog-footer">
             <div class="pdf-image-count">${this.filteredImages.length} images will be included</div>
-            <button class="btn btn-secondary" onclick="document.getElementById('word-layout-dialog').remove(); resolve(null);">Cancel</button>
+            <button class="btn btn-secondary" data-dialog-cancel>Cancel</button>
           </div>
         </div>
       </div>
@@ -1906,6 +1910,26 @@ class ImageViewer {
 
       // Store resolve function for layout selection
       window.wordLayoutResolve = resolve;
+      this.bindDialogCancel('word-layout-dialog', resolve, 'wordLayoutResolve');
+    });
+  }
+
+  /**
+   * Wire cancel controls ([data-dialog-cancel]) of a layout dialog so they
+   * close it and resolve its pending promise with null
+   * @param {string} dialogId - Dialog element ID
+   * @param {Function} resolve - Promise resolver to call with null
+   * @param {string} resolveKey - window property holding the pending resolver
+   */
+  bindDialogCancel(dialogId, resolve, resolveKey) {
+    const dialog = document.getElementById(dialogId);
+    if (!dialog) return;
+    dialog.querySelectorAll('[data-dialog-cancel]').forEach((el) => {
+      el.addEventListener('click', () => {
+        dialog.remove();
+        delete window[resolveKey];
+        resolve(null);
+      });
     });
   }
 
@@ -2492,12 +2516,12 @@ class ImageViewer {
   showSimplePDFLayoutDialog() {
     return new Promise((resolve) => {
       const dialogHTML = `
-      <div id="pdf-layout-dialog" class="pdf-layout-dialog">
-        <div class="pdf-dialog-overlay" onclick="document.getElementById('pdf-layout-dialog').remove(); resolve(null);"></div>
+      <div id="pdf-layout-dialog" class="pdf-layout-dialog" role="dialog" aria-modal="true">
+        <div class="pdf-dialog-overlay" data-dialog-cancel></div>
         <div class="pdf-dialog-content">
           <div class="pdf-dialog-header">
             <h3>PDF Report Layout</h3>
-            <button class="pdf-dialog-close" onclick="document.getElementById('pdf-layout-dialog').remove(); resolve(null);">✕</button>
+            <button class="pdf-dialog-close" data-dialog-cancel>✕</button>
           </div>
           
           <div class="pdf-layout-options">
@@ -2525,7 +2549,7 @@ class ImageViewer {
 
           <div class="pdf-dialog-footer">
             <div class="pdf-image-count">${this.filteredImages.length} images will be included</div>
-            <button class="btn btn-secondary" onclick="document.getElementById('pdf-layout-dialog').remove(); resolve(null);">Cancel</button>
+            <button class="btn btn-secondary" data-dialog-cancel>Cancel</button>
           </div>
         </div>
       </div>
@@ -2535,6 +2559,7 @@ class ImageViewer {
 
       // Store resolve function for layout selection
       window.pdfLayoutResolve = resolve;
+      this.bindDialogCancel('pdf-layout-dialog', resolve, 'pdfLayoutResolve');
     });
   }
 

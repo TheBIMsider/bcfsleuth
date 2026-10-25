@@ -108,7 +108,11 @@ class BCFSleuthApp {
     window.bcfApp = this; // Make globally accessible for onclick handlers
 
     // Initialize debug mode control
-    window.BCF_DEBUG_MODE = localStorage.getItem('bcf_debug') === 'true';
+    try {
+      window.BCF_DEBUG_MODE = localStorage.getItem('bcf_debug') === 'true';
+    } catch {
+      window.BCF_DEBUG_MODE = false; // Storage blocked (private mode, policy)
+    }
   }
 
   /**
@@ -1200,7 +1204,7 @@ class BCFSleuthApp {
     this.selectedFiles.forEach((file) => {
       const listItem = document.createElement('li');
       listItem.innerHTML = `
-                <span>${file.name}</span>
+                <span>${this.escapeHtml(file.name)}</span>
                 <span class="file-size">${this.formatFileSize(file.size)}</span>
             `;
       selectedFilesList.appendChild(listItem);
@@ -1531,12 +1535,12 @@ class BCFSleuthApp {
         <td>${this.escapeHtml(topic.title || 'Untitled')}</td>
         <td><span class="status-badge status-${(topic.topicStatus || 'unknown')
           .toLowerCase()
-          .replace(/\s+/g, '-')}">${this.escapeHtml(
+          .replace(/[^a-z0-9]+/g, '-')}">${this.escapeHtml(
           topic.topicStatus || 'Unknown'
         )}</span></td>
-        <td><span class="priority-badge priority-${(
-          topic.priority || 'normal'
-        ).toLowerCase()}">${this.escapeHtml(
+        <td><span class="priority-badge priority-${(topic.priority || 'normal')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')}">${this.escapeHtml(
           topic.priority || 'Normal'
         )}</span></td>
         <td>${this.escapeHtml(topic.creationAuthor || 'Unknown')}</td>
@@ -1569,12 +1573,6 @@ class BCFSleuthApp {
     } catch {
       return 'Invalid Date';
     }
-  }
-
-  escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   }
 
   exportCSV() {
@@ -1745,7 +1743,11 @@ class BCFSleuthApp {
    */
   toggleDebugMode() {
     window.BCF_DEBUG_MODE = !window.BCF_DEBUG_MODE;
-    localStorage.setItem('bcf_debug', window.BCF_DEBUG_MODE.toString());
+    try {
+      localStorage.setItem('bcf_debug', window.BCF_DEBUG_MODE.toString());
+    } catch {
+      // Storage unavailable; debug mode applies for this session only
+    }
     console.log(
       '🔧 Debug mode',
       window.BCF_DEBUG_MODE ? 'ENABLED' : 'DISABLED'
@@ -1760,21 +1762,8 @@ class BCFSleuthApp {
     return window.BCF_DEBUG_MODE;
   }
 
-  formatDate(dateString) {
-    if (!dateString) return 'Unknown';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString();
-    } catch {
-      return 'Invalid Date';
-    }
-  }
-
   escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return HtmlUtils.escape(text);
   }
 
   generateExportFilename(extension) {

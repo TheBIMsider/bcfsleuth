@@ -12,6 +12,12 @@ class ExcelExporter {
       selectedFields = this.getAllFieldNames();
     }
 
+    if (typeof XLSX === 'undefined') {
+      throw new Error(
+        'The Excel library (SheetJS) failed to load. Check your internet connection and refresh the page.'
+      );
+    }
+
     // Create a new workbook
     const workbook = XLSX.utils.book_new();
 
