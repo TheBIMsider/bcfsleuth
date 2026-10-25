@@ -250,6 +250,22 @@ class PDFUtils {
   }
 
   /**
+   * Map an image MIME type to the format name jsPDF expects
+   * @param {string} imageType - Image MIME type (e.g. 'image/png')
+   * @returns {string} - 'PNG', 'GIF', 'WEBP' or 'JPEG' (the default)
+   */
+  static getImageFormat(imageType) {
+    if (imageType.includes('png')) {
+      return 'PNG';
+    } else if (imageType.includes('gif')) {
+      return 'GIF';
+    } else if (imageType.includes('webp')) {
+      return 'WEBP';
+    }
+    return 'JPEG';
+  }
+
+  /**
    * Add image to PDF with error handling and fallback
    * @param {jsPDF} pdf - PDF document instance
    * @param {string} imageData - Base64 image data
@@ -271,14 +287,7 @@ class PDFUtils {
   ) {
     try {
       // Determine format for jsPDF
-      let format = 'JPEG';
-      if (imageType.includes('png')) {
-        format = 'PNG';
-      } else if (imageType.includes('gif')) {
-        format = 'GIF';
-      } else if (imageType.includes('webp')) {
-        format = 'WEBP';
-      }
+      const format = PDFUtils.getImageFormat(imageType);
 
       // Get image dimensions using temporary image element
       const img = new Image();

@@ -1725,9 +1725,47 @@ class ImageViewer {
       return;
     }
 
-    // ENHANCED: Wait for library to be ready
+    if (!(await this.waitForDocxLibrary()) || !this.verifyDocxComponents()) {
+      return;
+    }
 
-    // Wait up to 15 seconds for library to load
+    // Show layout options
+    const layout = await this.showWordLayoutDialog();
+    if (!layout) {
+      return; // User cancelled
+    }
+
+    try {
+      // Show progress
+      this.showDownloadProgress(
+        0,
+        this.filteredImages.length,
+        'Generating Word document...'
+      );
+
+      // Generate Word document based on chosen layout
+      const wordDoc = await this.generateWordDocumentForLayout(layout);
+
+      // Generate filename and download
+      const filename = this.generateWordFilename(layout);
+      await this.downloadWordDocument(wordDoc, filename);
+
+      // Hide progress and show success
+      this.hideDownloadProgress();
+      this.showDownloadFeedback(`✅ Word document generated: ${filename}`);
+    } catch (error) {
+      console.error('Error generating Word document:', error);
+      this.hideDownloadProgress();
+      this.app.showUserFeedback('Error generating Word document: ' + error.message, 'error');
+    }
+  }
+
+  /**
+   * Wait for the docx library to finish loading (up to 15 seconds)
+   * Shows an error message if the library failed to load or timed out
+   * @returns {Promise<boolean>} - True when window.docx is ready to use
+   */
+  async waitForDocxLibrary() {
     let attempts = 0;
     const maxAttempts = 30; // 30 attempts × 500ms = 15 seconds
 
@@ -1745,7 +1783,7 @@ class ImageViewer {
             '• Browser extensions blocking scripts\n\n' +
             'Please check your internet connection and try refreshing the page.'
         , 'error');
-        return;
+        return false;
       }
 
       await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 500ms
@@ -1758,10 +1796,18 @@ class ImageViewer {
           'Please refresh the page and try again. If the problem persists, ' +
           'check your internet connection and browser console for errors.'
       , 'error');
-      return;
+      return false;
     }
 
-    // Final verification
+    return true;
+  }
+
+  /**
+   * Check that the loaded docx library exposes the components the reports need
+   * Shows an error message listing any that are missing
+   * @returns {boolean} - True when all required components are present
+   */
+  verifyDocxComponents() {
     const requiredComponents = ['Document', 'Packer', 'Paragraph', 'TextRun'];
     const missingComponents = requiredComponents.filter(
       (comp) => !window.docx[comp]
@@ -1775,51 +1821,28 @@ class ImageViewer {
           ', '
         )}`
       , 'error');
-      return;
+      return false;
     }
 
+    return true;
+  }
 
-    // Show layout options
-    const layout = await this.showWordLayoutDialog();
-    if (!layout) {
-      return; // User cancelled
-    }
-
-    try {
-      // Show progress
-      this.showDownloadProgress(
-        0,
-        this.filteredImages.length,
-        'Generating Word document...'
-      );
-
-      // Generate Word document based on chosen layout
-      let wordDoc;
-      switch (layout) {
-        case 'grid':
-          wordDoc = await this.generateGridWordReport();
-          break;
-        case 'detailed':
-          wordDoc = await this.generateDetailedWordReport();
-          break;
-        case 'summary':
-          wordDoc = await this.generateSummaryWordReport();
-          break;
-        default:
-          throw new Error('Invalid layout choice');
-      }
-
-      // Generate filename and download
-      const filename = this.generateWordFilename(layout);
-      await this.downloadWordDocument(wordDoc, filename);
-
-      // Hide progress and show success
-      this.hideDownloadProgress();
-      this.showDownloadFeedback(`✅ Word document generated: ${filename}`);
-    } catch (error) {
-      console.error('Error generating Word document:', error);
-      this.hideDownloadProgress();
-      this.app.showUserFeedback('Error generating Word document: ' + error.message, 'error');
+  /**
+   * Build the Word document for the chosen layout
+   * @param {string} layout - 'grid', 'detailed' or 'summary'
+   * @returns {Promise<Document>} - docx Document
+   * @throws {Error} - If the layout is not recognized
+   */
+  async generateWordDocumentForLayout(layout) {
+    switch (layout) {
+      case 'grid':
+        return await this.generateGridWordReport();
+      case 'detailed':
+        return await this.generateDetailedWordReport();
+      case 'summary':
+        return await this.generateSummaryWordReport();
+      default:
+        throw new Error('Invalid layout choice');
     }
   }
 
@@ -2004,81 +2027,74 @@ class ImageViewer {
    * @returns {Array} - Array of Word document elements
    */
   async createWordGridContent() {
-    const {
-      Paragraph,
-      TextRun,
-      Table,
-      TableRow,
-      TableCell,
-      ImageRun,
-      AlignmentType,
-      HeadingLevel,
-      WidthType,
-    } = window.docx;
+    return [
+      ...this.buildGridWordHeader(),
+      await this.buildWordGridTable(),
+    ];
+  }
 
-    const elements = [];
+  /**
+   * Build the title block for the grid layout, ending with a spacer paragraph
+   * @returns {Array} - Title, project, generated-info and spacer paragraphs
+   */
+  buildGridWordHeader() {
+    const { Paragraph, AlignmentType, HeadingLevel } = window.docx;
 
-    // Add title and header
-    elements.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: `BCF Image Grid Report`,
-            bold: true,
-            size: 32,
-          }),
-        ],
-        heading: HeadingLevel.TITLE,
-        alignment: AlignmentType.CENTER,
-      })
-    );
+    return [
+      WordUtils.createTextParagraph(
+        `BCF Image Grid Report`,
+        { bold: true, size: 32 },
+        { heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }
+      ),
+      WordUtils.createTextParagraph(
+        `Project: ${this.getCommonProjectName()}`,
+        { size: 24 },
+        { alignment: AlignmentType.CENTER }
+      ),
+      WordUtils.createTextParagraph(
+        this.getWordGeneratedInfo(),
+        { size: 20 },
+        { alignment: AlignmentType.CENTER }
+      ),
+      // Add spacing
+      new Paragraph({ text: '' }),
+    ];
+  }
 
-    elements.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: `Project: ${this.getCommonProjectName()}`,
-            size: 24,
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-      })
-    );
+  /**
+   * Get the "Generated: date | Total Images: n" line used in Word report headers
+   * @returns {string} - Info line
+   */
+  getWordGeneratedInfo() {
+    return `Generated: ${new Date().toLocaleDateString()} | Total Images: ${
+      this.filteredImages.length
+    }`;
+  }
 
-    elements.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: `Generated: ${new Date().toLocaleDateString()} | Total Images: ${
-              this.filteredImages.length
-            }`,
-            size: 20,
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-      })
-    );
-
-    // Add spacing
-    elements.push(new Paragraph({ text: '' }));
+  /**
+   * Build the 2-column table of images for the grid layout
+   * @returns {Table} - docx Table holding every filtered image
+   */
+  async buildWordGridTable() {
+    const { Table, TableRow, TableCell, WidthType } = window.docx;
 
     // Create table with images (2 columns)
     const tableRows = [];
 
     for (let i = 0; i < this.filteredImages.length; i += 2) {
-      const leftImage = this.filteredImages[i];
-      const rightImage = this.filteredImages[i + 1];
+      const [leftCell, rightCell] = await this.createWordImagePairCells(
+        this.filteredImages[i],
+        this.filteredImages[i + 1]
+      );
 
       const row = new TableRow({
         children: [
           new TableCell({
-            children: await this.createWordImageCell(leftImage),
+            children: leftCell,
             width: { size: 50, type: WidthType.PERCENTAGE },
           }),
           new TableCell({
-            children: rightImage
-              ? await this.createWordImageCell(rightImage)
-              : [new Paragraph({ text: '' })],
+            children: rightCell,
             width: { size: 50, type: WidthType.PERCENTAGE },
           }),
         ],
@@ -2094,14 +2110,27 @@ class ImageViewer {
       );
     }
 
-    const table = new Table({
+    return new Table({
       rows: tableRows,
       width: { size: 100, type: WidthType.PERCENTAGE },
     });
+  }
 
-    elements.push(table);
+  /**
+   * Create the cell contents for a left/right pair of images
+   * @param {Object} leftImage - Image for the left cell
+   * @param {Object} [rightImage] - Image for the right cell; an empty paragraph if missing
+   * @returns {Promise<Array[]>} - [left cell paragraphs, right cell paragraphs]
+   */
+  async createWordImagePairCells(leftImage, rightImage) {
+    const { Paragraph } = window.docx;
 
-    return elements;
+    const leftCell = await this.createWordImageCell(leftImage);
+    const rightCell = rightImage
+      ? await this.createWordImageCell(rightImage)
+      : [new Paragraph({ text: '' })];
+
+    return [leftCell, rightCell];
   }
 
   /**
@@ -2111,83 +2140,30 @@ class ImageViewer {
    * @returns {Array} - Array of paragraph elements
    */
   async createWordImageCell(image) {
-    const { Paragraph, TextRun, ImageRun, AlignmentType } = window.docx;
+    const { AlignmentType } = window.docx;
 
-    const elements = [];
-
-    try {
-      // UPDATED: Convert base64 to buffer for DOCX 9.5.1
-      const base64Data = image.imageData;
-      const binaryString = atob(base64Data);
-      const imageBuffer = new Uint8Array(binaryString.length);
-
-      for (let i = 0; i < binaryString.length; i++) {
-        imageBuffer[i] = binaryString.charCodeAt(i);
-      }
-
-      // UPDATED: DOCX 9.5.1 ImageRun API
-      elements.push(
-        new Paragraph({
-          children: [
-            new ImageRun({
-              data: imageBuffer,
-              transformation: {
-                width: 200,
-                height: 150,
-              },
-              type: image.imageType.includes('png') ? 'png' : 'jpg', // Specify image type
-            }),
-          ],
+    return [
+      WordUtils.createImageParagraphWithFallback(
+        image,
+        { width: 200, height: 150 },
+        null,
+        'Word cell'
+      ),
+      // Add image metadata with enhanced styling
+      WordUtils.createTextParagraph(
+        image.title || 'Untitled',
+        { bold: true, size: 18, color: '2563eb' }, // Primary blue color
+        {
           alignment: AlignmentType.CENTER,
-        })
-      );
-    } catch (error) {
-      console.warn('Error adding image to Word cell:', error);
-      elements.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: '[Image not available]',
-              italics: true,
-              color: '999999',
-            }),
-          ],
-          alignment: AlignmentType.CENTER,
-        })
-      );
-    }
-
-    // Add image metadata with enhanced styling
-    elements.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: image.title || 'Untitled',
-            bold: true,
-            size: 18,
-            color: '2563eb', // Primary blue color
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-        spacing: { before: 200, after: 100 }, // Add spacing
-      })
-    );
-
-    elements.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: `${image.status} | ${image.priority} | ${image.author}`,
-            size: 16,
-            color: '64748b', // Secondary gray color
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 200 },
-      })
-    );
-
-    return elements;
+          spacing: { before: 200, after: 100 }, // Add spacing
+        }
+      ),
+      WordUtils.createTextParagraph(
+        `${image.status} | ${image.priority} | ${image.author}`,
+        { size: 16, color: '64748b' }, // Secondary gray color
+        { alignment: AlignmentType.CENTER, spacing: { after: 200 } }
+      ),
+    ];
   }
 
   /**
@@ -2196,69 +2172,10 @@ class ImageViewer {
    * @returns {Array} - Array of Word document elements
    */
   async createWordDetailedContent() {
-    const {
-      Paragraph,
-      TextRun,
-      ImageRun,
-      AlignmentType,
-      HeadingLevel,
-      PageBreak,
-    } = window.docx;
-
-    const elements = [];
-
-    // Add title with enhanced styling
-    elements.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: `BCF Detailed Image Report`,
-            bold: true,
-            size: 32,
-            color: '2563eb',
-          }),
-        ],
-        heading: HeadingLevel.TITLE,
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 400 },
-      })
-    );
-
-    // Add project info
-    elements.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: `Project: ${this.getCommonProjectName()}`,
-            size: 24,
-            color: '475569',
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 200 },
-      })
-    );
-
-    elements.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: `Generated: ${new Date().toLocaleDateString()} | Total Images: ${
-              this.filteredImages.length
-            }`,
-            size: 20,
-            color: '64748b',
-          }),
-        ],
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 600 },
-      })
-    );
+    const elements = this.buildDetailedWordHeader();
 
     // Add each image as a separate section
     for (let i = 0; i < this.filteredImages.length; i++) {
-      const image = this.filteredImages[i];
-
       // Update progress
       this.updateDownloadProgress(
         i + 1,
@@ -2266,123 +2183,121 @@ class ImageViewer {
         'Creating detailed sections...'
       );
 
-      // Add page break (except for first image)
-      if (i > 0) {
-        elements.push(
-          new Paragraph({
-            children: [new PageBreak()],
-          })
-        );
-      }
+      elements.push(...this.buildDetailedImageSection(this.filteredImages[i], i));
+    }
 
-      // Add image title
-      elements.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: `${i + 1}. ${image.title || 'Untitled'}`,
-              bold: true,
-              size: 24,
-              color: '2563eb',
-            }),
-          ],
-          heading: HeadingLevel.HEADING_1,
-          spacing: { before: 200, after: 300 },
-        })
-      );
+    return elements;
+  }
 
-      // Add image
-      try {
-        const binaryString = atob(image.imageData);
-        const imageBuffer = new Uint8Array(binaryString.length);
+  /**
+   * Build the title block for the detailed layout
+   * @returns {Array} - Title, project and generated-info paragraphs
+   */
+  buildDetailedWordHeader() {
+    const { AlignmentType, HeadingLevel } = window.docx;
 
-        for (let j = 0; j < binaryString.length; j++) {
-          imageBuffer[j] = binaryString.charCodeAt(j);
+    return [
+      WordUtils.createTextParagraph(
+        `BCF Detailed Image Report`,
+        { bold: true, size: 32, color: '2563eb' },
+        {
+          heading: HeadingLevel.TITLE,
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 400 },
         }
+      ),
+      WordUtils.createTextParagraph(
+        `Project: ${this.getCommonProjectName()}`,
+        { size: 24, color: '475569' },
+        { alignment: AlignmentType.CENTER, spacing: { after: 200 } }
+      ),
+      WordUtils.createTextParagraph(
+        this.getWordGeneratedInfo(),
+        { size: 20, color: '64748b' },
+        { alignment: AlignmentType.CENTER, spacing: { after: 600 } }
+      ),
+    ];
+  }
 
-        elements.push(
-          new Paragraph({
-            children: [
-              new ImageRun({
-                data: imageBuffer,
-                transformation: {
-                  width: 400,
-                  height: 300,
-                },
-                type: image.imageType.includes('png') ? 'png' : 'jpg',
-              }),
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: { before: 200, after: 300 },
-          })
-        );
-      } catch (error) {
-        console.warn('Error adding image to Word document:', error);
-        elements.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '[Image not available]',
-                italics: true,
-                color: '999999',
-              }),
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: { before: 200, after: 300 },
-          })
-        );
-      }
+  /**
+   * Build one image's section for the detailed layout: page break (except for the
+   * first image), numbered title, image, and topic details
+   * @param {Object} image - Image data
+   * @param {number} index - Zero-based position of the image in the report
+   * @returns {Array} - Word document elements for this image
+   */
+  buildDetailedImageSection(image, index) {
+    const { Paragraph, PageBreak, HeadingLevel } = window.docx;
+    const elements = [];
 
-      // Add metadata section
+    // Add page break (except for first image)
+    if (index > 0) {
       elements.push(
         new Paragraph({
-          children: [
-            new TextRun({
-              text: 'Topic Details',
-              bold: true,
-              size: 20,
-              color: '374151',
-            }),
-          ],
-          heading: HeadingLevel.HEADING_2,
-          spacing: { before: 300, after: 200 },
-        })
-      );
-
-      const metadata = [
-        `Status: ${image.status}`,
-        `Priority: ${image.priority}`,
-        `Author: ${image.author}`,
-        `Created: ${this.formatDate(image.creationDate)}`,
-        `Project: ${image.projectName}`,
-        `Description: ${image.description || 'No description available'}`,
-      ];
-
-      metadata.forEach((item) => {
-        elements.push(
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: item,
-                size: 20,
-                color: '1f2937',
-              }),
-            ],
-            spacing: { after: 100 },
-          })
-        );
-      });
-
-      // Add spacing before next section
-      elements.push(
-        new Paragraph({
-          children: [new TextRun({ text: '' })],
-          spacing: { after: 300 },
+          children: [new PageBreak()],
         })
       );
     }
 
+    // Add image title
+    elements.push(
+      WordUtils.createTextParagraph(
+        `${index + 1}. ${image.title || 'Untitled'}`,
+        { bold: true, size: 24, color: '2563eb' },
+        { heading: HeadingLevel.HEADING_1, spacing: { before: 200, after: 300 } }
+      )
+    );
+
+    // Add image
+    elements.push(
+      WordUtils.createImageParagraphWithFallback(
+        image,
+        { width: 400, height: 300 },
+        { before: 200, after: 300 },
+        'Word document'
+      )
+    );
+
+    // Add metadata section
+    elements.push(
+      WordUtils.createTextParagraph(
+        'Topic Details',
+        { bold: true, size: 20, color: '374151' },
+        { heading: HeadingLevel.HEADING_2, spacing: { before: 300, after: 200 } }
+      )
+    );
+    elements.push(...this.buildDetailedMetadataParagraphs(image));
+
+    // Add spacing before next section
+    elements.push(
+      WordUtils.createTextParagraph('', {}, { spacing: { after: 300 } })
+    );
+
     return elements;
+  }
+
+  /**
+   * Build the status/priority/author/date/project/description lines for an image
+   * @param {Object} image - Image data
+   * @returns {Array} - One paragraph per detail line
+   */
+  buildDetailedMetadataParagraphs(image) {
+    const metadata = [
+      `Status: ${image.status}`,
+      `Priority: ${image.priority}`,
+      `Author: ${image.author}`,
+      `Created: ${this.formatDate(image.creationDate)}`,
+      `Project: ${image.projectName}`,
+      `Description: ${image.description || 'No description available'}`,
+    ];
+
+    return metadata.map((item) =>
+      WordUtils.createTextParagraph(
+        item,
+        { size: 20, color: '1f2937' },
+        { spacing: { after: 100 } }
+      )
+    );
   }
 
   /**
@@ -2390,97 +2305,30 @@ class ImageViewer {
    * @returns {Array} - Array of Word document elements
    */
   async createWordSummaryContent() {
-    const {
-      Paragraph,
-      TextRun,
-      Table,
-      TableRow,
-      TableCell,
-      ImageRun,
-      AlignmentType,
-      HeadingLevel,
-    } = window.docx;
+    const { Paragraph, Table, TableRow, TableCell, HeadingLevel } =
+      window.docx;
 
-    const elements = [];
-
-    // Add cover content
-    elements.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: `BCF Executive Summary`,
-            bold: true,
-            size: 32,
-          }),
-        ],
-        heading: HeadingLevel.TITLE,
-        alignment: AlignmentType.CENTER,
-      })
-    );
-
-    // Add statistics
-    const stats = this.calculateImageStatistics();
-    elements.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: 'Project Statistics',
-            bold: true,
-            size: 24,
-          }),
-        ],
-        heading: HeadingLevel.HEADING_1,
-      })
-    );
-
-    const statLines = [
-      `Total Images: ${this.filteredImages.length}`,
-      `Projects: ${stats.projects.join(', ')}`,
-      `Status Breakdown: ${Object.entries(stats.statusCount)
-        .map(([status, count]) => `${status} (${count})`)
-        .join(', ')}`,
-    ];
-
-    statLines.forEach((line) => {
-      elements.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: line,
-              size: 20,
-            }),
-          ],
-        })
-      );
-    });
+    const elements = this.buildSummaryWordStatistics();
 
     // Add page break
     elements.push(new Paragraph({ pageBreakBefore: true }));
 
     // Add images in summary format (similar to grid but with more spacing)
     elements.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: 'Image Overview',
-            bold: true,
-            size: 24,
-          }),
-        ],
-        heading: HeadingLevel.HEADING_1,
-      })
+      WordUtils.createTextParagraph(
+        'Image Overview',
+        { bold: true, size: 24 },
+        { heading: HeadingLevel.HEADING_1 }
+      )
     );
 
     // Add all images in pairs (remove the 10-image limit)
     for (let i = 0; i < this.filteredImages.length; i += 2) {
-      const leftImage = this.filteredImages[i];
-      const rightImage = this.filteredImages[i + 1];
-
       // Create simplified image cells for summary
-      const leftCell = await this.createWordImageCell(leftImage);
-      const rightCell = rightImage
-        ? await this.createWordImageCell(rightImage)
-        : [new Paragraph({ text: '' })];
+      const [leftCell, rightCell] = await this.createWordImagePairCells(
+        this.filteredImages[i],
+        this.filteredImages[i + 1]
+      );
 
       const row = new TableRow({
         children: [
@@ -2503,6 +2351,45 @@ class ImageViewer {
         'Creating summary sections...'
       );
     }
+    return elements;
+  }
+
+  /**
+   * Build the cover title and "Project Statistics" section for the summary layout
+   * @returns {Array} - Title, statistics heading and one paragraph per statistic
+   */
+  buildSummaryWordStatistics() {
+    const { AlignmentType, HeadingLevel } = window.docx;
+
+    const elements = [
+      WordUtils.createTextParagraph(
+        `BCF Executive Summary`,
+        { bold: true, size: 32 },
+        { heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER }
+      ),
+    ];
+
+    const stats = this.calculateImageStatistics();
+    elements.push(
+      WordUtils.createTextParagraph(
+        'Project Statistics',
+        { bold: true, size: 24 },
+        { heading: HeadingLevel.HEADING_1 }
+      )
+    );
+
+    const statLines = [
+      `Total Images: ${this.filteredImages.length}`,
+      `Projects: ${stats.projects.join(', ')}`,
+      `Status Breakdown: ${Object.entries(stats.statusCount)
+        .map(([status, count]) => `${status} (${count})`)
+        .join(', ')}`,
+    ];
+
+    statLines.forEach((line) => {
+      elements.push(WordUtils.createTextParagraph(line, { size: 20 }));
+    });
+
     return elements;
   }
 
@@ -3130,84 +3017,24 @@ class ImageViewer {
    * @param {boolean} compact - Whether to use compact metadata
    */
   async addImageToPDF(pdf, image, x, y, maxWidth, maxHeight, compact = true) {
-    try {
+    // Reserve space for text below image
+    const textSpace = compact ? 25 : 35;
+    const availableImageHeight = maxHeight - textSpace;
 
+    try {
       // Prepare image data
       const imageData = image.imageData;
       const imageType = image.imageType;
 
       // Determine format for jsPDF
-      let format = 'JPEG';
-      if (imageType.includes('png')) {
-        format = 'PNG';
-      } else if (imageType.includes('gif')) {
-        format = 'GIF';
-      } else if (imageType.includes('webp')) {
-        format = 'WEBP';
-      }
+      const format = PDFUtils.getImageFormat(imageType);
 
-      // Reserve space for text below image
-      const textSpace = compact ? 25 : 35;
-      const availableImageHeight = maxHeight - textSpace;
-
-      // Create temporary image to get dimensions for aspect ratio calculation
-      const img = new Image();
-
-      const imageDimensions = await new Promise((resolve) => {
-        img.onload = () => {
-          const originalWidth = img.width;
-          const originalHeight = img.height;
-
-          if (originalWidth === 0 || originalHeight === 0) {
-            // Fallback if dimensions can't be determined
-            resolve({
-              width: maxWidth * 0.8,
-              height: availableImageHeight * 0.8,
-            });
-            return;
-          }
-
-          // Calculate aspect ratio
-          const aspectRatio = originalWidth / originalHeight;
-
-          let finalWidth, finalHeight;
-
-          // Calculate dimensions that fit within bounds while preserving aspect ratio
-          if (aspectRatio > maxWidth / availableImageHeight) {
-            // Width-constrained
-            finalWidth = Math.min(maxWidth, maxWidth * 0.95);
-            finalHeight = finalWidth / aspectRatio;
-          } else {
-            // Height-constrained
-            finalHeight = Math.min(
-              availableImageHeight,
-              availableImageHeight * 0.95
-            );
-            finalWidth = finalHeight * aspectRatio;
-          }
-
-          // Ensure minimum readable size
-          const minSize = 20;
-          if (finalWidth < minSize) finalWidth = minSize;
-          if (finalHeight < minSize) finalHeight = minSize;
-
-
-          resolve({
-            width: finalWidth,
-            height: finalHeight,
-          });
-        };
-
-        img.onerror = () => {
-          console.warn('Could not load image for dimension calculation');
-          resolve({
-            width: maxWidth * 0.8,
-            height: availableImageHeight * 0.8,
-          });
-        };
-
-        img.src = `data:${imageType};base64,${imageData}`;
-      });
+      const imageDimensions = await this.loadPDFImageDimensions(
+        imageType,
+        imageData,
+        maxWidth,
+        availableImageHeight
+      );
 
       // Center the image if it's smaller than available space
       const imageX = x + (maxWidth - imageDimensions.width) / 2;
@@ -3224,27 +3051,82 @@ class ImageViewer {
       );
     } catch (error) {
       console.warn('Error adding image to PDF:', error);
-
-      // Add placeholder rectangle if image fails
-      pdf.setFillColor(240, 240, 240);
-      pdf.rect(x, y, maxWidth, maxHeight - (compact ? 25 : 35), 'F');
-
-      // Add error text
-      pdf.setFontSize(12);
-      pdf.setTextColor(100, 100, 100);
-      pdf.text(
-        'Image not available',
-        x + maxWidth / 2,
-        y + (maxHeight - (compact ? 25 : 35)) / 2,
-        {
-          align: 'center',
-          baseline: 'middle',
-        }
-      );
-      pdf.setTextColor(0, 0, 0); // Reset text color
+      this.addPDFImagePlaceholder(pdf, x, y, maxWidth, availableImageHeight);
     }
 
-    // Add metadata below image (existing logic with null check)
+    this.addPDFImageMetadata(pdf, image, x, y, maxHeight, compact);
+  }
+
+  /**
+   * Load an image to find the size that fits the bounds while preserving its aspect ratio
+   * @param {string} imageType - Image MIME type
+   * @param {string} imageData - Base64 image data
+   * @param {number} maxWidth - Maximum width
+   * @param {number} maxHeight - Maximum height
+   * @returns {Promise<{width: number, height: number}>} - Fitted size; 80% of the
+   *   bounds if the image cannot be loaded
+   */
+  loadPDFImageDimensions(imageType, imageData, maxWidth, maxHeight) {
+    // Create temporary image to get dimensions for aspect ratio calculation
+    const img = new Image();
+
+    return new Promise((resolve) => {
+      img.onload = () => {
+        resolve(
+          PDFUtils.calculateImageDimensions(
+            img.width,
+            img.height,
+            maxWidth,
+            maxHeight
+          )
+        );
+      };
+
+      img.onerror = () => {
+        console.warn('Could not load image for dimension calculation');
+        resolve({
+          width: maxWidth * 0.8,
+          height: maxHeight * 0.8,
+        });
+      };
+
+      img.src = `data:${imageType};base64,${imageData}`;
+    });
+  }
+
+  /**
+   * Draw a gray "Image not available" placeholder in place of an image
+   * @param {jsPDF} pdf - PDF document
+   * @param {number} x - X position
+   * @param {number} y - Y position
+   * @param {number} width - Placeholder width
+   * @param {number} height - Placeholder height
+   */
+  addPDFImagePlaceholder(pdf, x, y, width, height) {
+    // Add placeholder rectangle if image fails
+    pdf.setFillColor(240, 240, 240);
+    pdf.rect(x, y, width, height, 'F');
+
+    // Add error text
+    pdf.setFontSize(12);
+    pdf.setTextColor(100, 100, 100);
+    pdf.text('Image not available', x + width / 2, y + height / 2, {
+      align: 'center',
+      baseline: 'middle',
+    });
+    pdf.setTextColor(0, 0, 0); // Reset text color
+  }
+
+  /**
+   * Write the title and details below an image in the PDF
+   * @param {jsPDF} pdf - PDF document
+   * @param {Object} image - Image data
+   * @param {number} x - X position
+   * @param {number} y - Y position of the image area
+   * @param {number} maxHeight - Height of the image area including the text
+   * @param {boolean} compact - Short title and one details line when true
+   */
+  addPDFImageMetadata(pdf, image, x, y, maxHeight, compact) {
     try {
       pdf.setFontSize(compact ? 8 : 10);
       pdf.setFont('helvetica', 'bold');
@@ -3252,8 +3134,8 @@ class ImageViewer {
       const titleText = PDFUtils.truncateText(image.title, compact ? 30 : 50);
       pdf.text(titleText, x, y + maxHeight - (compact ? 20 : 30));
 
+      pdf.setFont('helvetica', 'normal');
       if (!compact) {
-        pdf.setFont('helvetica', 'normal');
         pdf.text(
           `${image.status} | ${image.priority} | ${image.author}`,
           x,
@@ -3265,7 +3147,6 @@ class ImageViewer {
           y + maxHeight - 10
         );
       } else {
-        pdf.setFont('helvetica', 'normal');
         pdf.text(`${image.status} | ${image.author}`, x, y + maxHeight - 15);
       }
     } catch (textError) {
