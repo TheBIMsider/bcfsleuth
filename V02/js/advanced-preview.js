@@ -1,4 +1,19 @@
 // BCFSleuth Advanced Preview - sortable, filterable topic table with comment and viewpoint expansion
+// Columns sorted as numbers (non-numeric values fall back to string order)
+const NUMERIC_SORT_FIELDS = [
+  'type',
+  'topicIndex',
+  'serverAssignedId',
+  'index',
+  'priority',
+  'dueDate',
+  'createdDate',
+  'modifiedDate',
+];
+
+// Columns sorted as dates (invalid dates sort to the end)
+const DATE_SORT_FIELDS = ['dueDate', 'createdDate', 'modifiedDate'];
+
 class AdvancedPreview {
   constructor(bcfApp) {
     this.app = bcfApp; // Reference to main BCFSleuthApp
@@ -553,113 +568,113 @@ class AdvancedPreview {
     return mapping[field] || field;
   }
 
+  /**
+   * Re-filter the table rows from the current filter state, hide rows of
+   * collapsed topics, reset to page 1 and re-render.
+   */
   applyFilters() {
-    this.filteredData = this.allTableData.filter((row) => {
-      // Search filter - search across multiple fields
-      if (this.filters.search) {
-        const searchTerm = this.filters.search.toLowerCase();
-        const searchableText = [
-          row.title,
-          row.status,
-          row.priority,
-          row.assignee,
-          row.author,
-          row.content,
-          row.projectName,
-          row.sourceFile,
-        ]
-          .join(' ')
-          .toLowerCase();
-
-        if (!searchableText.includes(searchTerm)) {
-          return false;
-        }
-      }
-
-      // Status filter (only apply to topics)
-      if (
-        this.filters.status &&
-        row.rowType === 'topic' &&
-        row.status !== this.filters.status
-      ) {
-        return false;
-      }
-
-      // Priority filter (only apply to topics)
-      if (
-        this.filters.priority &&
-        row.rowType === 'topic' &&
-        row.priority !== this.filters.priority
-      ) {
-        return false;
-      }
-
-      // Assignee filter (only apply to topics)
-      if (
-        this.filters.assignee &&
-        row.rowType === 'topic' &&
-        row.assignee !== this.filters.assignee
-      ) {
-        return false;
-      }
-
-      // Due date filter (only apply to topics)
-      if (this.filters.dueDate && row.rowType === 'topic') {
-        const today = new Date();
-        const oneWeek = 7 * 24 * 60 * 60 * 1000;
-
-        switch (this.filters.dueDate) {
-          case 'overdue':
-            if (!row.due || !this.isOverdue(row.due)) return false;
-            break;
-          case 'this-week':
-            if (!row.due) return false;
-            const dueDate = new Date(row.due);
-            const weekFromNow = new Date(today.getTime() + oneWeek);
-            if (dueDate < today || dueDate > weekFromNow) return false;
-            break;
-          case 'next-week':
-            if (!row.due) return false;
-            const nextWeekStart = new Date(today.getTime() + oneWeek);
-            const nextWeekEnd = new Date(today.getTime() + 2 * oneWeek);
-            const dueDateNext = new Date(row.due);
-            if (dueDateNext < nextWeekStart || dueDateNext > nextWeekEnd)
-              return false;
-            break;
-          case 'no-due-date':
-            if (row.due) return false;
-            break;
-        }
-      }
-
-      return true;
-    });
-
-    // Filter out collapsed comments and viewpoints
-    this.filteredData = this.filteredData.filter((row) => {
-      // Always show topics
-      if (row.rowType === 'topic') {
-        return true;
-      }
-
-      // For comments, only show if parent topic is expanded
-      if (row.rowType === 'comment') {
-        return this.expandedTopics.has(row.parentTopicGuid);
-      }
-
-      // ✅ For viewpoints, only show if parent topic is expanded
-      if (row.rowType === 'viewpoint') {
-        return this.expandedTopics.has(row.parentTopicGuid);
-      }
-
-      return true;
-    });
+    this.filteredData = this.allTableData
+      .filter((row) => this.rowMatchesFilters(row))
+      .filter((row) => this.isRowVisibleByExpansion(row));
 
     // Reset to first page when filters change
     this.currentPage = 1;
     this.renderAdvancedTable();
     this.updateActiveFilters();
     this.updateSummaryStats();
+  }
+
+  /**
+   * Check a row against the search box and the topic-level dropdown filters.
+   * @param {Object} row - Flattened table row
+   * @returns {boolean} True if the row passes every active filter
+   */
+  rowMatchesFilters(row) {
+    if (this.filters.search && !this.matchesSearch(row)) return false;
+    if (row.rowType !== 'topic') return true;
+    if (!this.matchesTopicDropdowns(row)) return false;
+    if (this.filters.dueDate && !this.matchesDueDateFilter(row)) return false;
+    return true;
+  }
+
+  /**
+   * Case-insensitive search across the main text columns of a row.
+   * @param {Object} row - Flattened table row
+   * @returns {boolean}
+   */
+  matchesSearch(row) {
+    const searchTerm = this.filters.search.toLowerCase();
+    const searchableText = [
+      row.title,
+      row.status,
+      row.priority,
+      row.assignee,
+      row.author,
+      row.content,
+      row.projectName,
+      row.sourceFile,
+    ]
+      .join(' ')
+      .toLowerCase();
+
+    return searchableText.includes(searchTerm);
+  }
+
+  /**
+   * Apply the status, priority and assignee filters (topic rows only).
+   * @param {Object} row - Topic row
+   * @returns {boolean}
+   */
+  matchesTopicDropdowns(row) {
+    const { status, priority, assignee } = this.filters;
+    if (status && row.status !== status) return false;
+    if (priority && row.priority !== priority) return false;
+    if (assignee && row.assignee !== assignee) return false;
+    return true;
+  }
+
+  /**
+   * Apply the due date filter (topic rows only).
+   * @param {Object} row - Topic row
+   * @returns {boolean}
+   */
+  matchesDueDateFilter(row) {
+    const today = new Date();
+    const oneWeek = 7 * 24 * 60 * 60 * 1000;
+
+    switch (this.filters.dueDate) {
+      case 'overdue':
+        return !!row.due && this.isOverdue(row.due);
+      case 'this-week': {
+        if (!row.due) return false;
+        const dueDate = new Date(row.due);
+        const weekFromNow = new Date(today.getTime() + oneWeek);
+        return !(dueDate < today || dueDate > weekFromNow);
+      }
+      case 'next-week': {
+        if (!row.due) return false;
+        const nextWeekStart = new Date(today.getTime() + oneWeek);
+        const nextWeekEnd = new Date(today.getTime() + 2 * oneWeek);
+        const dueDateNext = new Date(row.due);
+        return !(dueDateNext < nextWeekStart || dueDateNext > nextWeekEnd);
+      }
+      case 'no-due-date':
+        return !row.due;
+      default:
+        return true;
+    }
+  }
+
+  /**
+   * Comments and viewpoints only show while their parent topic is expanded.
+   * @param {Object} row - Flattened table row
+   * @returns {boolean}
+   */
+  isRowVisibleByExpansion(row) {
+    if (row.rowType === 'comment' || row.rowType === 'viewpoint') {
+      return this.expandedTopics.has(row.parentTopicGuid);
+    }
+    return true;
   }
 
   updateActiveFilters() {
@@ -744,6 +759,11 @@ class AdvancedPreview {
     this.applyFilters();
   }
 
+  /**
+   * Sort the filtered rows by a column (toggling direction on repeat clicks)
+   * and re-render.
+   * @param {string} field - Row property to sort by
+   */
   sortData(field) {
     if (this.sortField === field) {
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
@@ -752,79 +772,93 @@ class AdvancedPreview {
       this.sortDirection = 'asc';
     }
 
-    // Define fields that should be sorted numerically
-    const numericFields = [
-      'type',
-      'topicIndex',
-      'serverAssignedId',
-      'index',
-      'priority',
-      'dueDate', // Will handle dates separately
-      'createdDate',
-      'modifiedDate',
-    ];
-
-    // Define date fields that need special handling
-    const dateFields = ['dueDate', 'createdDate', 'modifiedDate'];
-
-    // Sort the filtered data with proper type handling
-    this.filteredData.sort((a, b) => {
-      let aVal = a[this.sortField];
-      let bVal = b[this.sortField];
-
-      // Handle null/undefined values - always sort them to the end
-      if (aVal == null && bVal == null) return 0;
-      if (aVal == null) return this.sortDirection === 'asc' ? 1 : -1;
-      if (bVal == null) return this.sortDirection === 'asc' ? -1 : 1;
-
-      // Handle date fields
-      if (dateFields.includes(this.sortField)) {
-        const dateA = new Date(aVal);
-        const dateB = new Date(bVal);
-
-        // Check for invalid dates
-        if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
-        if (isNaN(dateA.getTime()))
-          return this.sortDirection === 'asc' ? 1 : -1;
-        if (isNaN(dateB.getTime()))
-          return this.sortDirection === 'asc' ? -1 : 1;
-
-        const comparison = dateA.getTime() - dateB.getTime();
-        return this.sortDirection === 'asc' ? comparison : -comparison;
-      }
-
-      // Handle numeric fields
-      if (numericFields.includes(this.sortField)) {
-        // Try to parse as numbers
-        const numA = parseFloat(aVal);
-        const numB = parseFloat(bVal);
-
-        // If both are valid numbers, compare numerically
-        if (!isNaN(numA) && !isNaN(numB)) {
-          const comparison = numA - numB;
-          return this.sortDirection === 'asc' ? comparison : -comparison;
-        }
-
-        // If one is a number and one isn't, number comes first
-        if (!isNaN(numA) && isNaN(numB))
-          return this.sortDirection === 'asc' ? -1 : 1;
-        if (isNaN(numA) && !isNaN(numB))
-          return this.sortDirection === 'asc' ? 1 : -1;
-
-        // If neither is a number, fall through to string comparison
-      }
-
-      // Default string comparison for text fields
-      const strA = String(aVal).toLowerCase().trim();
-      const strB = String(bVal).toLowerCase().trim();
-
-      if (strA < strB) return this.sortDirection === 'asc' ? -1 : 1;
-      if (strA > strB) return this.sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
+    this.filteredData.sort((a, b) =>
+      this.compareRows(a[this.sortField], b[this.sortField])
+    );
 
     this.updateSortIndicators();
     this.renderAdvancedTable();
+  }
+
+  /**
+   * Compare two cell values for the active sort field and direction.
+   * Null/undefined values always sort to the end.
+   * @param {*} aVal - First value
+   * @param {*} bVal - Second value
+   * @returns {number} Comparator result
+   */
+  compareRows(aVal, bVal) {
+    const asc = this.sortDirection === 'asc';
+
+    if (aVal == null && bVal == null) return 0;
+    if (aVal == null) return asc ? 1 : -1;
+    if (bVal == null) return asc ? -1 : 1;
+
+    if (DATE_SORT_FIELDS.includes(this.sortField)) {
+      return this.compareDates(aVal, bVal, asc);
+    }
+
+    if (NUMERIC_SORT_FIELDS.includes(this.sortField)) {
+      const result = this.compareNumbers(aVal, bVal, asc);
+      if (result !== null) return result;
+    }
+
+    return this.compareStrings(aVal, bVal, asc);
+  }
+
+  /**
+   * Compare two date values; invalid dates sort to the end.
+   * @param {*} aVal - First date value
+   * @param {*} bVal - Second date value
+   * @param {boolean} asc - True for ascending order
+   * @returns {number}
+   */
+  compareDates(aVal, bVal, asc) {
+    const timeA = new Date(aVal).getTime();
+    const timeB = new Date(bVal).getTime();
+
+    if (isNaN(timeA) && isNaN(timeB)) return 0;
+    if (isNaN(timeA)) return asc ? 1 : -1;
+    if (isNaN(timeB)) return asc ? -1 : 1;
+
+    const comparison = timeA - timeB;
+    return asc ? comparison : -comparison;
+  }
+
+  /**
+   * Compare two values numerically; numbers sort before non-numbers.
+   * @param {*} aVal - First value
+   * @param {*} bVal - Second value
+   * @param {boolean} asc - True for ascending order
+   * @returns {number|null} Comparator result, or null if neither is numeric
+   */
+  compareNumbers(aVal, bVal, asc) {
+    const numA = parseFloat(aVal);
+    const numB = parseFloat(bVal);
+
+    if (!isNaN(numA) && !isNaN(numB)) {
+      const comparison = numA - numB;
+      return asc ? comparison : -comparison;
+    }
+    if (!isNaN(numA)) return asc ? -1 : 1;
+    if (!isNaN(numB)) return asc ? 1 : -1;
+    return null;
+  }
+
+  /**
+   * Case-insensitive, trimmed string comparison.
+   * @param {*} aVal - First value
+   * @param {*} bVal - Second value
+   * @param {boolean} asc - True for ascending order
+   * @returns {number}
+   */
+  compareStrings(aVal, bVal, asc) {
+    const strA = String(aVal).toLowerCase().trim();
+    const strB = String(bVal).toLowerCase().trim();
+
+    if (strA < strB) return asc ? -1 : 1;
+    if (strA > strB) return asc ? 1 : -1;
+    return 0;
   }
 
   updateSortIndicators() {

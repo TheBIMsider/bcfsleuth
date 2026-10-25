@@ -1,4 +1,8 @@
 // BCFSleuth Image Viewer - Version 2.0
+// Preferred dropdown ordering for the image filters
+const STATUS_ORDER = ['Open', 'In Progress', 'Under Review', 'Closed', 'Rejected'];
+const PRIORITY_ORDER = ['Low', 'Normal', 'Medium', 'High', 'Critical'];
+
 class ImageViewer {
   constructor(bcfApp) {
     this.app = bcfApp; // Reference to main BCFSleuthApp
@@ -350,7 +354,53 @@ class ImageViewer {
    * Populate filter dropdown options based on actual data
    */
   populateFilterOptions() {
-    // Collect all unique values for each filter type
+    const filterData = this.collectFilterValues();
+
+    this.updateSelectOptions(
+      'image-project-filter',
+      Array.from(filterData.projects).sort()
+    );
+
+    // Limit to first 50 titles to prevent overwhelming the dropdown
+    const sortedTitles = Array.from(filterData.titles)
+      .filter((title) => title && title.trim())
+      .sort()
+      .slice(0, 50);
+    this.updateSelectOptions('image-title-filter', sortedTitles);
+
+    this.updateSelectOptions(
+      'image-status-filter',
+      this.sortByPreferredOrder(Array.from(filterData.statuses), STATUS_ORDER)
+    );
+
+    const priorities = Array.from(filterData.priorities).filter(
+      (priority) => priority && priority.trim()
+    );
+    this.updateSelectOptions(
+      'image-priority-filter',
+      this.sortByPreferredOrder(priorities, PRIORITY_ORDER)
+    );
+
+    this.updateSelectOptions(
+      'image-author-filter',
+      Array.from(filterData.authors)
+        .filter((author) => author && author.trim())
+        .sort()
+    );
+
+    // Most recent month first; true = append to existing options
+    const sortedDates = Array.from(filterData.createdDates)
+      .sort((a, b) => new Date(a) - new Date(b))
+      .reverse();
+    this.updateSelectOptions('image-created-filter', sortedDates, true);
+  }
+
+  /**
+   * Collect the unique values for each filter dropdown from all images
+   * @returns {Object} Sets keyed by projects, titles, statuses, priorities,
+   *   authors and createdDates (month/year strings)
+   */
+  collectFilterValues() {
     const filterData = {
       projects: new Set(),
       titles: new Set(),
@@ -367,7 +417,6 @@ class ImageViewer {
       filterData.priorities.add(image.priority);
       filterData.authors.add(image.author);
 
-      // Extract creation date for filtering (month/year format)
       if (image.creationDate) {
         const date = new Date(image.creationDate);
         const monthYear = date.toLocaleDateString('en-US', {
@@ -378,67 +427,27 @@ class ImageViewer {
       }
     });
 
-    // Update project filter
-    this.updateSelectOptions(
-      'image-project-filter',
-      Array.from(filterData.projects).sort()
-    );
+    return filterData;
+  }
 
-    // Update title filter (limit to reasonable number, sorted alphabetically)
-    const sortedTitles = Array.from(filterData.titles)
-      .filter((title) => title && title.trim())
-      .sort()
-      .slice(0, 50); // Limit to first 50 titles to prevent overwhelming dropdown
-    this.updateSelectOptions('image-title-filter', sortedTitles);
-
-    // Update status filter with logical order
-    const statusOrder = [
-      'Open',
-      'In Progress',
-      'Under Review',
-      'Closed',
-      'Rejected',
-    ];
-    const sortedStatuses = Array.from(filterData.statuses).sort((a, b) => {
-      const aIndex = statusOrder.indexOf(a);
-      const bIndex = statusOrder.indexOf(b);
+  /**
+   * Sort values by a preferred order; values not in the order go last,
+   * alphabetically
+   * @param {Array<string>} values - Values to sort
+   * @param {Array<string>} order - Preferred ordering
+   * @returns {Array<string>} The sorted values
+   */
+  sortByPreferredOrder(values, order) {
+    return values.sort((a, b) => {
+      const aIndex = order.indexOf(a);
+      const bIndex = order.indexOf(b);
       if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
       if (aIndex === -1) return 1;
       if (bIndex === -1) return -1;
       return aIndex - bIndex;
     });
-    this.updateSelectOptions('image-status-filter', sortedStatuses);
-
-    // Update priority filter with logical order
-    const priorityOrder = ['Low', 'Normal', 'Medium', 'High', 'Critical'];
-    const sortedPriorities = Array.from(filterData.priorities)
-      .filter((priority) => priority && priority.trim())
-      .sort((a, b) => {
-        const aIndex = priorityOrder.indexOf(a);
-        const bIndex = priorityOrder.indexOf(b);
-        if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
-        if (aIndex === -1) return 1;
-        if (bIndex === -1) return -1;
-        return aIndex - bIndex;
-      });
-    this.updateSelectOptions('image-priority-filter', sortedPriorities);
-
-    // Update author filter
-    this.updateSelectOptions(
-      'image-author-filter',
-      Array.from(filterData.authors)
-        .filter((author) => author && author.trim())
-        .sort()
-    );
-
-    // Update created date filter
-    const sortedDates = Array.from(filterData.createdDates)
-      .sort((a, b) => {
-        return new Date(a) - new Date(b);
-      })
-      .reverse(); // Most recent first
-    this.updateSelectOptions('image-created-filter', sortedDates, true); // true = append to existing options
   }
+
   /**
    * Update select dropdown options
    */

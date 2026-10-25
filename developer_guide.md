@@ -244,6 +244,20 @@ The three largest `app.js` methods are short orchestrators over focused helpers.
 
 **Note:** the old BCF 3.0 discovery added `serverAssignedId` twice; it is now added once, with the same output.
 
+### Parser, Preview and Image Viewer Structure (Phase 5)
+
+No method in `V02/js` is over 100 lines. Each original method stays as a short orchestrator, so add new steps as helpers.
+
+**`BCFParser.parseComments`**: `collectComments(doc, topic, existingGuids, trackNewGuids)` walks the comment elements of a document and `buildComment(commentEl, commentGuid)` builds one comment object (field aliases, custom fields). It runs once for `markup.bcf` and once for `comments.bcf`. Duplicate comments are skipped by GUID, and GUIDs from `comments.bcf` are deliberately not added to the seen set, as before.
+
+**`BCFParser.parseExtensions`**: `extractEnumerationValues(doc, keyword)` replaces four copies of the same loop, one each for status, type, priority and label.
+
+**`AdvancedPreview.applyFilters`**: filters rows with `rowMatchesFilters` (`matchesSearch`, `matchesTopicDropdowns`, `matchesDueDateFilter`), then `isRowVisibleByExpansion`, then resets the page and re-renders. `sortData` compares through `compareRows` (`compareDates`, `compareNumbers`, `compareStrings`), with the field lists in the top-level constants `NUMERIC_SORT_FIELDS` and `DATE_SORT_FIELDS`.
+
+**`ImageViewer.populateFilterOptions`**: `collectFilterValues` gathers the unique values and `sortByPreferredOrder` applies the status and priority orders (`STATUS_ORDER`, `PRIORITY_ORDER`).
+
+Old and new versions were compared in node harnesses (parser in jsdom) with identical results. Methods of 80-90 lines remain in `analytics-dashboard.js`, `image-viewer.js` and `app.js` for a later pass.
+
 ## Error Handling Standards
 
 ### Unified Feedback System

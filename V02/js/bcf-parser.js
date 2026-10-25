@@ -179,6 +179,37 @@ class BCFParser {
     }
   }
 
+  /**
+   * Collect unique enumeration values from an extensions XSD whose enclosing
+   * type name contains the given keyword (case-insensitive).
+   * @param {Document} doc - Parsed extensions.xsd
+   * @param {string} keyword - Lowercase keyword, e.g. 'status'
+   * @returns {string[]} Unique enumeration values in document order
+   */
+  static extractEnumerationValues(doc, keyword) {
+    const values = [];
+    const elements = doc.querySelectorAll(
+      'xs\\:enumeration[value], enumeration[value]'
+    );
+
+    elements.forEach((element) => {
+      const parentName =
+        element
+          .closest('xs\\:restriction, restriction')
+          ?.parentElement?.getAttribute('name') ||
+        element.closest('xs\\:simpleType, simpleType')?.getAttribute('name');
+
+      if (parentName && parentName.toLowerCase().includes(keyword)) {
+        const value = element.getAttribute('value');
+        if (value && !values.includes(value)) {
+          values.push(value);
+        }
+      }
+    });
+
+    return values;
+  }
+
   static async parseExtensions(zip, bcfData) {
     const extensionsFile = zip.file('extensions.xsd');
     if (!extensionsFile) {
@@ -204,81 +235,11 @@ class BCFParser {
         },
       };
 
-      // Extract TopicStatus values
-      const topicStatusElements = doc.querySelectorAll(
-        'xs\\:enumeration[value], enumeration[value]'
-      );
-      topicStatusElements.forEach((element) => {
-        const parentName =
-          element
-            .closest('xs\\:restriction, restriction')
-            ?.parentElement?.getAttribute('name') ||
-          element.closest('xs\\:simpleType, simpleType')?.getAttribute('name');
-
-        if (parentName && parentName.toLowerCase().includes('status')) {
-          const value = element.getAttribute('value');
-          if (value && !extensions.customFields.topicStatus.includes(value)) {
-            extensions.customFields.topicStatus.push(value);
-          }
-        }
-      });
-
-      // Extract TopicType values
-      const topicTypeElements = doc.querySelectorAll(
-        'xs\\:enumeration[value], enumeration[value]'
-      );
-      topicTypeElements.forEach((element) => {
-        const parentName =
-          element
-            .closest('xs\\:restriction, restriction')
-            ?.parentElement?.getAttribute('name') ||
-          element.closest('xs\\:simpleType, simpleType')?.getAttribute('name');
-
-        if (parentName && parentName.toLowerCase().includes('type')) {
-          const value = element.getAttribute('value');
-          if (value && !extensions.customFields.topicType.includes(value)) {
-            extensions.customFields.topicType.push(value);
-          }
-        }
-      });
-
-      // Extract Priority values
-      const priorityElements = doc.querySelectorAll(
-        'xs\\:enumeration[value], enumeration[value]'
-      );
-      priorityElements.forEach((element) => {
-        const parentName =
-          element
-            .closest('xs\\:restriction, restriction')
-            ?.parentElement?.getAttribute('name') ||
-          element.closest('xs\\:simpleType, simpleType')?.getAttribute('name');
-
-        if (parentName && parentName.toLowerCase().includes('priority')) {
-          const value = element.getAttribute('value');
-          if (value && !extensions.customFields.priority.includes(value)) {
-            extensions.customFields.priority.push(value);
-          }
-        }
-      });
-
-      // Extract TopicLabel values
-      const labelElements = doc.querySelectorAll(
-        'xs\\:enumeration[value], enumeration[value]'
-      );
-      labelElements.forEach((element) => {
-        const parentName =
-          element
-            .closest('xs\\:restriction, restriction')
-            ?.parentElement?.getAttribute('name') ||
-          element.closest('xs\\:simpleType, simpleType')?.getAttribute('name');
-
-        if (parentName && parentName.toLowerCase().includes('label')) {
-          const value = element.getAttribute('value');
-          if (value && !extensions.customFields.topicLabel.includes(value)) {
-            extensions.customFields.topicLabel.push(value);
-          }
-        }
-      });
+      const fields = extensions.customFields;
+      fields.topicStatus = this.extractEnumerationValues(doc, 'status');
+      fields.topicType = this.extractEnumerationValues(doc, 'type');
+      fields.priority = this.extractEnumerationValues(doc, 'priority');
+      fields.topicLabel = this.extractEnumerationValues(doc, 'label');
 
       this.debugLog('Parsed extensions:', extensions.customFields);
       bcfData.extensions = extensions;
@@ -746,65 +707,24 @@ class BCFParser {
     viewpoint.actualFilename = matchedFilename; // Store the actual filename used
   }
 
+  /**
+   * Parse comments for a topic from markup.bcf and, if present, a separate
+   * comments.bcf file, skipping comments whose GUID was already collected.
+   * @param {JSZip} zip - Loaded BCF archive
+   * @param {string} topicGuid - Topic folder GUID
+   * @param {Object} topic - Topic object; comments are pushed onto topic.comments
+   * @param {Document|null} markupDoc - Parsed markup.bcf, if available
+   */
   static async parseComments(zip, topicGuid, topic, markupDoc) {
     // Track comment GUIDs to prevent duplicates
     const existingCommentGuids = new Set();
 
     // Check comments from markup.bcf first (common in newer BCF versions)
     if (markupDoc) {
-      const commentElements = markupDoc.querySelectorAll(
-        'Comment, Note, Remark'
-      );
-      commentElements.forEach((commentEl) => {
-        const commentGuid =
-          commentEl.getAttribute('Guid') || commentEl.getAttribute('Id');
-        if (!existingCommentGuids.has(commentGuid)) {
-          const comment = {
-            guid: commentGuid,
-            date: this.getElementTextWithAliases(commentEl, [
-              'Date',
-              'Created',
-              'CreationDate',
-              'Timestamp',
-            ]),
-            author: this.getElementTextWithAliases(commentEl, [
-              'Author',
-              'CreatedBy',
-              'User',
-              'Creator',
-            ]),
-            comment: this.getElementTextWithAliases(commentEl, [
-              'Comment',
-              'Text',
-              'Description',
-              'Content',
-              'Message',
-            ]),
-            modifiedDate: this.getElementTextWithAliases(commentEl, [
-              'ModifiedDate',
-              'Modified',
-              'LastModified',
-            ]),
-            modifiedAuthor: this.getElementTextWithAliases(commentEl, [
-              'ModifiedAuthor',
-              'ModifiedBy',
-              'LastModifiedBy',
-            ]),
-            // Store custom fields for comments
-            _customFields: {},
-          };
-
-          // Extract custom fields from comment element
-          this.extractCustomFields(commentEl, comment._customFields, 'comment');
-
-          topic.comments.push(comment);
-          existingCommentGuids.add(commentGuid);
-        }
-      });
+      this.collectComments(markupDoc, topic, existingCommentGuids, true);
     }
 
     // ALSO check separate comments.bcf file (some tools use this) - but avoid duplicates
-    // Update existing GUIDs from markup comments
     topic.comments.forEach((c) => existingCommentGuids.add(c.guid));
     const commentsFile = zip.file(`${topicGuid}/comments.bcf`);
     if (!commentsFile) {
@@ -813,58 +733,75 @@ class BCFParser {
 
     try {
       const commentsXml = await commentsFile.async('text');
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(commentsXml, 'text/xml');
-
-      const commentElements = doc.querySelectorAll('Comment, Note, Remark');
-      commentElements.forEach((commentEl) => {
-        const commentGuid =
-          commentEl.getAttribute('Guid') || commentEl.getAttribute('Id');
-        if (!existingCommentGuids.has(commentGuid)) {
-          const comment = {
-            guid: commentGuid,
-            date: this.getElementTextWithAliases(commentEl, [
-              'Date',
-              'Created',
-              'CreationDate',
-              'Timestamp',
-            ]),
-            author: this.getElementTextWithAliases(commentEl, [
-              'Author',
-              'CreatedBy',
-              'User',
-              'Creator',
-            ]),
-            comment: this.getElementTextWithAliases(commentEl, [
-              'Comment',
-              'Text',
-              'Description',
-              'Content',
-              'Message',
-            ]),
-            modifiedDate: this.getElementTextWithAliases(commentEl, [
-              'ModifiedDate',
-              'Modified',
-              'LastModified',
-            ]),
-            modifiedAuthor: this.getElementTextWithAliases(commentEl, [
-              'ModifiedAuthor',
-              'ModifiedBy',
-              'LastModifiedBy',
-            ]),
-            // Store custom fields for comments
-            _customFields: {},
-          };
-
-          // Extract custom fields from comment element
-          this.extractCustomFields(commentEl, comment._customFields, 'comment');
-
-          topic.comments.push(comment);
-        }
-      });
+      const doc = new DOMParser().parseFromString(commentsXml, 'text/xml');
+      this.collectComments(doc, topic, existingCommentGuids, false);
     } catch (error) {
       console.warn(`Error parsing comments for topic ${topicGuid}:`, error);
     }
+  }
+
+  /**
+   * Add every not-yet-seen comment element in a document to the topic.
+   * @param {Document} doc - Markup or comments document
+   * @param {Object} topic - Topic receiving the comments
+   * @param {Set<string>} existingGuids - GUIDs already collected
+   * @param {boolean} trackNewGuids - Add each new GUID to existingGuids
+   */
+  static collectComments(doc, topic, existingGuids, trackNewGuids) {
+    doc.querySelectorAll('Comment, Note, Remark').forEach((commentEl) => {
+      const commentGuid =
+        commentEl.getAttribute('Guid') || commentEl.getAttribute('Id');
+      if (existingGuids.has(commentGuid)) return;
+
+      topic.comments.push(this.buildComment(commentEl, commentGuid));
+      if (trackNewGuids) existingGuids.add(commentGuid);
+    });
+  }
+
+  /**
+   * Build a comment object from a Comment/Note/Remark element.
+   * @param {Element} commentEl - Comment element
+   * @param {string|null} commentGuid - Resolved comment GUID
+   * @returns {Object} Comment with standard fields and _customFields
+   */
+  static buildComment(commentEl, commentGuid) {
+    const comment = {
+      guid: commentGuid,
+      date: this.getElementTextWithAliases(commentEl, [
+        'Date',
+        'Created',
+        'CreationDate',
+        'Timestamp',
+      ]),
+      author: this.getElementTextWithAliases(commentEl, [
+        'Author',
+        'CreatedBy',
+        'User',
+        'Creator',
+      ]),
+      comment: this.getElementTextWithAliases(commentEl, [
+        'Comment',
+        'Text',
+        'Description',
+        'Content',
+        'Message',
+      ]),
+      modifiedDate: this.getElementTextWithAliases(commentEl, [
+        'ModifiedDate',
+        'Modified',
+        'LastModified',
+      ]),
+      modifiedAuthor: this.getElementTextWithAliases(commentEl, [
+        'ModifiedAuthor',
+        'ModifiedBy',
+        'LastModifiedBy',
+      ]),
+      // Store custom fields for comments
+      _customFields: {},
+    };
+
+    this.extractCustomFields(commentEl, comment._customFields, 'comment');
+    return comment;
   }
 
   static parseViewpoints(doc, topic) {
