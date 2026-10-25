@@ -177,6 +177,19 @@ function generateAndDownloadZip(blob, filename) { /* download handling */ }
 
 **Browser support:** the exporters and `CoordinateUtils` use `static` class fields, which need Safari 14.1+ (current Chrome, Firefox and Edge are fine).
 
+### Advanced Preview Structure
+
+`js/advanced-preview.js` builds the preview table in two steps, each made of small helpers.
+
+**Flattening** (`flattenBCFData`): loops over files and topics and, per topic, adds `createTopicRow`, then `createCommentRows` (oldest first; sorts `topic.comments` in place) and `createViewpointRows` (viewpoints beyond the primary one). Coordinates come from `getTopicCoordinateData`, which uses `getCoordinateViewpoints` + `selectCoordinateViewpoint` to choose the primary viewpoint (`viewpoint.bcfv` first, otherwise the first one with coordinate data) and `extractViewpointCoordinates` to read it. Additional-viewpoint rows use the same selection, so the two stay in sync.
+
+**Cell formatting** (`createFormattedCell`): `formatCellByField` picks a formatter (`formatStatusCell`, `formatPriorityCell`, `formatDueDateCell`, `formatCommentTextCell`, `formatCoordinateCell`, `formatDefaultCell`). Formatters return either a finished `{ html }` or partial cell parts; `buildCellHtml` fills in defaults and adds the tooltip attribute. To format a new field, add a case to `formatCellByField`. Coordinate fields are recognised through `CoordinateUtils.COORDINATE_FIELDS`.
+
+**Known issues (not changed in the refactor):**
+- `formatDefaultCell` has a branch that references an undefined `originalValue`; a short value (30 characters or fewer) containing `...` throws a `ReferenceError`. Likely fix: use `stringValue`.
+- The preview's own `getPrimaryViewpoint` is no longer called by anything.
+- The preview's "has coordinates" test differs from `CoordinateUtils.viewpointHasCoordinateData`; unifying them would change which viewpoint rows appear.
+
 ## Error Handling Standards
 
 ### Unified Feedback System
