@@ -1,5 +1,81 @@
 // CSV Exporter - Handles CSV generation from BCF data
 class CSVExporter {
+  /** Camera/coordinate fields (BCF camera data plus legacy position/target). */
+  static COORDINATE_FIELDS = [
+    'cameraType',
+    'CameraViewPointX',
+    'CameraViewPointY',
+    'CameraViewPointZ',
+    'CameraDirectionX',
+    'CameraDirectionY',
+    'CameraDirectionZ',
+    'CameraUpVectorX',
+    'CameraUpVectorY',
+    'CameraUpVectorZ',
+    'FieldOfView',
+    'ViewToWorldScale',
+    'cameraPosX',
+    'cameraPosY',
+    'cameraPosZ',
+    'cameraTargetX',
+    'cameraTargetY',
+    'cameraTargetZ',
+  ];
+
+  /** Comment-specific fields, blank on topic rows. */
+  static COMMENT_FIELDS = [
+    'commentNumber',
+    'commentDate',
+    'commentAuthor',
+    'commentText',
+    'commentStatus',
+  ];
+
+  /** Topic-level and legacy coordinate fields, blank on comment rows. */
+  static COMMENT_ROW_HIDDEN_FIELDS = [
+    'title',
+    'description',
+    'status',
+    'type',
+    'priority',
+    'stage',
+    'labels',
+    'assignedTo',
+    'creationDate',
+    'creationAuthor',
+    'modifiedDate',
+    'modifiedAuthor',
+    'dueDate',
+    'sourceFile',
+    'projectName',
+    'bcfVersion',
+    'commentsCount',
+    'viewpointsCount',
+    'cameraPosX',
+    'cameraPosY',
+    'cameraPosZ',
+    'cameraTargetX',
+    'cameraTargetY',
+    'cameraTargetZ',
+  ];
+
+  /** Metadata fields shown on viewpoint rows besides the coordinate fields. */
+  static VIEWPOINT_ROW_FIELDS = [
+    'sourceFile',
+    'projectName',
+    'bcfVersion',
+    'topicGuid',
+    'viewpointsCount',
+  ];
+
+  /**
+   * Exports BCF data to CSV text: one row per topic, followed by its comment
+   * rows and (when coordinate fields are selected) its viewpoint rows.
+   * @param {Object[]} bcfDataArray - Parsed BCF files
+   * @param {string[]|null} selectedFields - Field names to include (all if empty)
+   * @returns {string} CSV content
+   * @throws {Error} If there is no data or no topics
+   */
   static export(bcfDataArray, selectedFields = null) {
     if (!bcfDataArray || bcfDataArray.length === 0) {
       throw new Error('No BCF data to export');
@@ -10,217 +86,7 @@ class CSVExporter {
       selectedFields = this.getAllFieldNames();
     }
 
-    // Collect all rows (topics + their comments)
-    const allRows = [];
-
-    let topicNumber = 1; // Add topic counter
-
-    bcfDataArray.forEach((bcfData) => {
-      bcfData.topics.forEach((topic) => {
-
-        // Add main topic row with primary viewpoint's BCF data (same logic as comments)
-        const topicRow = {
-          rowType: 'topic',
-          topicNumber: topicNumber,
-          sourceFile: bcfData.filename,
-          projectName: bcfData.project.name || 'Unknown',
-          bcfVersion: bcfData.version || 'Unknown',
-          topicGuid: topic.guid,
-          ...topic,
-        };
-
-        // Add primary viewpoint's BCF camera data to topic row
-        // Priority: 1) viewpoint.bcfv, 2) first viewpoint with coordinates
-        if (topic.viewpoints && topic.viewpoints.length > 0) {
-
-          // Method 1: Look for the main viewpoint.bcfv file (highest priority)
-          let primaryViewpoint = topic.viewpoints.find((vp) => {
-            return (
-              vp.viewpointFile === 'viewpoint.bcfv' ||
-              vp.guid === 'viewpoint-generic' ||
-              (vp.viewpointFile &&
-                vp.viewpointFile.toLowerCase().includes('viewpoint.bcfv'))
-            );
-          });
-
-          // Method 2: If no main viewpoint.bcfv, use first viewpoint with camera data
-          if (!primaryViewpoint) {
-            primaryViewpoint = topic.viewpoints.find((vp) => {
-              return vp.cameraType || vp.CameraViewPoint || vp.cameraPosition;
-            });
-          }
-
-          // Method 3: Last resort - use any viewpoint
-          if (!primaryViewpoint && topic.viewpoints.length > 0) {
-            primaryViewpoint = topic.viewpoints[0];
-          }
-
-          if (primaryViewpoint) {
-
-            // Add ALL BCF camera data to the main topic row
-            topicRow.cameraType = primaryViewpoint.cameraType || '';
-            topicRow.CameraViewPointX =
-              primaryViewpoint.CameraViewPoint?.X ?? null;
-            topicRow.CameraViewPointY =
-              primaryViewpoint.CameraViewPoint?.Y ?? null;
-            topicRow.CameraViewPointZ =
-              primaryViewpoint.CameraViewPoint?.Z ?? null;
-            topicRow.CameraDirectionX =
-              primaryViewpoint.CameraDirection?.X ?? null;
-            topicRow.CameraDirectionY =
-              primaryViewpoint.CameraDirection?.Y ?? null;
-            topicRow.CameraDirectionZ =
-              primaryViewpoint.CameraDirection?.Z ?? null;
-            topicRow.CameraUpVectorX =
-              primaryViewpoint.CameraUpVector?.X ?? null;
-            topicRow.CameraUpVectorY =
-              primaryViewpoint.CameraUpVector?.Y ?? null;
-            topicRow.CameraUpVectorZ =
-              primaryViewpoint.CameraUpVector?.Z ?? null;
-            topicRow.FieldOfView = primaryViewpoint.FieldOfView ?? null;
-            topicRow.ViewToWorldScale =
-              primaryViewpoint.ViewToWorldScale ?? null;
-
-            // Add legacy coordinate data for backward compatibility
-            topicRow.cameraPosX = primaryViewpoint.cameraPosition?.x ?? null;
-            topicRow.cameraPosY = primaryViewpoint.cameraPosition?.y ?? null;
-            topicRow.cameraPosZ = primaryViewpoint.cameraPosition?.z ?? null;
-            topicRow.cameraTargetX = primaryViewpoint.cameraTarget?.x ?? null;
-            topicRow.cameraTargetY = primaryViewpoint.cameraTarget?.y ?? null;
-            topicRow.cameraTargetZ = primaryViewpoint.cameraTarget?.z ?? null;
-          }
-        }
-
-        allRows.push(topicRow);
-
-        // Add comment rows underneath (sorted by date)
-        if (topic.comments && topic.comments.length > 0) {
-          const sortedComments = topic.comments.sort(
-            (a, b) =>
-              new Date(a.date || '1970-01-01') -
-              new Date(b.date || '1970-01-01')
-          );
-          sortedComments.forEach((comment, index) => {
-            const commentRow = {
-              rowType: 'comment',
-              topicNumber: `${topicNumber}.${index + 1}`, // Add comment numbering
-              sourceFile: bcfData.filename,
-              topicGuid: topic.guid,
-              commentNumber: index + 1,
-              commentDate: comment.date,
-              commentAuthor: comment.author,
-              commentText: comment.comment,
-              commentStatus: comment.status,
-              ...comment,
-            };
-            allRows.push(commentRow);
-          });
-        }
-
-        // Add viewpoint coordinate rows (only if coordinate fields are selected)
-        // This works exactly like comments - create separate rows for each viewpoint
-        const coordinateFields = [
-          'cameraType',
-          'CameraViewPointX',
-          'CameraViewPointY',
-          'CameraViewPointZ',
-          'CameraDirectionX',
-          'CameraDirectionY',
-          'CameraDirectionZ',
-          'CameraUpVectorX',
-          'CameraUpVectorY',
-          'CameraUpVectorZ',
-          'FieldOfView',
-          'ViewToWorldScale',
-          'cameraPosX',
-          'cameraPosY',
-          'cameraPosZ',
-          'cameraTargetX',
-          'cameraTargetY',
-          'cameraTargetZ',
-        ];
-        const hasCoordinateFields = selectedFields.some((field) =>
-          coordinateFields.includes(field)
-        );
-
-        // Create viewpoint rows for ALL viewpoints with coordinate data (like multiple comments)
-        if (
-          hasCoordinateFields &&
-          topic.viewpoints &&
-          topic.viewpoints.length > 0
-        ) {
-          // Filter viewpoints that have ANY coordinate data (more comprehensive check)
-          const coordinateViewpoints = topic.viewpoints.filter((viewpoint) => {
-            return (
-              // Check for BCF camera data
-              viewpoint.cameraType ||
-              (viewpoint.CameraViewPoint &&
-                (viewpoint.CameraViewPoint.X !== null ||
-                  viewpoint.CameraViewPoint.Y !== null ||
-                  viewpoint.CameraViewPoint.Z !== null)) ||
-              (viewpoint.CameraDirection &&
-                (viewpoint.CameraDirection.X !== null ||
-                  viewpoint.CameraDirection.Y !== null ||
-                  viewpoint.CameraDirection.Z !== null)) ||
-              (viewpoint.CameraUpVector &&
-                (viewpoint.CameraUpVector.X !== null ||
-                  viewpoint.CameraUpVector.Y !== null ||
-                  viewpoint.CameraUpVector.Z !== null)) ||
-              viewpoint.FieldOfView !== null ||
-              viewpoint.ViewToWorldScale !== null ||
-              // Check for legacy coordinate data
-              (viewpoint.cameraPosition &&
-                (viewpoint.cameraPosition.x !== null ||
-                  viewpoint.cameraPosition.y !== null ||
-                  viewpoint.cameraPosition.z !== null)) ||
-              (viewpoint.cameraTarget &&
-                (viewpoint.cameraTarget.x !== null ||
-                  viewpoint.cameraTarget.y !== null ||
-                  viewpoint.cameraTarget.z !== null))
-            );
-          });
-
-          coordinateViewpoints.forEach((viewpoint, index) => {
-            const viewpointRow = {
-              rowType: 'viewpoint',
-              topicNumber: `${topicNumber}.V${index + 1}`,
-              sourceFile: bcfData.filename,
-              projectName: bcfData.project.name || 'Unknown',
-              bcfVersion: bcfData.version || 'Unknown',
-              topicGuid: topic.guid,
-              viewpointNumber: index + 1,
-              viewpointGuid: viewpoint.guid || '',
-
-              // Add complete BCF camera data
-              cameraType: viewpoint.cameraType || '',
-              CameraViewPointX: viewpoint.CameraViewPoint?.X ?? null,
-              CameraViewPointY: viewpoint.CameraViewPoint?.Y ?? null,
-              CameraViewPointZ: viewpoint.CameraViewPoint?.Z ?? null,
-              CameraDirectionX: viewpoint.CameraDirection?.X ?? null,
-              CameraDirectionY: viewpoint.CameraDirection?.Y ?? null,
-              CameraDirectionZ: viewpoint.CameraDirection?.Z ?? null,
-              CameraUpVectorX: viewpoint.CameraUpVector?.X ?? null,
-              CameraUpVectorY: viewpoint.CameraUpVector?.Y ?? null,
-              CameraUpVectorZ: viewpoint.CameraUpVector?.Z ?? null,
-              FieldOfView: viewpoint.FieldOfView ?? null,
-              ViewToWorldScale: viewpoint.ViewToWorldScale ?? null,
-
-              // Legacy coordinate data for backward compatibility
-              cameraPosX: viewpoint.cameraPosition?.x ?? null,
-              cameraPosY: viewpoint.cameraPosition?.y ?? null,
-              cameraPosZ: viewpoint.cameraPosition?.z ?? null,
-              cameraTargetX: viewpoint.cameraTarget?.x ?? null,
-              cameraTargetY: viewpoint.cameraTarget?.y ?? null,
-              cameraTargetZ: viewpoint.cameraTarget?.z ?? null,
-            };
-
-            allRows.push(viewpointRow);
-          });
-        }
-
-        topicNumber++; // Increment topic counter after each topic
-      });
-    });
+    const allRows = this.collectExportRows(bcfDataArray, selectedFields);
 
     if (allRows.length === 0) {
       throw new Error('No topics found in BCF files');
@@ -231,11 +97,205 @@ class CSVExporter {
     const rows = allRows.map((row) => this.rowToCSVRow(row, selectedFields));
 
     // Combine headers and rows
-    const csvContent = [headers, ...rows]
+    return [headers, ...rows]
       .map((row) => row.map((field) => this.escapeCsvField(field)).join(','))
       .join('\n');
+  }
 
-    return csvContent;
+  /**
+   * Flattens all topics into ordered export rows (topic, comments, viewpoints).
+   * @param {Object[]} bcfDataArray - Parsed BCF files
+   * @param {string[]} selectedFields - Selected field names
+   * @returns {Object[]} Flat rows in output order
+   */
+  static collectExportRows(bcfDataArray, selectedFields) {
+    const allRows = [];
+    const includeViewpointRows = selectedFields.some((field) =>
+      this.COORDINATE_FIELDS.includes(field)
+    );
+    let topicNumber = 1;
+
+    bcfDataArray.forEach((bcfData) => {
+      bcfData.topics.forEach((topic) => {
+        allRows.push(this.buildTopicRow(bcfData, topic, topicNumber));
+        allRows.push(...this.buildCommentRows(bcfData, topic, topicNumber));
+        if (includeViewpointRows) {
+          allRows.push(...this.buildViewpointRows(bcfData, topic, topicNumber));
+        }
+        topicNumber++;
+      });
+    });
+
+    return allRows;
+  }
+
+  /**
+   * Builds the main topic row, including the primary viewpoint's camera data.
+   * @param {Object} bcfData - Parsed BCF file the topic belongs to
+   * @param {Object} topic - Topic to export
+   * @param {number} topicNumber - 1-based topic counter
+   * @returns {Object} Topic row
+   */
+  static buildTopicRow(bcfData, topic, topicNumber) {
+    const topicRow = {
+      rowType: 'topic',
+      topicNumber: topicNumber,
+      sourceFile: bcfData.filename,
+      projectName: bcfData.project.name || 'Unknown',
+      bcfVersion: bcfData.version || 'Unknown',
+      topicGuid: topic.guid,
+      ...topic,
+    };
+
+    const primaryViewpoint = this.findPrimaryViewpoint(topic.viewpoints);
+    if (primaryViewpoint) {
+      Object.assign(topicRow, this.extractCameraFields(primaryViewpoint));
+    }
+
+    return topicRow;
+  }
+
+  /**
+   * Picks the viewpoint whose camera data represents the topic.
+   * Priority: 1) viewpoint.bcfv, 2) first viewpoint with camera data, 3) first viewpoint.
+   * @param {Object[]} viewpoints - Topic viewpoints
+   * @returns {Object|undefined} Primary viewpoint, if any
+   */
+  static findPrimaryViewpoint(viewpoints) {
+    if (!viewpoints || viewpoints.length === 0) {
+      return undefined;
+    }
+
+    return (
+      viewpoints.find(
+        (vp) =>
+          vp.viewpointFile === 'viewpoint.bcfv' ||
+          vp.guid === 'viewpoint-generic' ||
+          (vp.viewpointFile &&
+            vp.viewpointFile.toLowerCase().includes('viewpoint.bcfv'))
+      ) ||
+      viewpoints.find(
+        (vp) => vp.cameraType || vp.CameraViewPoint || vp.cameraPosition
+      ) ||
+      viewpoints[0]
+    );
+  }
+
+  /**
+   * Extracts the complete BCF camera data plus legacy position/target from a viewpoint.
+   * @param {Object} viewpoint - Parsed viewpoint
+   * @returns {Object} Flat camera fields keyed by COORDINATE_FIELDS names
+   */
+  static extractCameraFields(viewpoint) {
+    return {
+      cameraType: viewpoint.cameraType || '',
+      CameraViewPointX: viewpoint.CameraViewPoint?.X ?? null,
+      CameraViewPointY: viewpoint.CameraViewPoint?.Y ?? null,
+      CameraViewPointZ: viewpoint.CameraViewPoint?.Z ?? null,
+      CameraDirectionX: viewpoint.CameraDirection?.X ?? null,
+      CameraDirectionY: viewpoint.CameraDirection?.Y ?? null,
+      CameraDirectionZ: viewpoint.CameraDirection?.Z ?? null,
+      CameraUpVectorX: viewpoint.CameraUpVector?.X ?? null,
+      CameraUpVectorY: viewpoint.CameraUpVector?.Y ?? null,
+      CameraUpVectorZ: viewpoint.CameraUpVector?.Z ?? null,
+      FieldOfView: viewpoint.FieldOfView ?? null,
+      ViewToWorldScale: viewpoint.ViewToWorldScale ?? null,
+
+      // Legacy coordinate data for backward compatibility
+      cameraPosX: viewpoint.cameraPosition?.x ?? null,
+      cameraPosY: viewpoint.cameraPosition?.y ?? null,
+      cameraPosZ: viewpoint.cameraPosition?.z ?? null,
+      cameraTargetX: viewpoint.cameraTarget?.x ?? null,
+      cameraTargetY: viewpoint.cameraTarget?.y ?? null,
+      cameraTargetZ: viewpoint.cameraTarget?.z ?? null,
+    };
+  }
+
+  /**
+   * Builds comment rows for a topic, sorted by date. Sorts topic.comments in place.
+   * @param {Object} bcfData - Parsed BCF file the topic belongs to
+   * @param {Object} topic - Topic whose comments to export
+   * @param {number} topicNumber - 1-based topic counter
+   * @returns {Object[]} Comment rows
+   */
+  static buildCommentRows(bcfData, topic, topicNumber) {
+    if (!topic.comments || topic.comments.length === 0) {
+      return [];
+    }
+
+    const sortedComments = topic.comments.sort(
+      (a, b) =>
+        new Date(a.date || '1970-01-01') - new Date(b.date || '1970-01-01')
+    );
+    return sortedComments.map((comment, index) => ({
+      rowType: 'comment',
+      topicNumber: `${topicNumber}.${index + 1}`,
+      sourceFile: bcfData.filename,
+      topicGuid: topic.guid,
+      commentNumber: index + 1,
+      commentDate: comment.date,
+      commentAuthor: comment.author,
+      commentText: comment.comment,
+      commentStatus: comment.status,
+      ...comment,
+    }));
+  }
+
+  /**
+   * Checks whether a point has any component that is not null.
+   * @param {Object} point - Object holding the components
+   * @param {string[]} keys - Component keys to test
+   * @returns {boolean} True if the point exists and any component is not null
+   */
+  static hasAnyComponent(point, keys) {
+    return !!point && keys.some((key) => point[key] !== null);
+  }
+
+  /**
+   * Checks whether a viewpoint carries any BCF or legacy coordinate data.
+   * @param {Object} viewpoint - Parsed viewpoint
+   * @returns {boolean} True if the viewpoint should get its own row
+   */
+  static hasCoordinateData(viewpoint) {
+    const upper = ['X', 'Y', 'Z'];
+    const lower = ['x', 'y', 'z'];
+    return !!(
+      viewpoint.cameraType ||
+      this.hasAnyComponent(viewpoint.CameraViewPoint, upper) ||
+      this.hasAnyComponent(viewpoint.CameraDirection, upper) ||
+      this.hasAnyComponent(viewpoint.CameraUpVector, upper) ||
+      viewpoint.FieldOfView !== null ||
+      viewpoint.ViewToWorldScale !== null ||
+      this.hasAnyComponent(viewpoint.cameraPosition, lower) ||
+      this.hasAnyComponent(viewpoint.cameraTarget, lower)
+    );
+  }
+
+  /**
+   * Builds one row per viewpoint that has coordinate data (like multiple comments).
+   * @param {Object} bcfData - Parsed BCF file the topic belongs to
+   * @param {Object} topic - Topic whose viewpoints to export
+   * @param {number} topicNumber - 1-based topic counter
+   * @returns {Object[]} Viewpoint rows
+   */
+  static buildViewpointRows(bcfData, topic, topicNumber) {
+    if (!topic.viewpoints || topic.viewpoints.length === 0) {
+      return [];
+    }
+
+    return topic.viewpoints
+      .filter((viewpoint) => this.hasCoordinateData(viewpoint))
+      .map((viewpoint, index) => ({
+        rowType: 'viewpoint',
+        topicNumber: `${topicNumber}.V${index + 1}`,
+        sourceFile: bcfData.filename,
+        projectName: bcfData.project.name || 'Unknown',
+        bcfVersion: bcfData.version || 'Unknown',
+        topicGuid: topic.guid,
+        viewpointNumber: index + 1,
+        viewpointGuid: viewpoint.guid || '',
+        ...this.extractCameraFields(viewpoint),
+      }));
   }
 
   static getAllFieldNames() {
@@ -365,8 +425,13 @@ class CSVExporter {
     return headers;
   }
 
-  static rowToCSVRow(row, selectedFields) {
-    const fieldMap = {
+  /**
+   * Builds the field-to-display-value lookup for the non-camera fields of a row.
+   * @param {Object} row - Flat export row (topic, comment or viewpoint)
+   * @returns {Object} Map of field name to formatted value
+   */
+  static buildTopicFieldMap(row) {
+    return {
       title: row.title || '',
       description: this.cleanDescription(row.description || ''),
       status: row.topicStatus || '',
@@ -405,136 +470,84 @@ class CSVExporter {
         row.headerFiles || row._originalTopic?.headerFiles
       ),
       viewpointIndex: row.viewpointIndex || '',
+    };
+  }
 
-      // Complete BCF camera field mappings
-      cameraType: row.cameraType || '',
-      CameraViewPointX: CoordinateUtils.formatCoordinate(row.CameraViewPointX),
-      CameraViewPointY: CoordinateUtils.formatCoordinate(row.CameraViewPointY),
-      CameraViewPointZ: CoordinateUtils.formatCoordinate(row.CameraViewPointZ),
-      CameraDirectionX: CoordinateUtils.formatCoordinate(row.CameraDirectionX),
-      CameraDirectionY: CoordinateUtils.formatCoordinate(row.CameraDirectionY),
-      CameraDirectionZ: CoordinateUtils.formatCoordinate(row.CameraDirectionZ),
-      CameraUpVectorX: CoordinateUtils.formatCoordinate(row.CameraUpVectorX),
-      CameraUpVectorY: CoordinateUtils.formatCoordinate(row.CameraUpVectorY),
-      CameraUpVectorZ: CoordinateUtils.formatCoordinate(row.CameraUpVectorZ),
-      FieldOfView: CoordinateUtils.formatCoordinate(row.FieldOfView),
-      ViewToWorldScale: CoordinateUtils.formatCoordinate(row.ViewToWorldScale),
+  /**
+   * Builds the field-to-display-value lookup for the camera/coordinate fields.
+   * @param {Object} row - Flat export row (topic, comment or viewpoint)
+   * @returns {Object} Map of camera field name to formatted value
+   */
+  static buildCameraFieldMap(row) {
+    const fieldMap = { cameraType: row.cameraType || '' };
+    this.COORDINATE_FIELDS.forEach((field) => {
+      if (field !== 'cameraType') {
+        fieldMap[field] = CoordinateUtils.formatCoordinate(row[field]);
+      }
+    });
+    return fieldMap;
+  }
 
-      // Legacy coordinate field mappings
-      cameraPosX: CoordinateUtils.formatCoordinate(row.cameraPosX),
-      cameraPosY: CoordinateUtils.formatCoordinate(row.cameraPosY),
-      cameraPosZ: CoordinateUtils.formatCoordinate(row.cameraPosZ),
-      cameraTargetX: CoordinateUtils.formatCoordinate(row.cameraTargetX),
-      cameraTargetY: CoordinateUtils.formatCoordinate(row.cameraTargetY),
-      cameraTargetZ: CoordinateUtils.formatCoordinate(row.cameraTargetZ),
+  /**
+   * Gets the display label for a row type in the "Row Type" column.
+   * @param {string} rowType - 'topic', 'comment' or 'viewpoint'
+   * @returns {string} 'Topic', 'Comment' or 'Viewpoint'
+   */
+  static getRowTypeLabel(rowType) {
+    if (rowType === 'comment') {
+      return 'Comment';
+    }
+    if (rowType === 'viewpoint') {
+      return 'Viewpoint';
+    }
+    return 'Topic';
+  }
+
+  /**
+   * Decides whether a field is blanked out for the given row type.
+   * Topic rows hide comment fields, comment rows hide topic and legacy
+   * coordinate fields, viewpoint rows show only coordinate/metadata fields.
+   * @param {string} rowType - 'topic', 'comment' or 'viewpoint'
+   * @param {string} field - Field name
+   * @returns {boolean|null} True to blank the cell, null for an unknown row type
+   */
+  static isFieldHiddenForRow(rowType, field) {
+    if (rowType === 'topic') {
+      return this.COMMENT_FIELDS.includes(field);
+    }
+    if (rowType === 'comment') {
+      return this.COMMENT_ROW_HIDDEN_FIELDS.includes(field);
+    }
+    if (rowType === 'viewpoint') {
+      return !(
+        this.COORDINATE_FIELDS.includes(field) ||
+        this.VIEWPOINT_ROW_FIELDS.includes(field)
+      );
+    }
+    return null;
+  }
+
+  /**
+   * Converts a flat export row into an array of CSV cell values.
+   * @param {Object} row - Flat export row (topic, comment or viewpoint)
+   * @param {string[]} selectedFields - Field names to include, in order
+   * @returns {Array} Cell values starting with Row Type and Topic #
+   */
+  static rowToCSVRow(row, selectedFields) {
+    const fieldMap = {
+      ...this.buildTopicFieldMap(row),
+      ...this.buildCameraFieldMap(row),
     };
 
-    // Start with row type and topic number
-    let rowTypeDisplay = 'Topic';
-    if (row.rowType === 'comment') {
-      rowTypeDisplay = 'Comment';
-    } else if (row.rowType === 'viewpoint') {
-      rowTypeDisplay = 'Viewpoint';
-    }
-
-    const csvRow = [
-      rowTypeDisplay,
-      row.topicNumber || '', // Add topic number as second column
-    ];
+    const csvRow = [this.getRowTypeLabel(row.rowType), row.topicNumber || ''];
 
     // Add selected fields in order
     selectedFields.forEach((field) => {
-      if (row.rowType === 'topic') {
-        // For topic rows, show topic data or empty for comment-specific fields
-        if (
-          [
-            'commentNumber',
-            'commentDate',
-            'commentAuthor',
-            'commentText',
-            'commentStatus',
-          ].includes(field)
-        ) {
-          csvRow.push('');
-        } else {
-          csvRow.push(fieldMap[field] || '');
-        }
-      } else if (row.rowType === 'comment') {
-        // For comment rows, show comment data or empty for topic-specific fields
-        if (
-          [
-            'title',
-            'description',
-            'status',
-            'type',
-            'priority',
-            'stage',
-            'labels',
-            'assignedTo',
-            'creationDate',
-            'creationAuthor',
-            'modifiedDate',
-            'modifiedAuthor',
-            'dueDate',
-            'sourceFile',
-            'projectName',
-            'bcfVersion',
-            'commentsCount',
-            'viewpointsCount',
-            'cameraPosX',
-            'cameraPosY',
-            'cameraPosZ',
-            'cameraTargetX',
-            'cameraTargetY',
-            'cameraTargetZ',
-          ].includes(field)
-        ) {
-          csvRow.push('');
-        } else {
-          csvRow.push(fieldMap[field] || '');
-        }
-      } else if (row.rowType === 'viewpoint') {
-        // For viewpoint rows, show coordinate data and basic metadata only
-        const coordinateFields = [
-          'cameraType',
-          'CameraViewPointX',
-          'CameraViewPointY',
-          'CameraViewPointZ',
-          'CameraDirectionX',
-          'CameraDirectionY',
-          'CameraDirectionZ',
-          'CameraUpVectorX',
-          'CameraUpVectorY',
-          'CameraUpVectorZ',
-          'FieldOfView',
-          'ViewToWorldScale',
-          'cameraPosX',
-          'cameraPosY',
-          'cameraPosZ',
-          'cameraTargetX',
-          'cameraTargetY',
-          'cameraTargetZ',
-        ];
-        const metadataFields = [
-          'sourceFile',
-          'projectName',
-          'bcfVersion',
-          'topicGuid',
-        ];
-        const viewpointSpecificFields = [
-          'viewpointsCount', // Show this for viewpoint rows
-        ];
-
-        if (
-          coordinateFields.includes(field) ||
-          metadataFields.includes(field) ||
-          viewpointSpecificFields.includes(field)
-        ) {
-          csvRow.push(fieldMap[field] || '');
-        } else {
-          csvRow.push(''); // Empty for topic/comment specific fields
-        }
+      const hidden = this.isFieldHiddenForRow(row.rowType, field);
+      if (hidden === null) {
+        return;
       }
+      csvRow.push(hidden ? '' : fieldMap[field] || '');
     });
 
     return csvRow;
