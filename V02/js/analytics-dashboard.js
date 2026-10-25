@@ -1194,25 +1194,6 @@ class AnalyticsDashboard {
   }
 
   /**
-   * Get user-friendly chart title
-   * @param {string} chartKey - Chart key (status, priority, etc.)
-   * @returns {string} - Formatted title
-   */
-  getChartTitle(chartKey) {
-    const titles = {
-      status: 'Status Distribution',
-      priority: 'Priority Distribution',
-      timeline: 'Topic Creation Timeline',
-      author: 'Author Activity',
-      comments: 'Comments Analysis',
-    };
-
-    return (
-      titles[chartKey] || chartKey.charAt(0).toUpperCase() + chartKey.slice(1)
-    );
-  }
-
-  /**
    * Show custom report builder
    */
   showCustomReportBuilder() {
@@ -1493,7 +1474,9 @@ class AnalyticsDashboard {
     // Display field analysis
     Object.entries(results.fieldAnalysis).forEach(([fieldName, analysis]) => {
       html += `<div class="field-analysis-section">`;
-      html += `<h6>${this.getFieldLabel(fieldName)} Analysis</h6>`;
+      html += `<h6>${HtmlUtils.escape(
+        this.getFieldLabel(fieldName)
+      )} Analysis</h6>`;
 
       if (analysis.type === 'numeric') {
         html += `
@@ -1505,7 +1488,7 @@ class AnalyticsDashboard {
               <strong>Distribution:</strong>
               <ul>
                 ${analysis.distribution
-                  .map(([range, count]) => `<li>${range}: ${count} topics</li>`)
+                  .map(([range, count]) => `<li>${HtmlUtils.escape(range)}: ${count} topics</li>`)
                   .join('')}
               </ul>
             </div>
@@ -1515,7 +1498,7 @@ class AnalyticsDashboard {
         html += `
           <div class="categorical-analysis">
             <p><strong>Unique Values:</strong> ${analysis.uniqueValues}</p>
-            <p><strong>Most Common:</strong> ${analysis.topValue[0]} (${
+            <p><strong>Most Common:</strong> ${HtmlUtils.escape(analysis.topValue[0])} (${
           analysis.topValue[1]
         } topics)</p>
             <div class="distribution">
@@ -1523,7 +1506,7 @@ class AnalyticsDashboard {
               <ul>
                 ${analysis.distribution
                   .slice(0, 5)
-                  .map(([value, count]) => `<li>${value}: ${count} topics</li>`)
+                  .map(([value, count]) => `<li>${HtmlUtils.escape(value)}: ${count} topics</li>`)
                   .join('')}
               </ul>
             </div>
@@ -1544,7 +1527,7 @@ class AnalyticsDashboard {
             ${results.crossFieldAnalysis
               .map(
                 ([combination, count]) =>
-                  `<li>${combination}: ${count} topics</li>`
+                  `<li>${HtmlUtils.escape(combination)}: ${count} topics</li>`
               )
               .join('')}
           </ul>
@@ -2507,17 +2490,6 @@ class AnalyticsDashboard {
    * @param {string} text - Input text to sanitize
    * @returns {string} - Filename-safe text
    */
-  sanitizeFilename(text) {
-    if (!text) return 'Unknown';
-
-    return text
-      .replace(/[<>:"/\\|?*]/g, '_') // Replace invalid filename characters
-      .replace(/\s+/g, '_') // Replace spaces with underscores
-      .replace(/_+/g, '_') // Replace multiple underscores with single
-      .replace(/^_|_$/g, '') // Remove leading/trailing underscores
-      .substring(0, 50); // Limit length
-  }
-
   sanitizeFilename(text) {
     if (!text) return 'Unknown';
 

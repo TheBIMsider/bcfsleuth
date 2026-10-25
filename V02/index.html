@@ -1423,20 +1423,36 @@
     </footer>
 
     <!-- External Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.1/jspdf.umd.min.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+      integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
+      integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.1/jspdf.umd.min.js"
+      integrity="sha512-ad3j5/L4h648YM/KObaUfjCsZRBP9sAOmpjaT2BDx6u9aBrKFp7SbeHykruy83rxfmG42+5QqeL/ngcojglbJw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
 
     <!-- Try multiple DOCX sources with fallback -->
     <script>
       // Function to load DOCX library with fallback
       async function loadDocxLibrary() {
         const sources = [
-          'https://unpkg.com/docx@7.8.2/build/index.js', // Older stable version
+          'https://unpkg.com/docx@7.8.2/build/index.js',
           'https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js',
-          'https://unpkg.com/docx@9.5.1/build/index.js',
-          'https://cdn.jsdelivr.net/npm/docx@9.5.1/build/index.js',
         ];
+        // Same bytes from every source, so one SRI hash covers them all
+        const integrity =
+          'sha512-JFCLOhVpbueUz+4av0O7O2RTpOrqWn3y0I4lkcj45jgqDQqxKxbHvt4D/Vcl16ISOY01G7j5cLmGHZBrLtKzUg==';
 
         for (const src of sources) {
           try {
@@ -1444,6 +1460,8 @@
 
             const script = document.createElement('script');
             script.src = src;
+            script.integrity = integrity;
+            script.crossOrigin = 'anonymous';
 
             const loadPromise = new Promise((resolve, reject) => {
               script.onload = () => {
@@ -1505,6 +1523,9 @@
           'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js',
           'https://unpkg.com/chart.js@3.9.1/dist/chart.min.js',
         ];
+        // Same bytes from every source, so one SRI hash covers them all
+        const integrity =
+          'sha512-ElRFoEQdI5Ht6kZvyzXhYG9NqjtkmlkfYk0wr6wHxU9JEHakS7UJZNeml5ALk+8IKlU6jDgMabC3vkumRokgJA==';
 
         for (const src of sources) {
           try {
@@ -1512,6 +1533,8 @@
 
             const script = document.createElement('script');
             script.src = src;
+            script.integrity = integrity;
+            script.crossOrigin = 'anonymous';
 
             const loadPromise = new Promise((resolve, reject) => {
               script.onload = () => {
@@ -1668,6 +1691,7 @@
     </div>
 
     <!-- Shared Utilities (MUST load first) -->
+    <script src="js/utils/html-utils.js"></script>
     <script src="js/utils/coordinate-utils.js"></script>
     <script src="js/utils/pdf-utils.js"></script>
     <script src="js/utils/color-manager.js"></script>

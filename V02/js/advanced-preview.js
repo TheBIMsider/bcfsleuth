@@ -441,10 +441,10 @@ class AdvancedPreview {
     headersRow.innerHTML = allColumns
       .map(
         (col) => `
-      <th ${col.sortable ? `data-sort="${col.field}"` : ''} ${
+      <th ${col.sortable ? `data-sort="${this.escapeHtml(col.field)}"` : ''} ${
           col.sortable ? 'style="cursor: pointer;"' : ''
         }>
-        ${col.label}
+        ${this.escapeHtml(col.label)}
         ${col.sortable ? '<span class="sort-indicator">↕</span>' : ''}
       </th>
     `
@@ -727,7 +727,7 @@ class AdvancedPreview {
         .map(
           (filter) => `
         <div class="filter-tag">
-          ${filter.label}
+          ${this.escapeHtml(filter.label)}
           <button class="filter-remove" onclick="window.bcfApp.advancedPreview.removeFilter('${filter.type}')">&times;</button>
         </div>
       `
@@ -1155,16 +1155,14 @@ class AdvancedPreview {
   }
 
   escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text.toString();
-    return div.innerHTML;
+    return HtmlUtils.escape(text);
   }
 
   createTitleCell(row) {
     const title = row.title || '';
-    const truncated = this.truncateText(title, 40);
-    const needsTooltip = title.length > 40 || truncated.includes('...');
+    const rawTruncated = this.truncateText(title, 40);
+    const truncated = this.escapeHtml(rawTruncated);
+    const needsTooltip = title.length > 40 || rawTruncated.includes('...');
 
     // ADD EXPAND/COLLAPSE FUNCTIONALITY FOR TOPICS
     if (row.rowType === 'topic' && (row.hasComments || row.hasViewpoints)) {
@@ -1177,9 +1175,9 @@ class AdvancedPreview {
       if (row.hasViewpoints) expandableItems.push('viewpoints');
       const expandableText = expandableItems.join(' & ');
 
-      const expandButton = `<button class="expand-button" onclick="window.bcfApp.advancedPreview.toggleTopicComments('${
+      const expandButton = `<button class="expand-button" data-topic-guid="${this.escapeHtml(
         row.topicGuid
-      }')" title="${
+      )}" onclick="window.bcfApp.advancedPreview.toggleTopicComments(this.dataset.topicGuid)" title="${
         isExpanded ? 'Collapse' : 'Expand'
       } ${expandableText}">${expandIcon}</button>`;
 
@@ -1305,9 +1303,11 @@ class AdvancedPreview {
   formatStatusCell(value) {
     if (!value) return { html: '<td></td>' };
     return {
-      html: `<td><span class="status-badge status-${value
-        .toLowerCase()
-        .replace(/\s+/g, '-')}">${value}</span></td>`,
+      html: `<td><span class="status-badge status-${this.escapeHtml(
+        String(value)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+      )}">${this.escapeHtml(value)}</span></td>`,
     };
   }
 
@@ -1319,7 +1319,11 @@ class AdvancedPreview {
   formatPriorityCell(value) {
     if (!value) return { html: '<td></td>' };
     return {
-      html: `<td><span class="priority-badge priority-${value.toLowerCase()}">${value}</span></td>`,
+      html: `<td><span class="priority-badge priority-${this.escapeHtml(
+        String(value)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+      )}">${this.escapeHtml(value)}</span></td>`,
     };
   }
 
@@ -1332,9 +1336,12 @@ class AdvancedPreview {
     if (!value) return { html: '<td></td>' };
     return {
       cssClass: 'cell-date',
+      rawHtml: true,
       value: this.isOverdue(value)
-        ? `<span style="color: var(--danger)">${value} (Overdue)</span>`
-        : value,
+        ? `<span style="color: var(--danger)">${this.escapeHtml(
+            value
+          )} (Overdue)</span>`
+        : this.escapeHtml(value),
     };
   }
 
@@ -1367,7 +1374,10 @@ class AdvancedPreview {
     }
     return {
       cssClass: 'cell-coordinate',
-      value: value ? `<span class="coordinate-value">${value}</span>` : '',
+      rawHtml: true,
+      value: value
+        ? `<span class="coordinate-value">${this.escapeHtml(value)}</span>`
+        : '',
     };
   }
 
@@ -1391,7 +1401,7 @@ class AdvancedPreview {
     if (stringValue && typeof value === 'string' && value.includes('...')) {
       return {
         cssClass: 'expandable',
-        fullText: originalValue,
+        fullText: stringValue,
         needsTooltip: true,
       };
     }
@@ -1400,10 +1410,13 @@ class AdvancedPreview {
 
   /**
    * Assemble the final `<td>`, adding a tooltip attribute when needed
-   * @param {{value: *, cssClass: string, fullText: string, needsTooltip: boolean}} cell
+   * @param {{value: *, cssClass: string, fullText: string, needsTooltip: boolean, rawHtml: boolean}} cell
    * @returns {string} `<td>` HTML
    */
-  buildCellHtml({ value, cssClass, fullText, needsTooltip }) {
+  buildCellHtml({ value, cssClass, fullText, needsTooltip, rawHtml }) {
+    // Cell values come from BCF files, so escape unless the formatter
+    // already built (and escaped) its own markup
+    if (!rawHtml) value = this.escapeHtml(value);
     if (needsTooltip && fullText) {
       return `<td class="${cssClass}" data-full-text="${this.escapeHtml(
         fullText
@@ -1519,22 +1532,6 @@ class AdvancedPreview {
     }
 
     return primaryViewpoint;
-  }
-
-  /**
-   * Format coordinate values to 3 decimal places, handle null/undefined
-   */
-  formatCoordinate(value) {
-    if (value === null || value === undefined || value === '') {
-      return '';
-    }
-
-    const num = parseFloat(value);
-    if (isNaN(num)) {
-      return '';
-    }
-
-    return num.toFixed(3);
   }
 
   /**

@@ -336,7 +336,7 @@ class ConfigurationManager {
       .sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed))
       .map(
         (template) => `
-        <div class="template-item" data-template-id="${template.id}">
+        <div class="template-item" data-template-id="${this.escapeHtml(template.id)}">
           <div class="template-info">
             <div class="template-name">${this.escapeHtml(template.name)}</div>
             <div class="template-description">${this.escapeHtml(
@@ -344,30 +344,26 @@ class ConfigurationManager {
             )}</div>
             <div class="template-meta">
               <span class="field-count">${
-                template.selectedFields.length
+                Array.isArray(template.selectedFields)
+                  ? template.selectedFields.length
+                  : 0
               } fields</span>
               <span class="last-used">Last used: ${this.formatDate(
                 template.lastUsed
               )}</span>
-              <span class="export-format">${
+              <span class="export-format">${this.escapeHtml(
                 template.exportFormat || 'excel'
-              }</span>
+              )}</span>
             </div>
           </div>
           <div class="template-actions">
-            <button class="btn btn-primary btn-sm" onclick="window.bcfApp.configManager.applyTemplate('${
-              template.id
-            }')">
+            <button class="btn btn-primary btn-sm" onclick="window.bcfApp.configManager.applyTemplate(this.closest('.template-item').dataset.templateId)">
               Apply
             </button>
-            <button class="btn btn-secondary btn-sm" onclick="window.bcfApp.configManager.editTemplate('${
-              template.id
-            }')">
+            <button class="btn btn-secondary btn-sm" onclick="window.bcfApp.configManager.editTemplate(this.closest('.template-item').dataset.templateId)">
               Edit
             </button>
-            <button class="btn btn-secondary btn-sm btn-danger" onclick="window.bcfApp.configManager.deleteTemplate('${
-              template.id
-            }')">
+            <button class="btn btn-secondary btn-sm btn-danger" onclick="window.bcfApp.configManager.deleteTemplate(this.closest('.template-item').dataset.templateId)">
               Delete
             </button>
           </div>
@@ -497,18 +493,18 @@ class ConfigurationManager {
       .slice(0, 10) // Show only last 10 items
       .map(
         (item) => `
-        <div class="history-item">
+        <div class="history-item" data-history-id="${this.escapeHtml(item.id)}">
           <div class="history-info">
             <div class="history-filename">${this.escapeHtml(
               item.filename
             )}</div>
             <div class="history-meta">
-              <span>${item.topicCount} topics, ${
+              <span>${this.escapeHtml(item.topicCount)} topics, ${this.escapeHtml(
           item.commentCount
-        } comments</span>
-              <span>${item.fieldsSelected} fields exported as ${
-          item.exportFormat
-        }</span>
+        )} comments</span>
+              <span>${this.escapeHtml(
+                item.fieldsSelected
+              )} fields exported as ${this.escapeHtml(item.exportFormat)}</span>
               <span>${this.formatDate(item.timestamp)}</span>
             </div>
             <div class="history-template">Template: ${this.escapeHtml(
@@ -516,9 +512,7 @@ class ConfigurationManager {
             )}</div>
           </div>
           <div class="history-actions">
-            <button class="btn btn-secondary btn-sm" onclick="window.bcfApp.configManager.reprocessFromHistory('${
-              item.id
-            }')">
+            <button class="btn btn-secondary btn-sm" onclick="window.bcfApp.configManager.reprocessFromHistory(this.closest('.history-item').dataset.historyId)">
               Reprocess
             </button>
           </div>
@@ -789,7 +783,7 @@ class ConfigurationManager {
       try {
         // Create new template with fresh ID and current timestamp
         const newTemplate = {
-          id: importedTemplate.id || this.generateId(),
+          id: this.generateId(),
           name: importedTemplate.name,
           description: importedTemplate.description || '',
           selectedFields: importedTemplate.selectedFields,
@@ -907,10 +901,7 @@ class ConfigurationManager {
   }
 
   escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return HtmlUtils.escape(text);
   }
 
   generateHistoryCSV() {

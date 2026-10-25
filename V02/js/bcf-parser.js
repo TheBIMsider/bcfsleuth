@@ -11,6 +11,12 @@ class BCFParser {
 
   static async parse(file) {
     try {
+      if (typeof JSZip === 'undefined') {
+        throw new Error(
+          'The ZIP library (JSZip) failed to load. Check your internet connection and refresh the page.'
+        );
+      }
+
       // Load the BCF file as a ZIP archive
       const zip = await JSZip.loadAsync(file);
 
