@@ -113,168 +113,206 @@ class AdvancedPreview {
     );
   }
 
-  // Flatten BCF data into table rows
+  /**
+   * Flatten BCF data into table rows (topic rows, followed by that topic's
+   * comment rows and additional-viewpoint rows)
+   * @param {Array} parsedData - Parsed BCF files
+   * @returns {Array<Object>} Flat row objects for the preview table
+   */
   flattenBCFData(parsedData) {
     const tableData = [];
     let topicNumber = 1;
 
     parsedData.forEach((bcfFile) => {
       bcfFile.topics.forEach((topic) => {
-        // ✅ Get primary viewpoint data for coordinate integration
-        const primaryViewpoint = this.getPrimaryViewpoint(topic);
-
-        // ✅ Get coordinate data for this topic
         const coordinateData = this.getTopicCoordinateData(topic, bcfFile);
 
-        // Add topic row with coordinate data
-        const topicRow = {
-          type: topicNumber,
-          rowType: 'topic',
-          sourceFile: bcfFile.filename,
-          projectName: bcfFile.project.name || 'Unknown',
-          bcfVersion: bcfFile.version || 'Unknown',
-          topicGuid: topic.guid,
-          title: topic.title || 'Untitled',
-          description: topic.description || '',
-          topicIndex: topic.topicIndex || '',
-          serverAssignedId: topic.serverAssignedId || '',
-          status: topic.topicStatus || '',
-          topicType: topic.topicType || '',
-          priority: topic.priority || '',
-          stage: topic.stage || '',
-          labels: topic.labels || [],
-          assignee: topic.assignedTo || '',
-          author: topic.creationAuthor || '',
-          created: this.formatDate(topic.creationDate),
-          modified: this.formatDate(topic.modifiedDate),
-          modifiedAuthor: topic.modifiedAuthor || '',
-          due: this.formatDate(topic.dueDate),
-          comments: topic.comments ? topic.comments.length : 0,
-          isOverdue: this.isOverdue(topic.dueDate),
-          hasComments: topic.comments && topic.comments.length > 0,
-          hasViewpoints:
-            topic.viewpoints &&
-            topic.viewpoints.filter((vp) => vp.CameraViewPoint || vp.cameraType)
-              .length > 1, // More than 1 means additional viewpoints beyond primary
-
-          // ✅ Include coordinate data from primary viewpoint
-          ...coordinateData,
-
-          _originalTopic: topic,
-        };
-
-        tableData.push(topicRow);
-
-        // Add comment rows
-        if (topic.comments && topic.comments.length > 0) {
-          const sortedComments = topic.comments.sort(
-            (a, b) =>
-              new Date(a.date || '1970-01-01') -
-              new Date(b.date || '1970-01-01')
-          );
-
-          sortedComments.forEach((comment, index) => {
-            const commentRow = {
-              type: `${topicNumber}.${index + 1}`,
-              rowType: 'comment',
-              sourceFile: bcfFile.filename,
-              topicGuid: topic.guid,
-              parentTopicGuid: topic.guid,
-              parentTitle: topic.title,
-              title: `Comment ${index + 1}`,
-              status: comment.status || '',
-              priority: '',
-              assignee: '',
-              author: comment.author || '',
-              created: this.formatDate(comment.date),
-              modified: '',
-              modifiedAuthor: '',
-              due: '',
-              comments: '',
-              content: comment.comment || '',
-              commentNumber: index + 1,
-              commentDate: this.formatDate(comment.date),
-              commentAuthor: comment.author || 'No Author',
-              commentText: comment.comment || 'No Comment Text',
-              commentStatus: comment.status || '',
-              _debug_comment: comment,
-              _originalComment: comment,
-            };
-
-            tableData.push(commentRow);
-          });
-        }
-
-        // ✅ Add viewpoint rows for multiple viewpoints (like comment rows)
-        if (topic.viewpoints && topic.viewpoints.length > 1) {
-          // Find viewpoints with coordinate data (excluding the primary one used in topic row)
-          const viewpointsWithCoordinates = topic.viewpoints.filter(
-            (vp) =>
-              vp.CameraViewPoint ||
-              vp.cameraType ||
-              vp.ViewToWorldScale ||
-              vp.FieldOfView
-          );
-
-          // Get the primary viewpoint that's already shown in the topic row
-          const primaryViewpoint =
-            viewpointsWithCoordinates.find((vp) => {
-              return (
-                vp.viewpointFile === 'viewpoint.bcfv' ||
-                vp.guid === 'viewpoint-generic' ||
-                (vp.viewpointFile &&
-                  vp.viewpointFile.toLowerCase().includes('viewpoint.bcfv'))
-              );
-            }) || viewpointsWithCoordinates[0];
-
-          // Add rows for additional viewpoints (excluding the primary one)
-          const additionalViewpoints = viewpointsWithCoordinates.filter(
-            (vp) => vp !== primaryViewpoint
-          );
-
-          additionalViewpoints.forEach((viewpoint, index) => {
-            const viewpointCoordinates =
-              this.extractViewpointCoordinates(viewpoint);
-
-            const viewpointRow = {
-              type: `${topicNumber}.V${index + 1}`,
-              rowType: 'viewpoint',
-              sourceFile: bcfFile.filename,
-              topicGuid: topic.guid,
-              parentTopicGuid: topic.guid,
-              parentTitle: topic.title,
-              title: `Viewpoint ${index + 1}: ${viewpoint.guid}`,
-              status: '',
-              priority: '',
-              assignee: '',
-              author: '',
-              created: '',
-              modified: '',
-              modifiedAuthor: '',
-              due: '',
-              comments: '',
-
-              // ✅ Include all coordinate data for this viewpoint
-              ...viewpointCoordinates,
-
-              // Viewpoint-specific metadata
-              viewpointNumber: index + 1,
-              viewpointGuid: viewpoint.guid,
-              viewpointFile: viewpoint.viewpointFile,
-              viewpointType: viewpoint.cameraType || '',
-
-              _originalViewpoint: viewpoint,
-            };
-
-            tableData.push(viewpointRow);
-          });
-        }
+        tableData.push(
+          this.createTopicRow(bcfFile, topic, topicNumber, coordinateData)
+        );
+        tableData.push(...this.createCommentRows(bcfFile, topic, topicNumber));
+        tableData.push(
+          ...this.createViewpointRows(bcfFile, topic, topicNumber)
+        );
 
         topicNumber++;
       });
     });
 
     return tableData;
+  }
+
+  /**
+   * Build the table row for a topic, including primary viewpoint coordinates
+   * @param {Object} bcfFile - Parsed BCF file the topic belongs to
+   * @param {Object} topic - Parsed topic
+   * @param {number} topicNumber - 1-based topic number across all files
+   * @param {Object} coordinateData - Result of getTopicCoordinateData
+   * @returns {Object} Topic row
+   */
+  createTopicRow(bcfFile, topic, topicNumber, coordinateData) {
+    return {
+      type: topicNumber,
+      rowType: 'topic',
+      sourceFile: bcfFile.filename,
+      projectName: bcfFile.project.name || 'Unknown',
+      bcfVersion: bcfFile.version || 'Unknown',
+      topicGuid: topic.guid,
+      title: topic.title || 'Untitled',
+      description: topic.description || '',
+      topicIndex: topic.topicIndex || '',
+      serverAssignedId: topic.serverAssignedId || '',
+      status: topic.topicStatus || '',
+      topicType: topic.topicType || '',
+      priority: topic.priority || '',
+      stage: topic.stage || '',
+      labels: topic.labels || [],
+      assignee: topic.assignedTo || '',
+      author: topic.creationAuthor || '',
+      created: this.formatDate(topic.creationDate),
+      modified: this.formatDate(topic.modifiedDate),
+      modifiedAuthor: topic.modifiedAuthor || '',
+      due: this.formatDate(topic.dueDate),
+      comments: topic.comments ? topic.comments.length : 0,
+      isOverdue: this.isOverdue(topic.dueDate),
+      hasComments: topic.comments && topic.comments.length > 0,
+      hasViewpoints:
+        topic.viewpoints &&
+        topic.viewpoints.filter((vp) => vp.CameraViewPoint || vp.cameraType)
+          .length > 1, // More than 1 means additional viewpoints beyond primary
+
+      // Coordinate data from primary viewpoint
+      ...coordinateData,
+
+      _originalTopic: topic,
+    };
+  }
+
+  /**
+   * Build comment rows for a topic, oldest first. Sorts topic.comments in
+   * place, as the original inline code did.
+   * @param {Object} bcfFile - Parsed BCF file the topic belongs to
+   * @param {Object} topic - Parsed topic
+   * @param {number} topicNumber - 1-based topic number across all files
+   * @returns {Array<Object>} Comment rows (empty if the topic has no comments)
+   */
+  createCommentRows(bcfFile, topic, topicNumber) {
+    if (!topic.comments || topic.comments.length === 0) {
+      return [];
+    }
+
+    const sortedComments = topic.comments.sort(
+      (a, b) =>
+        new Date(a.date || '1970-01-01') - new Date(b.date || '1970-01-01')
+    );
+
+    return sortedComments.map((comment, index) =>
+      this.createCommentRow(bcfFile, topic, topicNumber, comment, index)
+    );
+  }
+
+  /**
+   * Build a single comment row
+   * @param {Object} bcfFile - Parsed BCF file the topic belongs to
+   * @param {Object} topic - Parent topic
+   * @param {number} topicNumber - 1-based topic number across all files
+   * @param {Object} comment - Parsed comment
+   * @param {number} index - 0-based position in the sorted comment list
+   * @returns {Object} Comment row
+   */
+  createCommentRow(bcfFile, topic, topicNumber, comment, index) {
+    return {
+      type: `${topicNumber}.${index + 1}`,
+      rowType: 'comment',
+      sourceFile: bcfFile.filename,
+      topicGuid: topic.guid,
+      parentTopicGuid: topic.guid,
+      parentTitle: topic.title,
+      title: `Comment ${index + 1}`,
+      status: comment.status || '',
+      priority: '',
+      assignee: '',
+      author: comment.author || '',
+      created: this.formatDate(comment.date),
+      modified: '',
+      modifiedAuthor: '',
+      due: '',
+      comments: '',
+      content: comment.comment || '',
+      commentNumber: index + 1,
+      commentDate: this.formatDate(comment.date),
+      commentAuthor: comment.author || 'No Author',
+      commentText: comment.comment || 'No Comment Text',
+      commentStatus: comment.status || '',
+      _debug_comment: comment,
+      _originalComment: comment,
+    };
+  }
+
+  /**
+   * Build rows for a topic's additional viewpoints (those beyond the primary
+   * viewpoint already shown in the topic row)
+   * @param {Object} bcfFile - Parsed BCF file the topic belongs to
+   * @param {Object} topic - Parsed topic
+   * @param {number} topicNumber - 1-based topic number across all files
+   * @returns {Array<Object>} Viewpoint rows (empty unless topic has 2+ viewpoints)
+   */
+  createViewpointRows(bcfFile, topic, topicNumber) {
+    if (!topic.viewpoints || topic.viewpoints.length <= 1) {
+      return [];
+    }
+
+    const viewpointsWithCoordinates = this.getCoordinateViewpoints(topic);
+    const primaryViewpoint = this.selectCoordinateViewpoint(
+      viewpointsWithCoordinates
+    );
+
+    return viewpointsWithCoordinates
+      .filter((vp) => vp !== primaryViewpoint)
+      .map((viewpoint, index) =>
+        this.createViewpointRow(bcfFile, topic, topicNumber, viewpoint, index)
+      );
+  }
+
+  /**
+   * Build a single additional-viewpoint row
+   * @param {Object} bcfFile - Parsed BCF file the topic belongs to
+   * @param {Object} topic - Parent topic
+   * @param {number} topicNumber - 1-based topic number across all files
+   * @param {Object} viewpoint - Parsed viewpoint
+   * @param {number} index - 0-based position among the additional viewpoints
+   * @returns {Object} Viewpoint row
+   */
+  createViewpointRow(bcfFile, topic, topicNumber, viewpoint, index) {
+    return {
+      type: `${topicNumber}.V${index + 1}`,
+      rowType: 'viewpoint',
+      sourceFile: bcfFile.filename,
+      topicGuid: topic.guid,
+      parentTopicGuid: topic.guid,
+      parentTitle: topic.title,
+      title: `Viewpoint ${index + 1}: ${viewpoint.guid}`,
+      status: '',
+      priority: '',
+      assignee: '',
+      author: '',
+      created: '',
+      modified: '',
+      modifiedAuthor: '',
+      due: '',
+      comments: '',
+
+      // All coordinate data for this viewpoint
+      ...this.extractViewpointCoordinates(viewpoint),
+
+      // Viewpoint-specific metadata
+      viewpointNumber: index + 1,
+      viewpointGuid: viewpoint.guid,
+      viewpointFile: viewpoint.viewpointFile,
+      viewpointType: viewpoint.cameraType || '',
+
+      _originalViewpoint: viewpoint,
+    };
   }
 
   // Populate filter dropdowns with actual data
@@ -1148,203 +1186,196 @@ class AdvancedPreview {
     }
   }
 
+  /**
+   * Create the HTML for one table cell, formatted for its field type
+   * @param {Object} row - Flattened table row
+   * @param {string} columnField - Row property the column reads from
+   * @param {string} originalField - Field ID that decides the formatting
+   * @returns {string} `<td>` HTML
+   */
   createFormattedCell(row, columnField, originalField) {
-    let value = row[columnField] || '';
-    let cssClass = '';
-    let needsTooltip = false;
-    let fullText = '';
+    const value = row[columnField] || '';
+    const cell = this.formatCellByField(row, originalField, value);
 
-    // Format based on field type
-    switch (originalField) {
+    if (cell.html !== undefined) {
+      return cell.html;
+    }
+
+    return this.buildCellHtml({
+      value,
+      cssClass: '',
+      fullText: '',
+      needsTooltip: false,
+      ...cell,
+    });
+  }
+
+  /**
+   * Choose the formatter for a field. Returns either `{ html }` (a finished
+   * cell) or a partial `{ value, cssClass, fullText, needsTooltip }` that
+   * createFormattedCell completes with defaults.
+   * @param {Object} row - Flattened table row
+   * @param {string} field - Field ID
+   * @param {*} value - Raw cell value (already defaulted to '')
+   * @returns {Object} Formatted cell parts
+   */
+  formatCellByField(row, field, value) {
+    switch (field) {
       case 'status':
-        if (value) {
-          return `<td><span class="status-badge status-${value
-            .toLowerCase()
-            .replace(/\s+/g, '-')}">${value}</span></td>`;
-        }
-        return '<td></td>';
+        return this.formatStatusCell(value);
 
       case 'priority':
-        if (value) {
-          return `<td><span class="priority-badge priority-${value.toLowerCase()}">${value}</span></td>`;
-        }
-        return '<td></td>';
+        return this.formatPriorityCell(value);
 
       case 'dueDate':
-        if (!value) return '<td></td>';
-        const isOverdue = this.isOverdue(value);
-        cssClass = 'cell-date';
-        value = isOverdue
-          ? `<span style="color: var(--danger)">${value} (Overdue)</span>`
-          : value;
-        break;
+        return this.formatDueDateCell(value);
 
       case 'creationDate':
       case 'modifiedDate':
       case 'commentDate':
-        cssClass = 'cell-date';
-        break;
+        return { cssClass: 'cell-date' };
 
       case 'creationAuthor':
       case 'modifiedAuthor':
       case 'commentAuthor':
       case 'assignedTo':
-        cssClass = 'cell-author';
-        break;
+        return { cssClass: 'cell-author' };
 
       case 'commentText':
-        if (value && value.length > 50) {
-          cssClass = 'cell-comment expandable';
-          fullText = value;
-          value = this.truncateText(value, 50);
-          needsTooltip = true;
-        } else {
-          cssClass = 'cell-comment';
-        }
-        break;
-
-      case 'commentText':
-        if (value && value.length > 50) {
-          cssClass = 'cell-comment expandable';
-          fullText = value;
-          value = this.truncateText(value, 50);
-          needsTooltip = true;
-        } else {
-          cssClass = 'cell-comment';
-        }
-        break;
+        return this.formatCommentTextCell(value);
 
       case 'commentNumber':
         // Only show for comment rows, empty for topics
-        if (row.rowType === 'comment') {
-          value = row.commentNumber || '';
-        } else {
-          value = ''; // Empty for topic rows
-        }
-        break;
-
-      case 'commentDate':
-        // Only show for comment rows
-        if (row.rowType === 'comment') {
-          cssClass = 'cell-date';
-          value = row.commentDate || '';
-        } else {
-          value = ''; // Empty for topic rows
-        }
-        break;
-
-      case 'commentAuthor':
-        // Only show for comment rows
-        if (row.rowType === 'comment') {
-          cssClass = 'cell-author';
-          value = row.commentAuthor || '';
-        } else {
-          value = ''; // Empty for topic rows
-        }
-        break;
-
-      case 'commentText':
-        // Only show for comment rows
-        if (row.rowType === 'comment') {
-          value = row.commentText || '';
-          if (value && value.length > 50) {
-            cssClass = 'cell-comment expandable';
-            fullText = value;
-            value = this.truncateText(value, 50);
-            needsTooltip = true;
-          } else {
-            cssClass = 'cell-comment';
-          }
-        } else {
-          value = ''; // Empty for topic rows
-        }
-        break;
-
-      case 'modifiedDate':
-      case 'modifiedAuthor':
-        // Only show for topic rows
-        if (row.rowType === 'topic') {
-          cssClass = field === 'modifiedAuthor' ? 'cell-author' : 'cell-date';
-          value = value || '';
-        } else {
-          value = '';
-        }
-        break;
+        return { value: row.rowType === 'comment' ? row.commentNumber || '' : '' };
 
       case 'commentsCount':
       case 'viewpointsCount':
-        if (row.rowType === 'topic') {
-          value = value || 0;
-        } else {
-          value = '';
-        }
-        break;
+        return { value: row.rowType === 'topic' ? value || 0 : '' };
 
-      // ✅ BCF Camera Coordinate Fields - Format coordinate values
       case 'cameraType':
-        cssClass = 'cell-camera-type';
-        value = value || '';
-        break;
-
-      case 'CameraViewPointX':
-      case 'CameraViewPointY':
-      case 'CameraViewPointZ':
-      case 'CameraDirectionX':
-      case 'CameraDirectionY':
-      case 'CameraDirectionZ':
-      case 'CameraUpVectorX':
-      case 'CameraUpVectorY':
-      case 'CameraUpVectorZ':
-      case 'FieldOfView':
-      case 'ViewToWorldScale':
-      case 'cameraPosX':
-      case 'cameraPosY':
-      case 'cameraPosZ':
-      case 'cameraTargetX':
-      case 'cameraTargetY':
-      case 'cameraTargetZ':
-        // ✅ Show coordinate data for both topic rows AND viewpoint rows
-        if (row.rowType === 'topic' || row.rowType === 'viewpoint') {
-          cssClass = 'cell-coordinate';
-          value = value || '';
-          // Add visual indicator for coordinate fields
-          if (value) {
-            value = `<span class="coordinate-value">${value}</span>`;
-          }
-        } else {
-          value = ''; // Empty for comment rows only
-        }
-        break;
+        return { cssClass: 'cell-camera-type', value: value || '' };
 
       default:
-        // Handle long text fields and detect truncation
-        const stringValue = String(value || '');
-        if (stringValue && stringValue.length > 30) {
-          cssClass = cssClass ? `${cssClass} expandable` : 'expandable';
-          fullText = stringValue;
-          value = this.truncateText(stringValue, 30);
-          needsTooltip = true;
+        if (CoordinateUtils.COORDINATE_FIELDS.includes(field)) {
+          return this.formatCoordinateCell(row, value);
         }
-        // Also check if truncateText added ellipsis (indicates truncation)
-        else if (
-          stringValue &&
-          typeof value === 'string' &&
-          value.includes('...')
-        ) {
-          cssClass = cssClass ? `${cssClass} expandable` : 'expandable';
-          fullText = originalValue;
-          needsTooltip = true;
-        }
+        return this.formatDefaultCell(value);
     }
+  }
 
-    // Build the cell HTML
+  /**
+   * Status badge cell
+   * @param {string} value - Status text
+   * @returns {{html: string}} Finished cell
+   */
+  formatStatusCell(value) {
+    if (!value) return { html: '<td></td>' };
+    return {
+      html: `<td><span class="status-badge status-${value
+        .toLowerCase()
+        .replace(/\s+/g, '-')}">${value}</span></td>`,
+    };
+  }
+
+  /**
+   * Priority badge cell
+   * @param {string} value - Priority text
+   * @returns {{html: string}} Finished cell
+   */
+  formatPriorityCell(value) {
+    if (!value) return { html: '<td></td>' };
+    return {
+      html: `<td><span class="priority-badge priority-${value.toLowerCase()}">${value}</span></td>`,
+    };
+  }
+
+  /**
+   * Due date cell, flagged when overdue
+   * @param {string} value - Formatted due date
+   * @returns {Object} Finished cell (empty) or cell parts
+   */
+  formatDueDateCell(value) {
+    if (!value) return { html: '<td></td>' };
+    return {
+      cssClass: 'cell-date',
+      value: this.isOverdue(value)
+        ? `<span style="color: var(--danger)">${value} (Overdue)</span>`
+        : value,
+    };
+  }
+
+  /**
+   * Comment text cell, truncated with a tooltip when longer than 50 chars
+   * @param {string} value - Comment text
+   * @returns {Object} Cell parts
+   */
+  formatCommentTextCell(value) {
+    if (value && value.length > 50) {
+      return {
+        cssClass: 'cell-comment expandable',
+        fullText: value,
+        value: this.truncateText(value, 50),
+        needsTooltip: true,
+      };
+    }
+    return { cssClass: 'cell-comment' };
+  }
+
+  /**
+   * Camera coordinate cell, shown for topic and viewpoint rows only
+   * @param {Object} row - Flattened table row
+   * @param {string} value - Formatted coordinate
+   * @returns {Object} Cell parts
+   */
+  formatCoordinateCell(row, value) {
+    if (row.rowType !== 'topic' && row.rowType !== 'viewpoint') {
+      return { value: '' }; // Empty for comment rows
+    }
+    return {
+      cssClass: 'cell-coordinate',
+      value: value ? `<span class="coordinate-value">${value}</span>` : '',
+    };
+  }
+
+  /**
+   * Cell for fields without special formatting: truncates long text and
+   * flags it for a tooltip
+   * @param {*} value - Raw cell value
+   * @returns {Object} Cell parts
+   */
+  formatDefaultCell(value) {
+    const stringValue = String(value || '');
+    if (stringValue && stringValue.length > 30) {
+      return {
+        cssClass: 'expandable',
+        fullText: stringValue,
+        value: this.truncateText(stringValue, 30),
+        needsTooltip: true,
+      };
+    }
+    // Also check if truncateText added ellipsis (indicates truncation)
+    if (stringValue && typeof value === 'string' && value.includes('...')) {
+      return {
+        cssClass: 'expandable',
+        fullText: originalValue,
+        needsTooltip: true,
+      };
+    }
+    return {};
+  }
+
+  /**
+   * Assemble the final `<td>`, adding a tooltip attribute when needed
+   * @param {{value: *, cssClass: string, fullText: string, needsTooltip: boolean}} cell
+   * @returns {string} `<td>` HTML
+   */
+  buildCellHtml({ value, cssClass, fullText, needsTooltip }) {
     if (needsTooltip && fullText) {
       return `<td class="${cssClass}" data-full-text="${this.escapeHtml(
         fullText
       )}">${value}</td>`;
-    } else {
-      return `<td class="${cssClass}">${value}</td>`;
     }
+    return `<td class="${cssClass}">${value}</td>`;
   }
 
   // Updated setupTooltips method
@@ -1473,154 +1504,65 @@ class AdvancedPreview {
   }
 
   /**
-   * Get coordinate data using the correct viewpoint with extracted coordinates
+   * Get the viewpoints of a topic that carry extracted coordinate data
+   * (these have CameraViewPoint, cameraType, FieldOfView, etc.)
+   * @param {Object} topic - Parsed topic
+   * @returns {Array<Object>} Viewpoints with coordinate data, in original order
    */
-  getTopicCoordinateData(topic, bcfFile) {
-
-    // Initialize coordinate data object
-    const coordinateData = {
-      cameraType: '',
-      CameraViewPointX: '',
-      CameraViewPointY: '',
-      CameraViewPointZ: '',
-      CameraDirectionX: '',
-      CameraDirectionY: '',
-      CameraDirectionZ: '',
-      CameraUpVectorX: '',
-      CameraUpVectorY: '',
-      CameraUpVectorZ: '',
-      FieldOfView: '',
-      ViewToWorldScale: '',
-      cameraPosX: '',
-      cameraPosY: '',
-      cameraPosZ: '',
-      cameraTargetX: '',
-      cameraTargetY: '',
-      cameraTargetZ: '',
-    };
-
-    if (!topic.viewpoints || topic.viewpoints.length === 0) {
-      return coordinateData;
-    }
-
-    // 🎯 Find viewpoints with actual extracted coordinate data
-    // These are the viewpoints that have CameraViewPoint, CameraDirection, etc.
-    const viewpointsWithCoordinates = topic.viewpoints.filter(
+  getCoordinateViewpoints(topic) {
+    return (topic.viewpoints || []).filter(
       (vp) =>
         vp.CameraViewPoint ||
         vp.cameraType ||
         vp.ViewToWorldScale ||
         vp.FieldOfView
     );
+  }
 
-    if (viewpointsWithCoordinates.length === 0) {
-      return coordinateData;
-    }
+  /**
+   * Pick the viewpoint shown in the topic row: the main viewpoint.bcfv if
+   * present, otherwise the first viewpoint
+   * @param {Array<Object>} viewpoints - Viewpoints with coordinate data
+   * @returns {Object|undefined} Selected viewpoint (undefined if list is empty)
+   */
+  selectCoordinateViewpoint(viewpoints) {
+    return (
+      viewpoints.find(
+        (vp) =>
+          vp.viewpointFile === 'viewpoint.bcfv' ||
+          vp.guid === 'viewpoint-generic' ||
+          (vp.viewpointFile &&
+            vp.viewpointFile.toLowerCase().includes('viewpoint.bcfv'))
+      ) || viewpoints[0]
+    );
+  }
 
-    // Priority 1: Look for main viewpoint.bcfv with coordinates
-    let primaryViewpoint = viewpointsWithCoordinates.find((vp) => {
-      return (
-        vp.viewpointFile === 'viewpoint.bcfv' ||
-        vp.guid === 'viewpoint-generic' ||
-        (vp.viewpointFile &&
-          vp.viewpointFile.toLowerCase().includes('viewpoint.bcfv'))
-      );
-    });
+  /**
+   * Get coordinate data using the correct viewpoint with extracted coordinates.
+   * Returns all coordinate fields as empty strings when no viewpoint qualifies.
+   * @param {Object} topic - Parsed topic
+   * @param {Object} bcfFile - Parsed BCF file the topic belongs to
+   * @returns {Object} Coordinate fields keyed as in CoordinateUtils.COORDINATE_FIELDS
+   */
+  getTopicCoordinateData(topic, bcfFile) {
+    const primaryViewpoint = this.selectCoordinateViewpoint(
+      this.getCoordinateViewpoints(topic)
+    );
 
-    // Priority 2: First viewpoint with coordinate data
     if (!primaryViewpoint) {
-      primaryViewpoint = viewpointsWithCoordinates[0];
-    }
-
-    // Extract coordinate data
-    coordinateData.cameraType = primaryViewpoint.cameraType || '';
-
-    // BCF standard coordinates
-    if (primaryViewpoint.CameraViewPoint) {
-      coordinateData.CameraViewPointX = this.formatCoordinate(
-        primaryViewpoint.CameraViewPoint.X
-      );
-      coordinateData.CameraViewPointY = this.formatCoordinate(
-        primaryViewpoint.CameraViewPoint.Y
-      );
-      coordinateData.CameraViewPointZ = this.formatCoordinate(
-        primaryViewpoint.CameraViewPoint.Z
+      return Object.fromEntries(
+        CoordinateUtils.COORDINATE_FIELDS.map((field) => [field, ''])
       );
     }
 
-    if (primaryViewpoint.CameraDirection) {
-      coordinateData.CameraDirectionX = this.formatCoordinate(
-        primaryViewpoint.CameraDirection.X
-      );
-      coordinateData.CameraDirectionY = this.formatCoordinate(
-        primaryViewpoint.CameraDirection.Y
-      );
-      coordinateData.CameraDirectionZ = this.formatCoordinate(
-        primaryViewpoint.CameraDirection.Z
-      );
-    }
-
-    if (primaryViewpoint.CameraUpVector) {
-      coordinateData.CameraUpVectorX = this.formatCoordinate(
-        primaryViewpoint.CameraUpVector.X
-      );
-      coordinateData.CameraUpVectorY = this.formatCoordinate(
-        primaryViewpoint.CameraUpVector.Y
-      );
-      coordinateData.CameraUpVectorZ = this.formatCoordinate(
-        primaryViewpoint.CameraUpVector.Z
-      );
-    }
-
-    coordinateData.FieldOfView = this.formatCoordinate(
-      primaryViewpoint.FieldOfView
-    );
-    coordinateData.ViewToWorldScale = this.formatCoordinate(
-      primaryViewpoint.ViewToWorldScale
-    );
-
-    // Legacy coordinates
-    if (primaryViewpoint.cameraPosition) {
-      coordinateData.cameraPosX = this.formatCoordinate(
-        primaryViewpoint.cameraPosition.x
-      );
-      coordinateData.cameraPosY = this.formatCoordinate(
-        primaryViewpoint.cameraPosition.y
-      );
-      coordinateData.cameraPosZ = this.formatCoordinate(
-        primaryViewpoint.cameraPosition.z
-      );
-    }
-
-    if (primaryViewpoint.cameraTarget) {
-      coordinateData.cameraTargetX = this.formatCoordinate(
-        primaryViewpoint.cameraTarget.x
-      );
-      coordinateData.cameraTargetY = this.formatCoordinate(
-        primaryViewpoint.cameraTarget.y
-      );
-      coordinateData.cameraTargetZ = this.formatCoordinate(
-        primaryViewpoint.cameraTarget.z
-      );
-    }
-
-    return coordinateData;
+    return this.extractViewpointCoordinates(primaryViewpoint);
   }
 
   /**
    * Format coordinate values to 3 decimal places, handle null/undefined
    */
   formatCoordinate(value) {
-    if (value === null || value === undefined || value === '') {
-      return '';
-    }
-
-    const num = parseFloat(value);
-    if (isNaN(num)) {
-      return '';
-    }
-
-    return num.toFixed(3);
+    return CoordinateUtils.formatCoordinate(value);
   }
 
   /**

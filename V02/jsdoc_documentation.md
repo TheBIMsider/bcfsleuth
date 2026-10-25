@@ -519,6 +519,93 @@ function addMetadataItem(pdf, label, value, x, y) {
 }
 ```
 
+## js/advanced-preview.js - Optimized Methods
+
+```javascript
+/**
+ * Flatten BCF data into table rows (topic rows, followed by that topic's
+ * comment rows and additional-viewpoint rows)
+ * @param {Array} parsedData - Parsed BCF files
+ * @returns {Array<Object>} Flat row objects for the preview table
+ */
+flattenBCFData(parsedData) {
+    // Orchestrates createTopicRow, createCommentRows, createViewpointRows
+}
+
+/**
+ * Build comment rows for a topic, oldest first. Sorts topic.comments in place.
+ * @param {Object} bcfFile - Parsed BCF file the topic belongs to
+ * @param {Object} topic - Parsed topic
+ * @param {number} topicNumber - 1-based topic number across all files
+ * @returns {Array<Object>} Comment rows (empty if the topic has no comments)
+ */
+createCommentRows(bcfFile, topic, topicNumber) {
+    // Implementation...
+}
+
+/**
+ * Build rows for a topic's additional viewpoints (those beyond the primary
+ * viewpoint already shown in the topic row)
+ * @returns {Array<Object>} Viewpoint rows (empty unless topic has 2+ viewpoints)
+ */
+createViewpointRows(bcfFile, topic, topicNumber) {
+    // Implementation...
+}
+
+/**
+ * Get the viewpoints of a topic that carry extracted coordinate data
+ * @param {Object} topic - Parsed topic
+ * @returns {Array<Object>} Viewpoints with coordinate data, in original order
+ */
+getCoordinateViewpoints(topic) {
+    // Implementation...
+}
+
+/**
+ * Pick the viewpoint shown in the topic row: the main viewpoint.bcfv if
+ * present, otherwise the first viewpoint
+ * @param {Array<Object>} viewpoints - Viewpoints with coordinate data
+ * @returns {Object|undefined} Selected viewpoint
+ */
+selectCoordinateViewpoint(viewpoints) {
+    // Implementation...
+}
+
+/**
+ * Create the HTML for one table cell, formatted for its field type
+ * @param {Object} row - Flattened table row
+ * @param {string} columnField - Row property the column reads from
+ * @param {string} originalField - Field ID that decides the formatting
+ * @returns {string} <td> HTML
+ */
+createFormattedCell(row, columnField, originalField) {
+    // Chooses a formatter via formatCellByField, then buildCellHtml
+}
+
+/**
+ * Choose the formatter for a field. Returns either { html } (a finished
+ * cell) or a partial { value, cssClass, fullText, needsTooltip }.
+ * @param {Object} row - Flattened table row
+ * @param {string} field - Field ID
+ * @param {*} value - Raw cell value (already defaulted to '')
+ * @returns {Object} Formatted cell parts
+ */
+formatCellByField(row, field, value) {
+    // Implementation...
+}
+
+/**
+ * Assemble the final <td>, adding a tooltip attribute when needed
+ * @param {{value: *, cssClass: string, fullText: string, needsTooltip: boolean}} cell
+ * @returns {string} <td> HTML
+ */
+buildCellHtml(cell) {
+    // Implementation...
+}
+```
+
+The remaining helpers (`createTopicRow`, `createCommentRow`, `createViewpointRow`, `formatStatusCell`, `formatPriorityCell`, `formatDueDateCell`, `formatCommentTextCell`, `formatCoordinateCell`, `formatDefaultCell`) have JSDoc in the source.
+
 ## Usage Instructions
 
 ### Adding JSDoc Comments to Files
