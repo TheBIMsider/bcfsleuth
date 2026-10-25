@@ -702,6 +702,35 @@ setupTabListeners() {
 
 `discoverAvailableFields` orchestrates `discoverTopicFields`, `discoverBCF30TopicFields`, `discoverViewpointFields` (with `viewpointHasCoordinates`), `discoverCommentFields` and `buildDiscoveryResult`. `rebuildFieldSelectionUI` orchestrates `buildTopicCategory`, `buildDatesAuthorsCategory`, `buildFileProjectCategory`, `buildCommentsCountsCategory`, `buildBCF30Category` and `buildViewpointCoordinatesCategory`, which take `(discoveredFields, customData)` and return an element or `null`. All of them have JSDoc in the source. The top-level constants `VIEWPOINT_COORDINATE_FIELDS` and `FIELD_CATEGORY_DEFINITIONS` hold the camera field list and the category field ID/label pairs.
 
+## Phase 5 helpers (bcf-parser.js, advanced-preview.js, image-viewer.js)
+
+```javascript
+/**
+ * Collects the comments of a document into topic.comments, skipping
+ * GUIDs already seen.
+ * @param {Document} doc - Parsed markup.bcf or comments.bcf
+ * @param {Object} topic - Topic receiving the comments
+ * @param {Set<string>} existingGuids - GUIDs already collected
+ * @param {boolean} trackNewGuids - Add new GUIDs to the set (markup pass only)
+ */
+static collectComments(doc, topic, existingGuids, trackNewGuids) {
+    // Implementation...
+}
+
+/**
+ * Collects the unique enumeration values for one keyword (status, type,
+ * priority, label) from an extensions.xsd document.
+ * @param {Document} doc - Parsed extensions.xsd
+ * @param {string} keyword - Lowercase keyword matched against the enumeration's parent name
+ * @returns {Array<string>} Unique values in document order
+ */
+static extractEnumerationValues(doc, keyword) {
+    // Implementation...
+}
+```
+
+The other new helpers (`buildComment`, `rowMatchesFilters`, `matchesSearch`, `matchesTopicDropdowns`, `matchesDueDateFilter`, `isRowVisibleByExpansion`, `compareRows`, `compareDates`, `compareNumbers`, `compareStrings`, `collectFilterValues`, `sortByPreferredOrder`) have JSDoc in the source.
+
 ## Usage Instructions
 
 ### Adding JSDoc Comments to Files
