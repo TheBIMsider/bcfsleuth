@@ -1,4 +1,91 @@
 // BCFSleuth - Main Application Logic
+// Camera fields offered once any viewpoint has coordinates (BCF names first,
+// then the legacy names kept for backward compatibility)
+const VIEWPOINT_COORDINATE_FIELDS = [
+  'cameraType',
+  'CameraViewPointX',
+  'CameraViewPointY',
+  'CameraViewPointZ',
+  'CameraDirectionX',
+  'CameraDirectionY',
+  'CameraDirectionZ',
+  'CameraUpVectorX',
+  'CameraUpVectorY',
+  'CameraUpVectorZ',
+  'FieldOfView',
+  'ViewToWorldScale',
+  'cameraPosX',
+  'cameraPosY',
+  'cameraPosZ',
+  'cameraTargetX',
+  'cameraTargetY',
+  'cameraTargetZ',
+];
+
+// Field ID/label pairs for each field selection category
+const FIELD_CATEGORY_DEFINITIONS = {
+  topic: [
+    { id: 'title', label: 'Title' },
+    { id: 'description', label: 'Description' },
+    { id: 'status', label: 'Status' },
+    { id: 'type', label: 'Type' },
+    { id: 'priority', label: 'Priority' },
+    { id: 'stage', label: 'Stage' },
+    { id: 'topicIndex', label: 'Topic Index (BCF 2.x)' },
+    { id: 'labels', label: 'Labels' },
+    { id: 'assignedTo', label: 'Assigned To' },
+  ],
+  datesAuthors: [
+    { id: 'creationDate', label: 'Creation Date' },
+    { id: 'creationAuthor', label: 'Creation Author' },
+    { id: 'modifiedDate', label: 'Modified Date' },
+    { id: 'modifiedAuthor', label: 'Modified Author' },
+    { id: 'dueDate', label: 'Due Date' },
+  ],
+  fileProject: [
+    { id: 'sourceFile', label: 'Source File' },
+    { id: 'projectName', label: 'Project Name' },
+    { id: 'bcfVersion', label: 'BCF Version' },
+    { id: 'topicGuid', label: 'Topic GUID' },
+  ],
+  commentsCounts: [
+    { id: 'commentsCount', label: 'Comments Count' },
+    { id: 'viewpointsCount', label: 'Viewpoints Count' },
+    { id: 'commentNumber', label: 'Comment Number' },
+    { id: 'commentDate', label: 'Comment Date' },
+    { id: 'commentAuthor', label: 'Comment Author' },
+    { id: 'commentText', label: 'Comment Text' },
+    { id: 'commentStatus', label: 'Comment Status' },
+  ],
+  bcf30: [
+    { id: 'serverAssignedId', label: 'Server Assigned ID' },
+    { id: 'referenceLinks', label: 'Reference Links' },
+    { id: 'documentReferences', label: 'Document References' },
+    { id: 'headerFiles', label: 'Header Files' },
+    { id: 'viewpointIndex', label: 'Viewpoint Index' },
+  ],
+  viewpointCoordinates: [
+    { id: 'cameraType', label: 'Camera Type' },
+    { id: 'CameraViewPointX', label: 'CameraViewPoint X' },
+    { id: 'CameraViewPointY', label: 'CameraViewPoint Y' },
+    { id: 'CameraViewPointZ', label: 'CameraViewPoint Z' },
+    { id: 'CameraDirectionX', label: 'CameraDirection X' },
+    { id: 'CameraDirectionY', label: 'CameraDirection Y' },
+    { id: 'CameraDirectionZ', label: 'CameraDirection Z' },
+    { id: 'CameraUpVectorX', label: 'CameraUpVector X' },
+    { id: 'CameraUpVectorY', label: 'CameraUpVector Y' },
+    { id: 'CameraUpVectorZ', label: 'CameraUpVector Z' },
+    { id: 'FieldOfView', label: 'FieldOfView (Perspective)' },
+    { id: 'ViewToWorldScale', label: 'ViewToWorldScale (Orthogonal)' },
+    { id: 'cameraPosX', label: 'Camera Position X (Legacy)' },
+    { id: 'cameraPosY', label: 'Camera Position Y (Legacy)' },
+    { id: 'cameraPosZ', label: 'Camera Position Z (Legacy)' },
+    { id: 'cameraTargetX', label: 'Camera Target X (Legacy)' },
+    { id: 'cameraTargetY', label: 'Camera Target Y (Legacy)' },
+    { id: 'cameraTargetZ', label: 'Camera Target Z (Legacy)' },
+  ],
+};
+
 class BCFSleuthApp {
   constructor() {
     this.selectedFiles = [];
@@ -24,8 +111,23 @@ class BCFSleuthApp {
     window.BCF_DEBUG_MODE = localStorage.getItem('bcf_debug') === 'true';
   }
 
+  /**
+   * Wires up all static UI event listeners (file input, buttons, field
+   * selection controls, preview tabs). Each area has its own helper.
+   */
   setupEventListeners() {
-    // File input and drop zone - with safety checks
+    this.setupFileInputListeners();
+    this.setupProcessButtonListener();
+    this.setupExportButtonListeners();
+    this.setupFieldSelectionControlListeners();
+    this.setupTabListeners();
+  }
+
+  /**
+   * Attaches drag-and-drop, click-to-browse and file input change handlers.
+   * Warns instead of throwing when the elements are missing.
+   */
+  setupFileInputListeners() {
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
 
@@ -41,16 +143,24 @@ class BCFSleuthApp {
     } else {
       console.warn('⚠️ Drop zone or file input not found');
     }
+  }
 
-    // Process button - with safety check
+  /**
+   * Attaches the click handler for the Process button.
+   */
+  setupProcessButtonListener() {
     const processBtn = document.getElementById('process-btn');
     if (processBtn) {
       processBtn.addEventListener('click', this.processFiles.bind(this));
     } else {
       console.warn('⚠️ Process button not found');
     }
+  }
 
-    // Export buttons - with safety checks
+  /**
+   * Attaches click handlers for the CSV and Excel export buttons.
+   */
+  setupExportButtonListeners() {
     const exportCsvBtn = document.getElementById('export-csv');
     const exportExcelBtn = document.getElementById('export-excel');
 
@@ -65,8 +175,13 @@ class BCFSleuthApp {
     } else {
       console.warn('⚠️ Export Excel button not found');
     }
+  }
 
-    // Field selection controls - with safety checks
+  /**
+   * Attaches the select all / clear all / essential buttons and the change
+   * handlers of any field checkboxes already in the DOM.
+   */
+  setupFieldSelectionControlListeners() {
     const selectAllBtn = document.getElementById('select-all-fields');
     const clearAllBtn = document.getElementById('clear-all-fields');
     const selectEssentialBtn = document.getElementById('select-essential');
@@ -86,7 +201,6 @@ class BCFSleuthApp {
       );
     }
 
-    // Field checkboxes - with safety check
     const fieldCheckboxes = document.querySelectorAll(
       '.field-item input[type="checkbox"]'
     );
@@ -99,38 +213,30 @@ class BCFSleuthApp {
         );
       }
     });
+  }
 
-    // Tab switching event listeners - enhanced with extensive safety checks
-    const tabButtons = document.querySelectorAll('.preview-tabs .tab-button');
+  /**
+   * Attaches click handlers that switch preview tabs. Falls back to any
+   * `.tab-button` when none are inside `.preview-tabs`.
+   */
+  setupTabListeners() {
+    let tabButtons = document.querySelectorAll('.preview-tabs .tab-button');
 
     if (tabButtons.length === 0) {
-      // Try alternative selector
-      const altTabButtons = document.querySelectorAll('.tab-button');
-
-      altTabButtons.forEach((button) => {
-        if (button) {
-          button.addEventListener('click', (e) => {
-            e.preventDefault();
-            const tabName = e.target.dataset.tab;
-            if (tabName && this.switchToTab) {
-              this.switchToTab(tabName);
-            }
-          });
-        }
-      });
-    } else {
-      tabButtons.forEach((button) => {
-        if (button) {
-          button.addEventListener('click', (e) => {
-            e.preventDefault();
-            const tabName = e.target.dataset.tab;
-            if (tabName && this.switchToTab) {
-              this.switchToTab(tabName);
-            }
-          });
-        }
-      });
+      tabButtons = document.querySelectorAll('.tab-button');
     }
+
+    tabButtons.forEach((button) => {
+      if (button) {
+        button.addEventListener('click', (e) => {
+          e.preventDefault();
+          const tabName = e.target.dataset.tab;
+          if (tabName && this.switchToTab) {
+            this.switchToTab(tabName);
+          }
+        });
+      }
+    });
   }
 
   initializeFieldSelection() {
@@ -365,6 +471,8 @@ class BCFSleuthApp {
    * Enhanced field discovery with intelligent BCF 3.0 detection
    * Only shows BCF 3.0 fields when BCF 3.0 content is actually present
    * Maintains full compatibility with BCF 2.x files
+   * @returns {Object} Arrays of discovered field IDs per group (topic, comment,
+   *   metadata, bcf30) plus bcfVersionsFound, hasBCF30Content and total
    */
   discoverAvailableFields() {
     const discoveredFields = {
@@ -380,7 +488,6 @@ class BCFSleuthApp {
 
     // Scan all BCF data to discover what fields actually contain data
     this.parsedData.forEach((bcfData) => {
-      // Track BCF format for version-aware field discovery
       const bcfFormat =
         bcfData.bcfFormat || bcfData.version?.substring(0, 3) || '2.1';
       bcfVersionsFound.add(bcfFormat);
@@ -392,7 +499,6 @@ class BCFSleuthApp {
         discoveredFields.topic.add('topicIndex');
       }
 
-      // Check if this file has BCF 3.0 content
       if (bcfFormat === '3.0') {
         hasBCF30Content = true;
         this.debugLog(
@@ -401,141 +507,154 @@ class BCFSleuthApp {
       }
 
       bcfData.topics.forEach((topic) => {
-        // Enhanced BCF field detection with better labels support
-        if (topic.title) discoveredFields.topic.add('title');
-        if (topic.description) discoveredFields.topic.add('description');
-        if (topic.topicStatus) discoveredFields.topic.add('status');
-        if (topic.topicType) discoveredFields.topic.add('type');
-        if (topic.priority) discoveredFields.topic.add('priority');
-        if (topic.stage) discoveredFields.topic.add('stage');
-
-        // Enhanced labels detection - always add labels field if any topics exist
-        // This ensures labels appear in field selection even if current topics don't have labels
-        // (Users might have other BCF files with labels, or want to include empty label columns)
-        discoveredFields.topic.add('labels');
-
-        if (topic.assignedTo) discoveredFields.topic.add('assignedTo');
-        if (topic.creationDate) discoveredFields.topic.add('creationDate');
-        if (topic.creationAuthor) discoveredFields.topic.add('creationAuthor');
-        if (topic.modifiedDate) discoveredFields.topic.add('modifiedDate');
-        if (topic.modifiedAuthor) discoveredFields.topic.add('modifiedAuthor');
-        if (topic.dueDate) discoveredFields.topic.add('dueDate');
-        if (topic.guid) discoveredFields.metadata.add('topicGuid');
-        // BCF 3.0: ServerAssignedId detection (inside topic loop)
-        if (bcfFormat === '3.0' && topic.serverAssignedId) {
-          discoveredFields.bcf30.add('serverAssignedId');
-        }
-
-        // BCF 3.0 specific field detection (only when BCF 3.0 content is present)
-        if (bcfFormat === '3.0' && hasBCF30Content) {
-          // ServerAssignedId detection
-          if (topic.serverAssignedId) {
-            discoveredFields.bcf30.add('serverAssignedId');
-          }
-
-          // Multiple ReferenceLinks detection
-          if (topic.referenceLinks && topic.referenceLinks.length > 0) {
-            discoveredFields.bcf30.add('referenceLinks');
-          }
-
-          // DocumentReferences detection
-          if (topic.documentReferences && topic.documentReferences.length > 0) {
-            discoveredFields.bcf30.add('documentReferences');
-          }
-
-          // Header Files detection
-          if (topic.headerFiles && topic.headerFiles.length > 0) {
-            discoveredFields.bcf30.add('headerFiles');
-          }
-        }
-
-        // Viewpoints and comments detection (existing logic)
-        if (topic.viewpoints && topic.viewpoints.length > 0) {
-          discoveredFields.metadata.add('viewpointsCount');
-
-          // Check for viewpoint coordinates (available in all BCF versions)
-          const hasCoordinates = topic.viewpoints.some(
-            (vp) =>
-              (vp.cameraPosition &&
-                (vp.cameraPosition.x !== null ||
-                  vp.cameraPosition.y !== null ||
-                  vp.cameraPosition.z !== null)) ||
-              (vp.cameraTarget &&
-                (vp.cameraTarget.x !== null ||
-                  vp.cameraTarget.y !== null ||
-                  vp.cameraTarget.z !== null))
-          );
-
-          if (hasCoordinates) {
-            // Add all BCF camera fields to metadata
-            discoveredFields.metadata.add('cameraType');
-            discoveredFields.metadata.add('CameraViewPointX');
-            discoveredFields.metadata.add('CameraViewPointY');
-            discoveredFields.metadata.add('CameraViewPointZ');
-            discoveredFields.metadata.add('CameraDirectionX');
-            discoveredFields.metadata.add('CameraDirectionY');
-            discoveredFields.metadata.add('CameraDirectionZ');
-            discoveredFields.metadata.add('CameraUpVectorX');
-            discoveredFields.metadata.add('CameraUpVectorY');
-            discoveredFields.metadata.add('CameraUpVectorZ');
-            discoveredFields.metadata.add('FieldOfView');
-            discoveredFields.metadata.add('ViewToWorldScale');
-
-            // Keep old names for backward compatibility
-            discoveredFields.metadata.add('cameraPosX');
-            discoveredFields.metadata.add('cameraPosY');
-            discoveredFields.metadata.add('cameraPosZ');
-            discoveredFields.metadata.add('cameraTargetX');
-            discoveredFields.metadata.add('cameraTargetY');
-            discoveredFields.metadata.add('cameraTargetZ');
-          }
-
-          // BCF 3.0: Check for viewpoint index (if BCF 3.0 content present)
-          if (bcfFormat === '3.0' && hasBCF30Content) {
-            const hasViewpointIndex = topic.viewpoints.some(
-              (vp) => vp.index !== undefined && vp.index !== null
-            );
-            if (hasViewpointIndex) {
-              discoveredFields.bcf30.add('viewpointIndex');
-            }
-          }
-        }
-
-        if (topic.comments && topic.comments.length > 0) {
-          discoveredFields.metadata.add('commentsCount');
-
-          // Check comment fields
-          topic.comments.forEach((comment) => {
-            if (comment.date) discoveredFields.comment.add('commentDate');
-            if (comment.author) discoveredFields.comment.add('commentAuthor');
-            if (comment.comment) discoveredFields.comment.add('commentText');
-
-            // BCF 2.x only: comment status (removed in BCF 3.0)
-            if (bcfFormat !== '3.0' && comment.status) {
-              discoveredFields.comment.add('commentStatus');
-            }
-
-            discoveredFields.comment.add('commentNumber'); // Always available when comments exist
-          });
-        }
+        this.discoverTopicFields(topic, discoveredFields);
+        this.discoverBCF30TopicFields(topic, bcfFormat, discoveredFields);
+        this.discoverViewpointFields(topic, bcfFormat, discoveredFields);
+        this.discoverCommentFields(topic, bcfFormat, discoveredFields);
       });
     });
 
-    // Calculate totals including BCF 3.0 fields when present
-    const totalFields =
-      discoveredFields.topic.size +
-      discoveredFields.comment.size +
-      discoveredFields.metadata.size +
-      discoveredFields.bcf30.size;
+    return this.buildDiscoveryResult(
+      discoveredFields,
+      bcfVersionsFound,
+      hasBCF30Content
+    );
+  }
 
+  /**
+   * Adds the standard topic and topic-level metadata fields that contain data
+   * @param {Object} topic - Parsed topic
+   * @param {Object} discoveredFields - Sets of field IDs, mutated in place
+   */
+  discoverTopicFields(topic, discoveredFields) {
+    if (topic.title) discoveredFields.topic.add('title');
+    if (topic.description) discoveredFields.topic.add('description');
+    if (topic.topicStatus) discoveredFields.topic.add('status');
+    if (topic.topicType) discoveredFields.topic.add('type');
+    if (topic.priority) discoveredFields.topic.add('priority');
+    if (topic.stage) discoveredFields.topic.add('stage');
+
+    // Labels are always offered when topics exist, so users can include the
+    // column even if the current files have no labels
+    discoveredFields.topic.add('labels');
+
+    if (topic.assignedTo) discoveredFields.topic.add('assignedTo');
+    if (topic.creationDate) discoveredFields.topic.add('creationDate');
+    if (topic.creationAuthor) discoveredFields.topic.add('creationAuthor');
+    if (topic.modifiedDate) discoveredFields.topic.add('modifiedDate');
+    if (topic.modifiedAuthor) discoveredFields.topic.add('modifiedAuthor');
+    if (topic.dueDate) discoveredFields.topic.add('dueDate');
+    if (topic.guid) discoveredFields.metadata.add('topicGuid');
+  }
+
+  /**
+   * Adds BCF 3.0 only topic fields (ServerAssignedId, ReferenceLinks,
+   * DocumentReferences, HeaderFiles). No-op for other BCF versions.
+   * @param {Object} topic - Parsed topic
+   * @param {string} bcfFormat - BCF format of the file ('2.0', '2.1', '3.0')
+   * @param {Object} discoveredFields - Sets of field IDs, mutated in place
+   */
+  discoverBCF30TopicFields(topic, bcfFormat, discoveredFields) {
+    if (bcfFormat !== '3.0') return;
+
+    if (topic.serverAssignedId) {
+      discoveredFields.bcf30.add('serverAssignedId');
+    }
+    if (topic.referenceLinks && topic.referenceLinks.length > 0) {
+      discoveredFields.bcf30.add('referenceLinks');
+    }
+    if (topic.documentReferences && topic.documentReferences.length > 0) {
+      discoveredFields.bcf30.add('documentReferences');
+    }
+    if (topic.headerFiles && topic.headerFiles.length > 0) {
+      discoveredFields.bcf30.add('headerFiles');
+    }
+  }
+
+  /**
+   * Adds viewpoint count, camera coordinate and (BCF 3.0) viewpoint index fields
+   * @param {Object} topic - Parsed topic
+   * @param {string} bcfFormat - BCF format of the file
+   * @param {Object} discoveredFields - Sets of field IDs, mutated in place
+   */
+  discoverViewpointFields(topic, bcfFormat, discoveredFields) {
+    if (!topic.viewpoints || topic.viewpoints.length === 0) return;
+
+    discoveredFields.metadata.add('viewpointsCount');
+
+    // Viewpoint coordinates are available in all BCF versions
+    if (topic.viewpoints.some((vp) => this.viewpointHasCoordinates(vp))) {
+      VIEWPOINT_COORDINATE_FIELDS.forEach((field) =>
+        discoveredFields.metadata.add(field)
+      );
+    }
+
+    if (
+      bcfFormat === '3.0' &&
+      topic.viewpoints.some((vp) => vp.index !== undefined && vp.index !== null)
+    ) {
+      discoveredFields.bcf30.add('viewpointIndex');
+    }
+  }
+
+  /**
+   * Checks whether a viewpoint has any non-null camera position/target value
+   * @param {Object} viewpoint - Parsed viewpoint
+   * @returns {boolean}
+   */
+  viewpointHasCoordinates(viewpoint) {
+    const hasValue = (point) =>
+      point && (point.x !== null || point.y !== null || point.z !== null);
+    return !!(
+      hasValue(viewpoint.cameraPosition) || hasValue(viewpoint.cameraTarget)
+    );
+  }
+
+  /**
+   * Adds comment count and comment fields that contain data
+   * @param {Object} topic - Parsed topic
+   * @param {string} bcfFormat - BCF format of the file
+   * @param {Object} discoveredFields - Sets of field IDs, mutated in place
+   */
+  discoverCommentFields(topic, bcfFormat, discoveredFields) {
+    if (!topic.comments || topic.comments.length === 0) return;
+
+    discoveredFields.metadata.add('commentsCount');
+
+    topic.comments.forEach((comment) => {
+      if (comment.date) discoveredFields.comment.add('commentDate');
+      if (comment.author) discoveredFields.comment.add('commentAuthor');
+      if (comment.comment) discoveredFields.comment.add('commentText');
+
+      // BCF 2.x only: comment status (removed in BCF 3.0)
+      if (bcfFormat !== '3.0' && comment.status) {
+        discoveredFields.comment.add('commentStatus');
+      }
+
+      discoveredFields.comment.add('commentNumber'); // Always available when comments exist
+    });
+  }
+
+  /**
+   * Converts the discovery Sets into the result object returned to callers
+   * @param {Object} discoveredFields - Sets of field IDs
+   * @param {Set<string>} bcfVersionsFound - BCF formats seen in the data
+   * @param {boolean} hasBCF30Content - True if any BCF 3.0 file was loaded
+   * @returns {Object} Discovery result (see discoverAvailableFields)
+   */
+  buildDiscoveryResult(discoveredFields, bcfVersionsFound, hasBCF30Content) {
     const result = {
       topic: Array.from(discoveredFields.topic),
       comment: Array.from(discoveredFields.comment),
       metadata: Array.from(discoveredFields.metadata),
       bcf30: Array.from(discoveredFields.bcf30),
       bcfVersionsFound: Array.from(bcfVersionsFound),
-      hasBCF30Content: hasBCF30Content, // NEW: Flag for UI decisions
-      total: totalFields,
+      hasBCF30Content: hasBCF30Content, // Flag for UI decisions
+      total:
+        discoveredFields.topic.size +
+        discoveredFields.comment.size +
+        discoveredFields.metadata.size +
+        discoveredFields.bcf30.size,
     };
 
     this.debugLog('✅ Enhanced field discovery complete:', {
@@ -548,6 +667,11 @@ class BCFSleuthApp {
     return result;
   }
 
+  /**
+   * Rebuilds the field selection checkboxes from the discovered fields
+   * @param {Object} discoveredFields - Result of discoverAvailableFields()
+   * @param {Object} customData - Custom field data passed through to the category builders
+   */
   rebuildFieldSelectionUI(discoveredFields, customData) {
     const fieldSelection = document.querySelector('.field-selection');
     if (!fieldSelection) return;
@@ -558,191 +682,160 @@ class BCFSleuthApp {
       fieldCountHeader.textContent = `0 of ${discoveredFields.total} available fields selected`;
     }
 
-    // Clear existing field categories
     const fieldCategories = fieldSelection.querySelector('.field-categories');
     if (!fieldCategories) return;
 
     fieldCategories.innerHTML = '';
 
-    // Build Topic Information category with enhanced labels support
-    if (discoveredFields.topic.length > 0) {
-      const topicCategory = this.buildFieldCategory(
-        'Topic Information',
-        discoveredFields.topic,
-        customData,
-        [
-          { id: 'title', label: 'Title' },
-          { id: 'description', label: 'Description' },
-          { id: 'status', label: 'Status' },
-          { id: 'type', label: 'Type' },
-          { id: 'priority', label: 'Priority' },
-          { id: 'stage', label: 'Stage' },
-          { id: 'topicIndex', label: 'Topic Index (BCF 2.x)' },
-          { id: 'labels', label: 'Labels' }, // This ensures labels always appear when topic data exists
-          { id: 'assignedTo', label: 'Assigned To' },
-        ]
-      );
-      fieldCategories.appendChild(topicCategory);
-    }
-
-    // Build Dates & Authors category
-    const dateAuthorFields = discoveredFields.topic.filter((field) =>
-      [
-        'creationDate',
-        'creationAuthor',
-        'modifiedDate',
-        'modifiedAuthor',
-        'dueDate',
-      ].includes(field)
-    );
-    if (dateAuthorFields.length > 0) {
-      const dateCategory = this.buildFieldCategory(
-        'Dates & Authors',
-        dateAuthorFields,
-        customData,
-        [
-          { id: 'creationDate', label: 'Creation Date' },
-          { id: 'creationAuthor', label: 'Creation Author' },
-          { id: 'modifiedDate', label: 'Modified Date' },
-          { id: 'modifiedAuthor', label: 'Modified Author' },
-          { id: 'dueDate', label: 'Due Date' },
-        ]
-      );
-      fieldCategories.appendChild(dateCategory);
-    }
-
-    // Build File & Project Info category
-    if (discoveredFields.metadata.length > 0) {
-      const metadataCategory = this.buildFieldCategory(
-        'File & Project Info',
-        discoveredFields.metadata,
-        customData,
-        [
-          { id: 'sourceFile', label: 'Source File' },
-          { id: 'projectName', label: 'Project Name' },
-          { id: 'bcfVersion', label: 'BCF Version' },
-          { id: 'topicGuid', label: 'Topic GUID' },
-        ]
-      );
-      fieldCategories.appendChild(metadataCategory);
-    }
-
-    // Build Comments & Counts category
-    const commentFields = [
-      ...discoveredFields.comment,
-      ...discoveredFields.metadata.filter((field) =>
-        ['commentsCount', 'viewpointsCount'].includes(field)
-      ),
-    ];
-    if (commentFields.length > 0) {
-      const commentCategory = this.buildFieldCategory(
-        'Comments & Counts',
-        commentFields,
-        customData,
-        [
-          { id: 'commentsCount', label: 'Comments Count' },
-          { id: 'viewpointsCount', label: 'Viewpoints Count' },
-          { id: 'commentNumber', label: 'Comment Number' },
-          { id: 'commentDate', label: 'Comment Date' },
-          { id: 'commentAuthor', label: 'Comment Author' },
-          { id: 'commentText', label: 'Comment Text' },
-          { id: 'commentStatus', label: 'Comment Status' },
-        ]
-      );
-      fieldCategories.appendChild(commentCategory);
-    }
-
-    // Build BCF 3.0 Fields category (ONLY if BCF 3.0 content is actually present)
-    if (discoveredFields.hasBCF30Content && discoveredFields.bcf30.length > 0) {
-      const bcf30Category = this.buildFieldCategory(
-        'BCF 3.0 Fields',
-        discoveredFields.bcf30,
-        customData,
-        [
-          { id: 'serverAssignedId', label: 'Server Assigned ID' },
-          { id: 'referenceLinks', label: 'Reference Links' },
-          { id: 'documentReferences', label: 'Document References' },
-          { id: 'headerFiles', label: 'Header Files' },
-          { id: 'viewpointIndex', label: 'Viewpoint Index' },
-        ]
-      );
-      fieldCategories.appendChild(bcf30Category);
-
-      // Add visual indicator that BCF 3.0 features are active
-      const bcf30Header = bcf30Category.querySelector('h6');
-      if (bcf30Header) {
-        bcf30Header.innerHTML = `BCF 3.0 Fields <span style="color: var(--primary); font-weight: bold;">(${discoveredFields.bcf30.length} enhanced fields)</span>`;
-      }
-    }
-
-    // Build Viewpoint Coordinates section (new section at bottom)
-    const coordinateFields = discoveredFields.metadata.filter((field) =>
-      [
-        'cameraType',
-        'CameraViewPointX',
-        'CameraViewPointY',
-        'CameraViewPointZ',
-        'CameraDirectionX',
-        'CameraDirectionY',
-        'CameraDirectionZ',
-        'CameraUpVectorX',
-        'CameraUpVectorY',
-        'CameraUpVectorZ',
-        'FieldOfView',
-        'ViewToWorldScale',
-        'cameraPosX',
-        'cameraPosY',
-        'cameraPosZ',
-        'cameraTargetX',
-        'cameraTargetY',
-        'cameraTargetZ',
-      ].includes(field)
-    );
-
-    this.debugLog('🎯 Coordinate fields found:', coordinateFields);
-
-    if (coordinateFields.length > 0) {
-      const coordinatesCategory = this.buildFieldCategory(
-        'Viewpoint Coordinates',
-        coordinateFields,
-        customData,
-        [
-          { id: 'cameraType', label: 'Camera Type' },
-          { id: 'CameraViewPointX', label: 'CameraViewPoint X' },
-          { id: 'CameraViewPointY', label: 'CameraViewPoint Y' },
-          { id: 'CameraViewPointZ', label: 'CameraViewPoint Z' },
-          { id: 'CameraDirectionX', label: 'CameraDirection X' },
-          { id: 'CameraDirectionY', label: 'CameraDirection Y' },
-          { id: 'CameraDirectionZ', label: 'CameraDirection Z' },
-          { id: 'CameraUpVectorX', label: 'CameraUpVector X' },
-          { id: 'CameraUpVectorY', label: 'CameraUpVector Y' },
-          { id: 'CameraUpVectorZ', label: 'CameraUpVector Z' },
-          { id: 'FieldOfView', label: 'FieldOfView (Perspective)' },
-          { id: 'ViewToWorldScale', label: 'ViewToWorldScale (Orthogonal)' },
-          { id: 'cameraPosX', label: 'Camera Position X (Legacy)' },
-          { id: 'cameraPosY', label: 'Camera Position Y (Legacy)' },
-          { id: 'cameraPosZ', label: 'Camera Position Z (Legacy)' },
-          { id: 'cameraTargetX', label: 'Camera Target X (Legacy)' },
-          { id: 'cameraTargetY', label: 'Camera Target Y (Legacy)' },
-          { id: 'cameraTargetZ', label: 'Camera Target Z (Legacy)' },
-        ]
-      );
-
-      // Uncheck these by default (as requested)
-      coordinatesCategory
-        .querySelectorAll('input[type="checkbox"]')
-        .forEach((checkbox) => {
-          checkbox.checked = false;
-        });
-
-      fieldCategories.appendChild(coordinatesCategory);
-    }
+    [
+      this.buildTopicCategory,
+      this.buildDatesAuthorsCategory,
+      this.buildFileProjectCategory,
+      this.buildCommentsCountsCategory,
+      this.buildBCF30Category,
+      this.buildViewpointCoordinatesCategory,
+    ].forEach((buildCategory) => {
+      const category = buildCategory.call(this, discoveredFields, customData);
+      if (category) fieldCategories.appendChild(category);
+    });
 
     // Re-attach event listeners to new checkboxes
     this.attachFieldSelectionListeners();
 
     // Trigger initial update to count pre-selected essential fields
     this.updateFieldSelection();
+  }
+
+  /**
+   * Builds the "Topic Information" category, or null if no topic fields exist
+   * @param {Object} discoveredFields - Result of discoverAvailableFields()
+   * @param {Object} customData - Custom field data
+   * @returns {HTMLElement|null}
+   */
+  buildTopicCategory(discoveredFields, customData) {
+    if (discoveredFields.topic.length === 0) return null;
+    return this.buildFieldCategory(
+      'Topic Information',
+      discoveredFields.topic,
+      customData,
+      FIELD_CATEGORY_DEFINITIONS.topic
+    );
+  }
+
+  /**
+   * Builds the "Dates & Authors" category, or null if none of its fields were found
+   * @param {Object} discoveredFields - Result of discoverAvailableFields()
+   * @param {Object} customData - Custom field data
+   * @returns {HTMLElement|null}
+   */
+  buildDatesAuthorsCategory(discoveredFields, customData) {
+    const dateAuthorFields = discoveredFields.topic.filter((field) =>
+      FIELD_CATEGORY_DEFINITIONS.datesAuthors.some((def) => def.id === field)
+    );
+    if (dateAuthorFields.length === 0) return null;
+    return this.buildFieldCategory(
+      'Dates & Authors',
+      dateAuthorFields,
+      customData,
+      FIELD_CATEGORY_DEFINITIONS.datesAuthors
+    );
+  }
+
+  /**
+   * Builds the "File & Project Info" category, or null if no metadata exists
+   * @param {Object} discoveredFields - Result of discoverAvailableFields()
+   * @param {Object} customData - Custom field data
+   * @returns {HTMLElement|null}
+   */
+  buildFileProjectCategory(discoveredFields, customData) {
+    if (discoveredFields.metadata.length === 0) return null;
+    return this.buildFieldCategory(
+      'File & Project Info',
+      discoveredFields.metadata,
+      customData,
+      FIELD_CATEGORY_DEFINITIONS.fileProject
+    );
+  }
+
+  /**
+   * Builds the "Comments & Counts" category, or null if none of its fields were found
+   * @param {Object} discoveredFields - Result of discoverAvailableFields()
+   * @param {Object} customData - Custom field data
+   * @returns {HTMLElement|null}
+   */
+  buildCommentsCountsCategory(discoveredFields, customData) {
+    const commentFields = [
+      ...discoveredFields.comment,
+      ...discoveredFields.metadata.filter((field) =>
+        ['commentsCount', 'viewpointsCount'].includes(field)
+      ),
+    ];
+    if (commentFields.length === 0) return null;
+    return this.buildFieldCategory(
+      'Comments & Counts',
+      commentFields,
+      customData,
+      FIELD_CATEGORY_DEFINITIONS.commentsCounts
+    );
+  }
+
+  /**
+   * Builds the "BCF 3.0 Fields" category. Only present when BCF 3.0 content
+   * was actually loaded and produced BCF 3.0 fields.
+   * @param {Object} discoveredFields - Result of discoverAvailableFields()
+   * @param {Object} customData - Custom field data
+   * @returns {HTMLElement|null}
+   */
+  buildBCF30Category(discoveredFields, customData) {
+    if (!discoveredFields.hasBCF30Content || discoveredFields.bcf30.length === 0) {
+      return null;
+    }
+    const bcf30Category = this.buildFieldCategory(
+      'BCF 3.0 Fields',
+      discoveredFields.bcf30,
+      customData,
+      FIELD_CATEGORY_DEFINITIONS.bcf30
+    );
+
+    // Add visual indicator that BCF 3.0 features are active
+    const bcf30Header = bcf30Category.querySelector('h6');
+    if (bcf30Header) {
+      bcf30Header.innerHTML = `BCF 3.0 Fields <span style="color: var(--primary); font-weight: bold;">(${discoveredFields.bcf30.length} enhanced fields)</span>`;
+    }
+    return bcf30Category;
+  }
+
+  /**
+   * Builds the "Viewpoint Coordinates" category (unchecked by default), or
+   * null if no camera fields were found
+   * @param {Object} discoveredFields - Result of discoverAvailableFields()
+   * @param {Object} customData - Custom field data
+   * @returns {HTMLElement|null}
+   */
+  buildViewpointCoordinatesCategory(discoveredFields, customData) {
+    const coordinateFields = discoveredFields.metadata.filter((field) =>
+      VIEWPOINT_COORDINATE_FIELDS.includes(field)
+    );
+
+    this.debugLog('🎯 Coordinate fields found:', coordinateFields);
+
+    if (coordinateFields.length === 0) return null;
+
+    const coordinatesCategory = this.buildFieldCategory(
+      'Viewpoint Coordinates',
+      coordinateFields,
+      customData,
+      FIELD_CATEGORY_DEFINITIONS.viewpointCoordinates
+    );
+
+    // Uncheck these by default
+    coordinatesCategory
+      .querySelectorAll('input[type="checkbox"]')
+      .forEach((checkbox) => {
+        checkbox.checked = false;
+      });
+
+    return coordinatesCategory;
   }
 
   buildFieldCategory(
