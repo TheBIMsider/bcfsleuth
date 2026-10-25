@@ -113,168 +113,206 @@ class AdvancedPreview {
     );
   }
 
-  // Flatten BCF data into table rows
+  /**
+   * Flatten BCF data into table rows (topic rows, followed by that topic's
+   * comment rows and additional-viewpoint rows)
+   * @param {Array} parsedData - Parsed BCF files
+   * @returns {Array<Object>} Flat row objects for the preview table
+   */
   flattenBCFData(parsedData) {
     const tableData = [];
     let topicNumber = 1;
 
     parsedData.forEach((bcfFile) => {
       bcfFile.topics.forEach((topic) => {
-        // ✅ Get primary viewpoint data for coordinate integration
-        const primaryViewpoint = this.getPrimaryViewpoint(topic);
-
-        // ✅ Get coordinate data for this topic
         const coordinateData = this.getTopicCoordinateData(topic, bcfFile);
 
-        // Add topic row with coordinate data
-        const topicRow = {
-          type: topicNumber,
-          rowType: 'topic',
-          sourceFile: bcfFile.filename,
-          projectName: bcfFile.project.name || 'Unknown',
-          bcfVersion: bcfFile.version || 'Unknown',
-          topicGuid: topic.guid,
-          title: topic.title || 'Untitled',
-          description: topic.description || '',
-          topicIndex: topic.topicIndex || '',
-          serverAssignedId: topic.serverAssignedId || '',
-          status: topic.topicStatus || '',
-          topicType: topic.topicType || '',
-          priority: topic.priority || '',
-          stage: topic.stage || '',
-          labels: topic.labels || [],
-          assignee: topic.assignedTo || '',
-          author: topic.creationAuthor || '',
-          created: this.formatDate(topic.creationDate),
-          modified: this.formatDate(topic.modifiedDate),
-          modifiedAuthor: topic.modifiedAuthor || '',
-          due: this.formatDate(topic.dueDate),
-          comments: topic.comments ? topic.comments.length : 0,
-          isOverdue: this.isOverdue(topic.dueDate),
-          hasComments: topic.comments && topic.comments.length > 0,
-          hasViewpoints:
-            topic.viewpoints &&
-            topic.viewpoints.filter((vp) => vp.CameraViewPoint || vp.cameraType)
-              .length > 1, // More than 1 means additional viewpoints beyond primary
-
-          // ✅ Include coordinate data from primary viewpoint
-          ...coordinateData,
-
-          _originalTopic: topic,
-        };
-
-        tableData.push(topicRow);
-
-        // Add comment rows
-        if (topic.comments && topic.comments.length > 0) {
-          const sortedComments = topic.comments.sort(
-            (a, b) =>
-              new Date(a.date || '1970-01-01') -
-              new Date(b.date || '1970-01-01')
-          );
-
-          sortedComments.forEach((comment, index) => {
-            const commentRow = {
-              type: `${topicNumber}.${index + 1}`,
-              rowType: 'comment',
-              sourceFile: bcfFile.filename,
-              topicGuid: topic.guid,
-              parentTopicGuid: topic.guid,
-              parentTitle: topic.title,
-              title: `Comment ${index + 1}`,
-              status: comment.status || '',
-              priority: '',
-              assignee: '',
-              author: comment.author || '',
-              created: this.formatDate(comment.date),
-              modified: '',
-              modifiedAuthor: '',
-              due: '',
-              comments: '',
-              content: comment.comment || '',
-              commentNumber: index + 1,
-              commentDate: this.formatDate(comment.date),
-              commentAuthor: comment.author || 'No Author',
-              commentText: comment.comment || 'No Comment Text',
-              commentStatus: comment.status || '',
-              _debug_comment: comment,
-              _originalComment: comment,
-            };
-
-            tableData.push(commentRow);
-          });
-        }
-
-        // ✅ Add viewpoint rows for multiple viewpoints (like comment rows)
-        if (topic.viewpoints && topic.viewpoints.length > 1) {
-          // Find viewpoints with coordinate data (excluding the primary one used in topic row)
-          const viewpointsWithCoordinates = topic.viewpoints.filter(
-            (vp) =>
-              vp.CameraViewPoint ||
-              vp.cameraType ||
-              vp.ViewToWorldScale ||
-              vp.FieldOfView
-          );
-
-          // Get the primary viewpoint that's already shown in the topic row
-          const primaryViewpoint =
-            viewpointsWithCoordinates.find((vp) => {
-              return (
-                vp.viewpointFile === 'viewpoint.bcfv' ||
-                vp.guid === 'viewpoint-generic' ||
-                (vp.viewpointFile &&
-                  vp.viewpointFile.toLowerCase().includes('viewpoint.bcfv'))
-              );
-            }) || viewpointsWithCoordinates[0];
-
-          // Add rows for additional viewpoints (excluding the primary one)
-          const additionalViewpoints = viewpointsWithCoordinates.filter(
-            (vp) => vp !== primaryViewpoint
-          );
-
-          additionalViewpoints.forEach((viewpoint, index) => {
-            const viewpointCoordinates =
-              this.extractViewpointCoordinates(viewpoint);
-
-            const viewpointRow = {
-              type: `${topicNumber}.V${index + 1}`,
-              rowType: 'viewpoint',
-              sourceFile: bcfFile.filename,
-              topicGuid: topic.guid,
-              parentTopicGuid: topic.guid,
-              parentTitle: topic.title,
-              title: `Viewpoint ${index + 1}: ${viewpoint.guid}`,
-              status: '',
-              priority: '',
-              assignee: '',
-              author: '',
-              created: '',
-              modified: '',
-              modifiedAuthor: '',
-              due: '',
-              comments: '',
-
-              // ✅ Include all coordinate data for this viewpoint
-              ...viewpointCoordinates,
-
-              // Viewpoint-specific metadata
-              viewpointNumber: index + 1,
-              viewpointGuid: viewpoint.guid,
-              viewpointFile: viewpoint.viewpointFile,
-              viewpointType: viewpoint.cameraType || '',
-
-              _originalViewpoint: viewpoint,
-            };
-
-            tableData.push(viewpointRow);
-          });
-        }
+        tableData.push(
+          this.createTopicRow(bcfFile, topic, topicNumber, coordinateData)
+        );
+        tableData.push(...this.createCommentRows(bcfFile, topic, topicNumber));
+        tableData.push(
+          ...this.createViewpointRows(bcfFile, topic, topicNumber)
+        );
 
         topicNumber++;
       });
     });
 
     return tableData;
+  }
+
+  /**
+   * Build the table row for a topic, including primary viewpoint coordinates
+   * @param {Object} bcfFile - Parsed BCF file the topic belongs to
+   * @param {Object} topic - Parsed topic
+   * @param {number} topicNumber - 1-based topic number across all files
+   * @param {Object} coordinateData - Result of getTopicCoordinateData
+   * @returns {Object} Topic row
+   */
+  createTopicRow(bcfFile, topic, topicNumber, coordinateData) {
+    return {
+      type: topicNumber,
+      rowType: 'topic',
+      sourceFile: bcfFile.filename,
+      projectName: bcfFile.project.name || 'Unknown',
+      bcfVersion: bcfFile.version || 'Unknown',
+      topicGuid: topic.guid,
+      title: topic.title || 'Untitled',
+      description: topic.description || '',
+      topicIndex: topic.topicIndex || '',
+      serverAssignedId: topic.serverAssignedId || '',
+      status: topic.topicStatus || '',
+      topicType: topic.topicType || '',
+      priority: topic.priority || '',
+      stage: topic.stage || '',
+      labels: topic.labels || [],
+      assignee: topic.assignedTo || '',
+      author: topic.creationAuthor || '',
+      created: this.formatDate(topic.creationDate),
+      modified: this.formatDate(topic.modifiedDate),
+      modifiedAuthor: topic.modifiedAuthor || '',
+      due: this.formatDate(topic.dueDate),
+      comments: topic.comments ? topic.comments.length : 0,
+      isOverdue: this.isOverdue(topic.dueDate),
+      hasComments: topic.comments && topic.comments.length > 0,
+      hasViewpoints:
+        topic.viewpoints &&
+        topic.viewpoints.filter((vp) => vp.CameraViewPoint || vp.cameraType)
+          .length > 1, // More than 1 means additional viewpoints beyond primary
+
+      // Coordinate data from primary viewpoint
+      ...coordinateData,
+
+      _originalTopic: topic,
+    };
+  }
+
+  /**
+   * Build comment rows for a topic, oldest first. Sorts topic.comments in
+   * place, as the original inline code did.
+   * @param {Object} bcfFile - Parsed BCF file the topic belongs to
+   * @param {Object} topic - Parsed topic
+   * @param {number} topicNumber - 1-based topic number across all files
+   * @returns {Array<Object>} Comment rows (empty if the topic has no comments)
+   */
+  createCommentRows(bcfFile, topic, topicNumber) {
+    if (!topic.comments || topic.comments.length === 0) {
+      return [];
+    }
+
+    const sortedComments = topic.comments.sort(
+      (a, b) =>
+        new Date(a.date || '1970-01-01') - new Date(b.date || '1970-01-01')
+    );
+
+    return sortedComments.map((comment, index) =>
+      this.createCommentRow(bcfFile, topic, topicNumber, comment, index)
+    );
+  }
+
+  /**
+   * Build a single comment row
+   * @param {Object} bcfFile - Parsed BCF file the topic belongs to
+   * @param {Object} topic - Parent topic
+   * @param {number} topicNumber - 1-based topic number across all files
+   * @param {Object} comment - Parsed comment
+   * @param {number} index - 0-based position in the sorted comment list
+   * @returns {Object} Comment row
+   */
+  createCommentRow(bcfFile, topic, topicNumber, comment, index) {
+    return {
+      type: `${topicNumber}.${index + 1}`,
+      rowType: 'comment',
+      sourceFile: bcfFile.filename,
+      topicGuid: topic.guid,
+      parentTopicGuid: topic.guid,
+      parentTitle: topic.title,
+      title: `Comment ${index + 1}`,
+      status: comment.status || '',
+      priority: '',
+      assignee: '',
+      author: comment.author || '',
+      created: this.formatDate(comment.date),
+      modified: '',
+      modifiedAuthor: '',
+      due: '',
+      comments: '',
+      content: comment.comment || '',
+      commentNumber: index + 1,
+      commentDate: this.formatDate(comment.date),
+      commentAuthor: comment.author || 'No Author',
+      commentText: comment.comment || 'No Comment Text',
+      commentStatus: comment.status || '',
+      _debug_comment: comment,
+      _originalComment: comment,
+    };
+  }
+
+  /**
+   * Build rows for a topic's additional viewpoints (those beyond the primary
+   * viewpoint already shown in the topic row)
+   * @param {Object} bcfFile - Parsed BCF file the topic belongs to
+   * @param {Object} topic - Parsed topic
+   * @param {number} topicNumber - 1-based topic number across all files
+   * @returns {Array<Object>} Viewpoint rows (empty unless topic has 2+ viewpoints)
+   */
+  createViewpointRows(bcfFile, topic, topicNumber) {
+    if (!topic.viewpoints || topic.viewpoints.length <= 1) {
+      return [];
+    }
+
+    const viewpointsWithCoordinates = this.getCoordinateViewpoints(topic);
+    const primaryViewpoint = this.selectCoordinateViewpoint(
+      viewpointsWithCoordinates
+    );
+
+    return viewpointsWithCoordinates
+      .filter((vp) => vp !== primaryViewpoint)
+      .map((viewpoint, index) =>
+        this.createViewpointRow(bcfFile, topic, topicNumber, viewpoint, index)
+      );
+  }
+
+  /**
+   * Build a single additional-viewpoint row
+   * @param {Object} bcfFile - Parsed BCF file the topic belongs to
+   * @param {Object} topic - Parent topic
+   * @param {number} topicNumber - 1-based topic number across all files
+   * @param {Object} viewpoint - Parsed viewpoint
+   * @param {number} index - 0-based position among the additional viewpoints
+   * @returns {Object} Viewpoint row
+   */
+  createViewpointRow(bcfFile, topic, topicNumber, viewpoint, index) {
+    return {
+      type: `${topicNumber}.V${index + 1}`,
+      rowType: 'viewpoint',
+      sourceFile: bcfFile.filename,
+      topicGuid: topic.guid,
+      parentTopicGuid: topic.guid,
+      parentTitle: topic.title,
+      title: `Viewpoint ${index + 1}: ${viewpoint.guid}`,
+      status: '',
+      priority: '',
+      assignee: '',
+      author: '',
+      created: '',
+      modified: '',
+      modifiedAuthor: '',
+      due: '',
+      comments: '',
+
+      // All coordinate data for this viewpoint
+      ...this.extractViewpointCoordinates(viewpoint),
+
+      // Viewpoint-specific metadata
+      viewpointNumber: index + 1,
+      viewpointGuid: viewpoint.guid,
+      viewpointFile: viewpoint.viewpointFile,
+      viewpointType: viewpoint.cameraType || '',
+
+      _originalViewpoint: viewpoint,
+    };
   }
 
   // Populate filter dropdowns with actual data
@@ -1473,154 +1511,65 @@ class AdvancedPreview {
   }
 
   /**
-   * Get coordinate data using the correct viewpoint with extracted coordinates
+   * Get the viewpoints of a topic that carry extracted coordinate data
+   * (these have CameraViewPoint, cameraType, FieldOfView, etc.)
+   * @param {Object} topic - Parsed topic
+   * @returns {Array<Object>} Viewpoints with coordinate data, in original order
    */
-  getTopicCoordinateData(topic, bcfFile) {
-
-    // Initialize coordinate data object
-    const coordinateData = {
-      cameraType: '',
-      CameraViewPointX: '',
-      CameraViewPointY: '',
-      CameraViewPointZ: '',
-      CameraDirectionX: '',
-      CameraDirectionY: '',
-      CameraDirectionZ: '',
-      CameraUpVectorX: '',
-      CameraUpVectorY: '',
-      CameraUpVectorZ: '',
-      FieldOfView: '',
-      ViewToWorldScale: '',
-      cameraPosX: '',
-      cameraPosY: '',
-      cameraPosZ: '',
-      cameraTargetX: '',
-      cameraTargetY: '',
-      cameraTargetZ: '',
-    };
-
-    if (!topic.viewpoints || topic.viewpoints.length === 0) {
-      return coordinateData;
-    }
-
-    // 🎯 Find viewpoints with actual extracted coordinate data
-    // These are the viewpoints that have CameraViewPoint, CameraDirection, etc.
-    const viewpointsWithCoordinates = topic.viewpoints.filter(
+  getCoordinateViewpoints(topic) {
+    return (topic.viewpoints || []).filter(
       (vp) =>
         vp.CameraViewPoint ||
         vp.cameraType ||
         vp.ViewToWorldScale ||
         vp.FieldOfView
     );
+  }
 
-    if (viewpointsWithCoordinates.length === 0) {
-      return coordinateData;
-    }
+  /**
+   * Pick the viewpoint shown in the topic row: the main viewpoint.bcfv if
+   * present, otherwise the first viewpoint
+   * @param {Array<Object>} viewpoints - Viewpoints with coordinate data
+   * @returns {Object|undefined} Selected viewpoint (undefined if list is empty)
+   */
+  selectCoordinateViewpoint(viewpoints) {
+    return (
+      viewpoints.find(
+        (vp) =>
+          vp.viewpointFile === 'viewpoint.bcfv' ||
+          vp.guid === 'viewpoint-generic' ||
+          (vp.viewpointFile &&
+            vp.viewpointFile.toLowerCase().includes('viewpoint.bcfv'))
+      ) || viewpoints[0]
+    );
+  }
 
-    // Priority 1: Look for main viewpoint.bcfv with coordinates
-    let primaryViewpoint = viewpointsWithCoordinates.find((vp) => {
-      return (
-        vp.viewpointFile === 'viewpoint.bcfv' ||
-        vp.guid === 'viewpoint-generic' ||
-        (vp.viewpointFile &&
-          vp.viewpointFile.toLowerCase().includes('viewpoint.bcfv'))
-      );
-    });
+  /**
+   * Get coordinate data using the correct viewpoint with extracted coordinates.
+   * Returns all coordinate fields as empty strings when no viewpoint qualifies.
+   * @param {Object} topic - Parsed topic
+   * @param {Object} bcfFile - Parsed BCF file the topic belongs to
+   * @returns {Object} Coordinate fields keyed as in CoordinateUtils.COORDINATE_FIELDS
+   */
+  getTopicCoordinateData(topic, bcfFile) {
+    const primaryViewpoint = this.selectCoordinateViewpoint(
+      this.getCoordinateViewpoints(topic)
+    );
 
-    // Priority 2: First viewpoint with coordinate data
     if (!primaryViewpoint) {
-      primaryViewpoint = viewpointsWithCoordinates[0];
-    }
-
-    // Extract coordinate data
-    coordinateData.cameraType = primaryViewpoint.cameraType || '';
-
-    // BCF standard coordinates
-    if (primaryViewpoint.CameraViewPoint) {
-      coordinateData.CameraViewPointX = this.formatCoordinate(
-        primaryViewpoint.CameraViewPoint.X
-      );
-      coordinateData.CameraViewPointY = this.formatCoordinate(
-        primaryViewpoint.CameraViewPoint.Y
-      );
-      coordinateData.CameraViewPointZ = this.formatCoordinate(
-        primaryViewpoint.CameraViewPoint.Z
+      return Object.fromEntries(
+        CoordinateUtils.COORDINATE_FIELDS.map((field) => [field, ''])
       );
     }
 
-    if (primaryViewpoint.CameraDirection) {
-      coordinateData.CameraDirectionX = this.formatCoordinate(
-        primaryViewpoint.CameraDirection.X
-      );
-      coordinateData.CameraDirectionY = this.formatCoordinate(
-        primaryViewpoint.CameraDirection.Y
-      );
-      coordinateData.CameraDirectionZ = this.formatCoordinate(
-        primaryViewpoint.CameraDirection.Z
-      );
-    }
-
-    if (primaryViewpoint.CameraUpVector) {
-      coordinateData.CameraUpVectorX = this.formatCoordinate(
-        primaryViewpoint.CameraUpVector.X
-      );
-      coordinateData.CameraUpVectorY = this.formatCoordinate(
-        primaryViewpoint.CameraUpVector.Y
-      );
-      coordinateData.CameraUpVectorZ = this.formatCoordinate(
-        primaryViewpoint.CameraUpVector.Z
-      );
-    }
-
-    coordinateData.FieldOfView = this.formatCoordinate(
-      primaryViewpoint.FieldOfView
-    );
-    coordinateData.ViewToWorldScale = this.formatCoordinate(
-      primaryViewpoint.ViewToWorldScale
-    );
-
-    // Legacy coordinates
-    if (primaryViewpoint.cameraPosition) {
-      coordinateData.cameraPosX = this.formatCoordinate(
-        primaryViewpoint.cameraPosition.x
-      );
-      coordinateData.cameraPosY = this.formatCoordinate(
-        primaryViewpoint.cameraPosition.y
-      );
-      coordinateData.cameraPosZ = this.formatCoordinate(
-        primaryViewpoint.cameraPosition.z
-      );
-    }
-
-    if (primaryViewpoint.cameraTarget) {
-      coordinateData.cameraTargetX = this.formatCoordinate(
-        primaryViewpoint.cameraTarget.x
-      );
-      coordinateData.cameraTargetY = this.formatCoordinate(
-        primaryViewpoint.cameraTarget.y
-      );
-      coordinateData.cameraTargetZ = this.formatCoordinate(
-        primaryViewpoint.cameraTarget.z
-      );
-    }
-
-    return coordinateData;
+    return this.extractViewpointCoordinates(primaryViewpoint);
   }
 
   /**
    * Format coordinate values to 3 decimal places, handle null/undefined
    */
   formatCoordinate(value) {
-    if (value === null || value === undefined || value === '') {
-      return '';
-    }
-
-    const num = parseFloat(value);
-    if (isNaN(num)) {
-      return '';
-    }
-
-    return num.toFixed(3);
+    return CoordinateUtils.formatCoordinate(value);
   }
 
   /**
