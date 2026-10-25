@@ -60,8 +60,34 @@ const CoordinateUtils = {
      */
     hasCoordinateData(topic) {
         // Implementation...
+    },
+
+    /**
+     * Checks whether a point has any component that is not null
+     * @param {Object} point - Object holding the components (e.g. {X, Y, Z})
+     * @param {string[]} keys - Component keys to test
+     * @returns {boolean} True if the point exists and any component is not null
+     */
+    hasAnyComponent(point, keys) {
+        // Implementation...
+    },
+
+    /**
+     * Checks whether a single viewpoint carries any BCF or legacy coordinate data.
+     * Unlike hasCoordinateData, this tests one viewpoint, not a topic's primary one.
+     * @param {Object} viewpoint - Parsed viewpoint
+     * @returns {boolean} True if the viewpoint has any camera/coordinate data
+     */
+    viewpointHasCoordinateData(viewpoint) {
+        // Implementation...
     }
 };
+
+/**
+ * Camera and legacy coordinate field names shared by the CSV and Excel exporters
+ * @type {string[]}
+ */
+CoordinateUtils.COORDINATE_FIELDS;
 ```
 
 ## js/utils/pdf-utils.js
