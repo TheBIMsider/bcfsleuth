@@ -67,6 +67,29 @@ const success = PDFUtils.addImageToPDF(pdf, imageData, x, y, width, height);
 - `wrapTextForPDF()` - Smart text wrapping for PDF constraints
 - `generatePDFFilename()` - Standardized filename generation
 - `addImageToPDF()` - Error-handling image insertion
+- `calculateImageDimensions()` - Aspect-ratio-preserving image sizing (used by `ImageViewer.loadPDFImageDimensions`)
+- `getImageFormat()` - Maps an image MIME type to the jsPDF format name (`PNG`, `GIF`, `WEBP`, default `JPEG`)
+
+Note: `PDFUtils.addImageToPDF` currently has no callers; `ImageViewer.addImageToPDF` draws its own image plus caption and shares only `calculateImageDimensions`, `getImageFormat` and `truncateText` with it.
+
+### WordUtils (`js/utils/word-utils.js`)
+
+**Purpose**: Shared building blocks for Word (docx) report content. Requires `window.docx` at call time.
+
+```javascript
+// Single-run paragraph: text, TextRun options, Paragraph options
+WordUtils.createTextParagraph('Title', { bold: true, size: 32 }, { spacing: { after: 400 } });
+
+// Centered image paragraph; becomes "[Image not available]" if the base64 data can't be decoded
+WordUtils.createImageParagraphWithFallback(image, { width: 400, height: 300 }, { before: 200, after: 300 }, 'Word document');
+```
+
+**Key Methods**:
+- `createTextParagraph()` - Paragraph with one `TextRun`; extra options are spread after `text` / `children`
+- `base64ToBytes()` - Base64 string to `Uint8Array` for `ImageRun`
+- `createImageParagraphWithFallback()` - Centered image paragraph with the "[Image not available]" fallback; the last argument names where the image is going in the warning message
+
+Load order: `word-utils.js` is loaded with the other utilities in `V02/index.html`, before the feature scripts.
 
 ### ColorManager (`js/utils/color-manager.js`)
 
@@ -189,6 +212,25 @@ function generateAndDownloadZip(blob, filename) { /* download handling */ }
 - `formatDefaultCell` has a branch that references an undefined `originalValue`; a short value (30 characters or fewer) containing `...` throws a `ReferenceError`. Likely fix: use `stringValue`.
 - The preview's own `getPrimaryViewpoint` is no longer called by anything.
 - The preview's "has coordinates" test differs from `CoordinateUtils.viewpointHasCoordinateData`; unifying them would change which viewpoint rows appear.
+
+### Report Builder Structure
+
+The Word and PDF report methods in `js/image-viewer.js` and `js/analytics-dashboard.js` are thin orchestrators over small helpers. Public entry points and their names are unchanged (`generateWordReport` is called from an `onclick` in `index.html`), so add new steps as helpers rather than growing them.
+
+**`ImageViewer` Word reports**
+- `generateWordReport`: `waitForDocxLibrary` (waits up to 15 s for `window.docx`), `verifyDocxComponents`, then `generateWordDocumentForLayout(layout)` which dispatches to the grid, detailed or summary builder.
+- Grid (`createWordGridContent`): `buildGridWordHeader` + `buildWordGridTable`. Detailed (`createWordDetailedContent`): `buildDetailedWordHeader` + one `buildDetailedImageSection` per image (which uses `buildDetailedMetadataParagraphs`). Summary (`createWordSummaryContent`): `buildSummaryWordStatistics`, a page break, then one two-cell table per image pair.
+- Grid and summary share `createWordImagePairCells` and `createWordImageCell`; grid and detailed share `getWordGeneratedInfo`.
+
+**`ImageViewer` PDF images** (`addImageToPDF`): `loadPDFImageDimensions` sizes the image (via `PDFUtils.calculateImageDimensions`), `addPDFImagePlaceholder` is the failure fallback, and `addPDFImageMetadata` writes the caption below it. The caption area is 25 mm (compact) or 35 mm tall and is reserved out of the height passed in.
+
+**`AnalyticsDashboard` Word report** (`createAnalyticsWordContent`): `buildAnalyticsWordTitle`, `buildAnalyticsWordSummary` (rows from `createSummaryTableRow` / `createSummaryTableCell`), `buildAnalyticsWordResults` (one `createResultLineParagraph` per wrapped line) and `buildAnalyticsWordFooter`.
+
+**`AnalyticsDashboard` charts PDF** (`exportChartsToPDF`): after the checks, a `layout` object (`pageWidth`, `pageHeight`, `margin`) is passed through `addChartsPDFTitle`, `addChartsPDFSummary`, `addChartToPDF` per chart (page break, title, image sized by `calculateChartPDFSize`, or an error note) and `addChartsPDFFooters`. Each helper that draws returns the next Y position.
+
+**`AnalyticsDashboard` lightbox** (`renderChartInLightbox`): `calculateLightboxSize` (landscape preference, minimum 600x400), `applyLightboxCanvasSize` and `buildLightboxChartConfig`. If the container has no size yet it retries after 100 ms.
+
+**Shared logic** lives in `WordUtils` (paragraphs, image decoding and the image fallback) and `PDFUtils` (image sizing and format). Do not copy these back into a report builder.
 
 ## Error Handling Standards
 

@@ -606,6 +606,78 @@ buildCellHtml(cell) {
 
 The remaining helpers (`createTopicRow`, `createCommentRow`, `createViewpointRow`, `formatStatusCell`, `formatPriorityCell`, `formatDueDateCell`, `formatCommentTextCell`, `formatCoordinateCell`, `formatDefaultCell`) have JSDoc in the source.
 
+## js/utils/word-utils.js
+
+```javascript
+/**
+ * Create a paragraph holding a single text run
+ * @param {string} text - Run text
+ * @param {Object} [runOptions] - Extra TextRun options (bold, size, color, ...)
+ * @param {Object} [paragraphOptions] - Extra Paragraph options (heading, alignment, spacing, ...)
+ * @returns {Paragraph} docx Paragraph
+ */
+static createTextParagraph(text, runOptions = {}, paragraphOptions = {}) {
+    // Implementation...
+}
+
+/**
+ * Create a centered paragraph for an image, or an "[Image not available]"
+ * paragraph if the image cannot be decoded
+ * @param {Object} image - Image data ({imageData, imageType})
+ * @param {{width: number, height: number}} size - Image size in the document
+ * @param {Object|null} [spacing] - Paragraph spacing, omitted when null
+ * @param {string} [context] - Where the image is going, used in the warning message
+ * @returns {Paragraph} docx Paragraph
+ */
+static createImageParagraphWithFallback(image, size, spacing = null, context = 'Word document') {
+    // Implementation...
+}
+```
+
+`base64ToBytes` has JSDoc in the source.
+
+## Report builders (js/image-viewer.js, js/analytics-dashboard.js)
+
+```javascript
+/**
+ * Create Word document content for analytics report
+ * @param {Object} reportData - Report data object
+ * @returns {Array} Array of Word document elements
+ */
+async createAnalyticsWordContent(reportData) {
+    // Orchestrates buildAnalyticsWordTitle, buildAnalyticsWordSummary,
+    // buildAnalyticsWordResults, buildAnalyticsWordFooter
+}
+
+/**
+ * Add one chart (title and image) to the charts PDF, starting a new page when
+ * there is not enough room. On failure a short note is written in its place.
+ * @param {jsPDF} pdf - PDF document
+ * @param {string} chartKey - Chart key (status, priority, etc.)
+ * @param {Chart} chart - Chart.js instance with a canvas
+ * @param {{pageWidth: number, pageHeight: number, margin: number}} layout - Page layout in mm
+ * @param {number} startY - Y position to start at
+ * @returns {number} Y position below the chart
+ */
+addChartToPDF(pdf, chartKey, chart, layout, startY) {
+    // Implementation...
+}
+
+/**
+ * Load an image to find the size that fits the bounds while preserving its aspect ratio
+ * @param {string} imageType - Image MIME type
+ * @param {string} imageData - Base64 image data
+ * @param {number} maxWidth - Maximum width
+ * @param {number} maxHeight - Maximum height
+ * @returns {Promise<{width: number, height: number}>} Fitted size; 80% of the bounds if the image cannot be loaded
+ */
+loadPDFImageDimensions(imageType, imageData, maxWidth, maxHeight) {
+    // Implementation...
+}
+```
+
+The other new helpers (`buildGridWordHeader`, `buildWordGridTable`, `createWordImagePairCells`, `buildDetailedWordHeader`, `buildDetailedImageSection`, `buildDetailedMetadataParagraphs`, `buildSummaryWordStatistics`, `waitForDocxLibrary`, `verifyDocxComponents`, `generateWordDocumentForLayout`, `addPDFImagePlaceholder`, `addPDFImageMetadata`, `createSummaryTableRow`, `createSummaryTableCell`, `createResultLineParagraph`, `addChartsPDFTitle`, `addChartsPDFSummary`, `calculateChartPDFSize`, `addChartsPDFFooters`, `calculateLightboxSize`, `applyLightboxCanvasSize`, `buildLightboxChartConfig`) have JSDoc in the source.
+
 ## Usage Instructions
 
 ### Adding JSDoc Comments to Files
