@@ -1186,203 +1186,196 @@ class AdvancedPreview {
     }
   }
 
+  /**
+   * Create the HTML for one table cell, formatted for its field type
+   * @param {Object} row - Flattened table row
+   * @param {string} columnField - Row property the column reads from
+   * @param {string} originalField - Field ID that decides the formatting
+   * @returns {string} `<td>` HTML
+   */
   createFormattedCell(row, columnField, originalField) {
-    let value = row[columnField] || '';
-    let cssClass = '';
-    let needsTooltip = false;
-    let fullText = '';
+    const value = row[columnField] || '';
+    const cell = this.formatCellByField(row, originalField, value);
 
-    // Format based on field type
-    switch (originalField) {
+    if (cell.html !== undefined) {
+      return cell.html;
+    }
+
+    return this.buildCellHtml({
+      value,
+      cssClass: '',
+      fullText: '',
+      needsTooltip: false,
+      ...cell,
+    });
+  }
+
+  /**
+   * Choose the formatter for a field. Returns either `{ html }` (a finished
+   * cell) or a partial `{ value, cssClass, fullText, needsTooltip }` that
+   * createFormattedCell completes with defaults.
+   * @param {Object} row - Flattened table row
+   * @param {string} field - Field ID
+   * @param {*} value - Raw cell value (already defaulted to '')
+   * @returns {Object} Formatted cell parts
+   */
+  formatCellByField(row, field, value) {
+    switch (field) {
       case 'status':
-        if (value) {
-          return `<td><span class="status-badge status-${value
-            .toLowerCase()
-            .replace(/\s+/g, '-')}">${value}</span></td>`;
-        }
-        return '<td></td>';
+        return this.formatStatusCell(value);
 
       case 'priority':
-        if (value) {
-          return `<td><span class="priority-badge priority-${value.toLowerCase()}">${value}</span></td>`;
-        }
-        return '<td></td>';
+        return this.formatPriorityCell(value);
 
       case 'dueDate':
-        if (!value) return '<td></td>';
-        const isOverdue = this.isOverdue(value);
-        cssClass = 'cell-date';
-        value = isOverdue
-          ? `<span style="color: var(--danger)">${value} (Overdue)</span>`
-          : value;
-        break;
+        return this.formatDueDateCell(value);
 
       case 'creationDate':
       case 'modifiedDate':
       case 'commentDate':
-        cssClass = 'cell-date';
-        break;
+        return { cssClass: 'cell-date' };
 
       case 'creationAuthor':
       case 'modifiedAuthor':
       case 'commentAuthor':
       case 'assignedTo':
-        cssClass = 'cell-author';
-        break;
+        return { cssClass: 'cell-author' };
 
       case 'commentText':
-        if (value && value.length > 50) {
-          cssClass = 'cell-comment expandable';
-          fullText = value;
-          value = this.truncateText(value, 50);
-          needsTooltip = true;
-        } else {
-          cssClass = 'cell-comment';
-        }
-        break;
-
-      case 'commentText':
-        if (value && value.length > 50) {
-          cssClass = 'cell-comment expandable';
-          fullText = value;
-          value = this.truncateText(value, 50);
-          needsTooltip = true;
-        } else {
-          cssClass = 'cell-comment';
-        }
-        break;
+        return this.formatCommentTextCell(value);
 
       case 'commentNumber':
         // Only show for comment rows, empty for topics
-        if (row.rowType === 'comment') {
-          value = row.commentNumber || '';
-        } else {
-          value = ''; // Empty for topic rows
-        }
-        break;
-
-      case 'commentDate':
-        // Only show for comment rows
-        if (row.rowType === 'comment') {
-          cssClass = 'cell-date';
-          value = row.commentDate || '';
-        } else {
-          value = ''; // Empty for topic rows
-        }
-        break;
-
-      case 'commentAuthor':
-        // Only show for comment rows
-        if (row.rowType === 'comment') {
-          cssClass = 'cell-author';
-          value = row.commentAuthor || '';
-        } else {
-          value = ''; // Empty for topic rows
-        }
-        break;
-
-      case 'commentText':
-        // Only show for comment rows
-        if (row.rowType === 'comment') {
-          value = row.commentText || '';
-          if (value && value.length > 50) {
-            cssClass = 'cell-comment expandable';
-            fullText = value;
-            value = this.truncateText(value, 50);
-            needsTooltip = true;
-          } else {
-            cssClass = 'cell-comment';
-          }
-        } else {
-          value = ''; // Empty for topic rows
-        }
-        break;
-
-      case 'modifiedDate':
-      case 'modifiedAuthor':
-        // Only show for topic rows
-        if (row.rowType === 'topic') {
-          cssClass = field === 'modifiedAuthor' ? 'cell-author' : 'cell-date';
-          value = value || '';
-        } else {
-          value = '';
-        }
-        break;
+        return { value: row.rowType === 'comment' ? row.commentNumber || '' : '' };
 
       case 'commentsCount':
       case 'viewpointsCount':
-        if (row.rowType === 'topic') {
-          value = value || 0;
-        } else {
-          value = '';
-        }
-        break;
+        return { value: row.rowType === 'topic' ? value || 0 : '' };
 
-      // ✅ BCF Camera Coordinate Fields - Format coordinate values
       case 'cameraType':
-        cssClass = 'cell-camera-type';
-        value = value || '';
-        break;
-
-      case 'CameraViewPointX':
-      case 'CameraViewPointY':
-      case 'CameraViewPointZ':
-      case 'CameraDirectionX':
-      case 'CameraDirectionY':
-      case 'CameraDirectionZ':
-      case 'CameraUpVectorX':
-      case 'CameraUpVectorY':
-      case 'CameraUpVectorZ':
-      case 'FieldOfView':
-      case 'ViewToWorldScale':
-      case 'cameraPosX':
-      case 'cameraPosY':
-      case 'cameraPosZ':
-      case 'cameraTargetX':
-      case 'cameraTargetY':
-      case 'cameraTargetZ':
-        // ✅ Show coordinate data for both topic rows AND viewpoint rows
-        if (row.rowType === 'topic' || row.rowType === 'viewpoint') {
-          cssClass = 'cell-coordinate';
-          value = value || '';
-          // Add visual indicator for coordinate fields
-          if (value) {
-            value = `<span class="coordinate-value">${value}</span>`;
-          }
-        } else {
-          value = ''; // Empty for comment rows only
-        }
-        break;
+        return { cssClass: 'cell-camera-type', value: value || '' };
 
       default:
-        // Handle long text fields and detect truncation
-        const stringValue = String(value || '');
-        if (stringValue && stringValue.length > 30) {
-          cssClass = cssClass ? `${cssClass} expandable` : 'expandable';
-          fullText = stringValue;
-          value = this.truncateText(stringValue, 30);
-          needsTooltip = true;
+        if (CoordinateUtils.COORDINATE_FIELDS.includes(field)) {
+          return this.formatCoordinateCell(row, value);
         }
-        // Also check if truncateText added ellipsis (indicates truncation)
-        else if (
-          stringValue &&
-          typeof value === 'string' &&
-          value.includes('...')
-        ) {
-          cssClass = cssClass ? `${cssClass} expandable` : 'expandable';
-          fullText = originalValue;
-          needsTooltip = true;
-        }
+        return this.formatDefaultCell(value);
     }
+  }
 
-    // Build the cell HTML
+  /**
+   * Status badge cell
+   * @param {string} value - Status text
+   * @returns {{html: string}} Finished cell
+   */
+  formatStatusCell(value) {
+    if (!value) return { html: '<td></td>' };
+    return {
+      html: `<td><span class="status-badge status-${value
+        .toLowerCase()
+        .replace(/\s+/g, '-')}">${value}</span></td>`,
+    };
+  }
+
+  /**
+   * Priority badge cell
+   * @param {string} value - Priority text
+   * @returns {{html: string}} Finished cell
+   */
+  formatPriorityCell(value) {
+    if (!value) return { html: '<td></td>' };
+    return {
+      html: `<td><span class="priority-badge priority-${value.toLowerCase()}">${value}</span></td>`,
+    };
+  }
+
+  /**
+   * Due date cell, flagged when overdue
+   * @param {string} value - Formatted due date
+   * @returns {Object} Finished cell (empty) or cell parts
+   */
+  formatDueDateCell(value) {
+    if (!value) return { html: '<td></td>' };
+    return {
+      cssClass: 'cell-date',
+      value: this.isOverdue(value)
+        ? `<span style="color: var(--danger)">${value} (Overdue)</span>`
+        : value,
+    };
+  }
+
+  /**
+   * Comment text cell, truncated with a tooltip when longer than 50 chars
+   * @param {string} value - Comment text
+   * @returns {Object} Cell parts
+   */
+  formatCommentTextCell(value) {
+    if (value && value.length > 50) {
+      return {
+        cssClass: 'cell-comment expandable',
+        fullText: value,
+        value: this.truncateText(value, 50),
+        needsTooltip: true,
+      };
+    }
+    return { cssClass: 'cell-comment' };
+  }
+
+  /**
+   * Camera coordinate cell, shown for topic and viewpoint rows only
+   * @param {Object} row - Flattened table row
+   * @param {string} value - Formatted coordinate
+   * @returns {Object} Cell parts
+   */
+  formatCoordinateCell(row, value) {
+    if (row.rowType !== 'topic' && row.rowType !== 'viewpoint') {
+      return { value: '' }; // Empty for comment rows
+    }
+    return {
+      cssClass: 'cell-coordinate',
+      value: value ? `<span class="coordinate-value">${value}</span>` : '',
+    };
+  }
+
+  /**
+   * Cell for fields without special formatting: truncates long text and
+   * flags it for a tooltip
+   * @param {*} value - Raw cell value
+   * @returns {Object} Cell parts
+   */
+  formatDefaultCell(value) {
+    const stringValue = String(value || '');
+    if (stringValue && stringValue.length > 30) {
+      return {
+        cssClass: 'expandable',
+        fullText: stringValue,
+        value: this.truncateText(stringValue, 30),
+        needsTooltip: true,
+      };
+    }
+    // Also check if truncateText added ellipsis (indicates truncation)
+    if (stringValue && typeof value === 'string' && value.includes('...')) {
+      return {
+        cssClass: 'expandable',
+        fullText: originalValue,
+        needsTooltip: true,
+      };
+    }
+    return {};
+  }
+
+  /**
+   * Assemble the final `<td>`, adding a tooltip attribute when needed
+   * @param {{value: *, cssClass: string, fullText: string, needsTooltip: boolean}} cell
+   * @returns {string} `<td>` HTML
+   */
+  buildCellHtml({ value, cssClass, fullText, needsTooltip }) {
     if (needsTooltip && fullText) {
       return `<td class="${cssClass}" data-full-text="${this.escapeHtml(
         fullText
       )}">${value}</td>`;
-    } else {
-      return `<td class="${cssClass}">${value}</td>`;
     }
+    return `<td class="${cssClass}">${value}</td>`;
   }
 
   // Updated setupTooltips method
